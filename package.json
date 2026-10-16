@@ -1,0 +1,28 @@
+{
+  "name": "camera-business-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Smart Camera E-Commerce Platform with Admin, Storefront, NestJS API, PostgreSQL & K8s deployment",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm --workspace=apps/backend run start:dev",
+    "dev:store": "npm --workspace=apps/web-store run dev",
+    "dev:admin": "npm --workspace=apps/web-admin run dev",
+    "build:all": "npm run build --workspaces",
+    "docker:up": "docker compose -f deploy/docker-compose.yml up -d",
+    "docker:down": "docker compose -f deploy/docker-compose.yml down",
+    "docker:logs": "docker compose -f deploy/docker-compose.yml logs -f"
+  },
+  "keywords": [
+    "ecommerce",
+    "camera",
+    "kubernetes",
+    "nestjs",
+    "nextjs",
+    "postgresql"
+  ],
+  "author": "",
+  "license": "MIT"
+}
