@@ -16,7 +16,7 @@ export class ProductsService {
     limit?: number;
   }) {
     const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 20;
+    const limit = Number(query.limit) || 50;
     const skip = (page - 1) * limit;
 
     const where: any = { isActive: true };
@@ -78,7 +78,7 @@ export class ProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException('Không tìm thấy sản phẩm camera này');
+      throw new NotFoundException('Không tìm thấy thiết bị này');
     }
 
     return product;
@@ -100,7 +100,7 @@ export class ProductsService {
       if (firstCat) categoryId = firstCat.id;
       else {
         const cat = await this.prisma.category.create({
-          data: { name: 'Camera Wifi Trong Nhà', slug: 'camera-wifi-trong-nha' },
+          data: { name: 'Máy Ảnh Mirrorless & DSLR', slug: 'may-anh-mirrorless-dslr' },
         });
         categoryId = cat.id;
       }
@@ -121,28 +121,30 @@ export class ProductsService {
       if (firstBrand) brandId = firstBrand.id;
       else {
         const br = await this.prisma.brand.create({
-          data: { name: 'Hikvision', slug: 'hikvision' },
+          data: { name: 'Sony', slug: 'sony' },
         });
         brandId = br.id;
       }
     }
 
-    const name = data.name || 'Camera giám sát thông minh';
+    const name = data.name || 'Thiết bị Nhiếp Ảnh & Điện Ảnh Chuyên Nghiệp';
     const timestamp = Date.now();
     const slug = data.slug || (name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + timestamp);
-    const sku = data.sku || ('CAM-' + Math.floor(1000 + Math.random() * 9000));
-    const price = Number(data.price) || 850000;
-    const originalPrice = Number(data.originalPrice) || Math.round(price * 1.25);
+    const sku = data.sku || ('PRO-' + Math.floor(1000 + Math.random() * 9000));
+    const price = Number(data.price) || 25000000;
+    const originalPrice = Number(data.originalPrice) || Math.round(price * 1.15);
     const stockQuantity = Number(data.stockQuantity || data.stock) || 10;
     const shortDesc = data.shortDesc || name;
     const description = data.description || shortDesc;
     const specifications = data.specifications || {
-      resolution: data.resolution || '4.0 MP 2K',
-      nightVision: data.nightVision || 'ColorVu có màu 24/7',
-      aiFeatures: data.aiFeatures || (data.aiFeature ? [data.aiFeature] : ['Phát hiện người và phương tiện']),
+      sensor: data.sensor || 'Full-Frame BSI CMOS',
+      video: data.video || '4K 60p 10-bit 4:2:2',
+      stabilization: data.stabilization || 'Chống rung IBIS 5 trục',
+      weight: data.weight || '650g',
+      features: Array.isArray(data.features) ? data.features : ['Quay 4K HDR', 'Lấy nét AI'],
     };
 
-    const imageUrl = data.imageUrl || (data.images?.[0]?.imageUrl) || 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600';
+    const imageUrl = data.imageUrl || (data.images?.[0]?.imageUrl) || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800';
 
     return this.prisma.product.create({
       data: {
@@ -183,7 +185,6 @@ export class ProductsService {
       await this.prisma.productImage.deleteMany({ where: { productId: id } });
       return await this.prisma.product.delete({ where: { id } });
     } catch (err) {
-      // Product may already be deleted or not found
       return { id, deleted: true };
     }
   }
