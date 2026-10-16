@@ -7,6 +7,7 @@ import { OrdersModule } from './orders/orders.module';
 import { CategoriesModule } from './categories/categories.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { WarrantyModule } from './warranty/warranty.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
