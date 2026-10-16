@@ -6,16 +6,11 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
-  tls:
-    - hosts:
-        - camera.yourdomain.com # Thay bằng domain hoặc IP của AKS Ingress
-      secretName: camera-tls-cert
+  ingressClassName: nginx
   rules:
-    - host: camera.yourdomain.com # Thay bằng domain hoặc để trống host nếu dùng nip.io / IP
-      http:
+    - http:
         paths:
           # Backend API
           - path: /api
