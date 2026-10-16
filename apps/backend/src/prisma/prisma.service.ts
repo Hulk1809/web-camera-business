@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { exec } from 'child_process';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -14,6 +15,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       try {
         await this.$connect();
         this.logger.log('✅ Successfully connected to PostgreSQL Database');
+        exec('npx prisma db push --skip-generate', (err) => {
+          if (!err) {
+            this.logger.log('✅ Database schema synchronized');
+          }
+        });
         return;
       } catch (error) {
         this.logger.warn(`⏳ Waiting for PostgreSQL database to be ready... Attempt ${i}/${retries}`);
