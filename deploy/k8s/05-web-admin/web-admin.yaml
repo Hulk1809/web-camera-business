@@ -20,6 +20,8 @@ spec:
       labels:
         app: web-admin
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: web-admin
           image: ghcr.io/hulk1809/camera-admin:latest

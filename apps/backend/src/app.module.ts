@@ -19,5 +19,6 @@ import { WarrantyModule } from './warranty/warranty.module';
     DashboardModule,
     WarrantyModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

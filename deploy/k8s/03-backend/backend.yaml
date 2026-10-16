@@ -40,6 +40,8 @@ spec:
       labels:
         app: backend
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: backend
           image: ghcr.io/hulk1809/camera-backend:latest # GitHub Actions sẽ update tag này khi deploy
@@ -61,13 +63,13 @@ spec:
               memory: 512Mi
           livenessProbe:
             httpGet:
-              path: /api/categories
+              path: /api/health
               port: 4000
             initialDelaySeconds: 20
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /api/categories
+              path: /api/health
               port: 4000
             initialDelaySeconds: 10
             periodSeconds: 5

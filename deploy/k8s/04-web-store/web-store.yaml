@@ -20,6 +20,8 @@ spec:
       labels:
         app: web-store
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: web-store
           image: ghcr.io/hulk1809/camera-store:latest
