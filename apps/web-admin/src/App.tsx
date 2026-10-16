@@ -144,9 +144,9 @@ const DEFAULT_PRODUCTS: Product[] = [
     category: 'Gimbal & Chống Rung DJI Ronin',
     price: 19990000,
     originalPrice: 22500000,
-    stock: 3,
+    stock: 25,
     imageUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=800',
-    status: 'LOW_STOCK',
+    status: 'IN_STOCK',
     specifications: {
       payload: 'Tải trọng 4.5kg',
       stabilization: 'RS 4th Gen',
@@ -161,13 +161,129 @@ const DEFAULT_PRODUCTS: Product[] = [
     category: 'Action Cam & Pocket Creator',
     price: 15890000,
     originalPrice: 17900000,
-    stock: 2,
+    stock: 30,
     imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=800',
-    status: 'LOW_STOCK',
+    status: 'IN_STOCK',
     specifications: {
       sensor: '1-inch CMOS',
       video: '4K 120fps D-Log M',
       weight: '179g',
+    },
+  },
+  {
+    id: 'prod-canon-r5m2',
+    name: 'Canon EOS R5 Mark II Body - 45MP Stacked CMOS & 8K 60p RAW',
+    sku: 'CANON-R5-M2-BODY',
+    brand: 'Canon',
+    category: 'Máy Ảnh Mirrorless & DSLR',
+    price: 104990000,
+    originalPrice: 115000000,
+    stock: 6,
+    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=800',
+    status: 'IN_STOCK',
+    specifications: {
+      sensor: '45MP Stacked CMOS',
+      video: '8K 60p RAW',
+      stabilization: 'IBIS 8.5 stops',
+    },
+  },
+  {
+    id: 'prod-dji-mini4pro',
+    name: 'DJI Mini 4 Pro Fly More Combo Plus (DJI RC 2) - Dưới 249g',
+    sku: 'DJI-MINI4-PRO-RC2',
+    brand: 'DJI',
+    category: 'Flycam & Drone DJI',
+    price: 24890000,
+    originalPrice: 27900000,
+    stock: 20,
+    imageUrl: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=800',
+    status: 'IN_STOCK',
+    specifications: {
+      weight: 'Dưới 249g',
+      video: '4K 60fps HDR',
+      flightTime: '45 phút bay',
+    },
+  },
+  {
+    id: 'prod-bmd-cinema6k',
+    name: 'Blackmagic Cinema Camera 6K (Full-Frame L-Mount)',
+    sku: 'BMD-CINEMA-6K-FF',
+    brand: 'Blackmagic Design',
+    category: 'Máy Quay Điện Ảnh & Cinema',
+    price: 62500000,
+    originalPrice: 68000000,
+    stock: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800',
+    status: 'IN_STOCK',
+    specifications: {
+      sensor: 'Full-Frame 6K 6048x4032',
+      video: '6K 36fps Open Gate 12-bit RAW',
+      screen: 'Màn hình 5.0 inch 1500 nits',
+    },
+  },
+  {
+    id: 'prod-fuji-xt5',
+    name: 'Fujifilm X-T5 Body (Silver) - 40.2MP Cảm biến X-Trans CMOS 5 HR',
+    sku: 'FUJI-XT5-BODY-SILVER',
+    brand: 'Fujifilm',
+    category: 'Máy Ảnh Mirrorless & DSLR',
+    price: 41900000,
+    originalPrice: 45900000,
+    stock: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=800',
+    status: 'IN_STOCK',
+    specifications: {
+      sensor: '40.2MP X-Trans CMOS 5 HR',
+      video: '6.2K 30p 10-bit',
+      stabilization: 'IBIS 7.0 stops',
+    },
+  },
+  {
+    id: 'prod-sony-2470gm2',
+    name: 'Ống kính Sony FE 24-70mm F2.8 GM II (SEL2470GM2)',
+    sku: 'SEL2470GM2',
+    brand: 'Sony',
+    category: 'Ống Kính Chuyên Dụng (Lenses)',
+    price: 49990000,
+    originalPrice: 54900000,
+    stock: 14,
+    imageUrl: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=800',
+    status: 'IN_STOCK',
+    specifications: {
+      focalLength: '24-70mm F2.8 GM',
+      weight: '695g',
+    },
+  },
+  {
+    id: 'prod-dji-mic2',
+    name: 'Bộ Micro Thu Âm Không Dây DJI Mic 2 (2 TX + 1 RX + Hộp sạc)',
+    sku: 'DJI-MIC2-COMBO',
+    brand: 'DJI',
+    category: 'Âm Thanh & Ánh Sáng Studio',
+    price: 8490000,
+    originalPrice: 9490000,
+    stock: 40,
+    imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800',
+    status: 'IN_STOCK',
+    specifications: {
+      audioQuality: 'Thu âm 32-bit Float nội bộ',
+      flightTime: 'Pin 18 tiếng kèm hộp',
+    },
+  },
+  {
+    id: 'prod-nikon-z8',
+    name: 'Nikon Z8 Body - Máy ảnh Mirrorless 45.7MP Quay 8.3K N-RAW',
+    sku: 'NIKON-Z8-BODY',
+    brand: 'Nikon',
+    category: 'Máy Ảnh Mirrorless & DSLR',
+    price: 86900000,
+    originalPrice: 95000000,
+    stock: 9,
+    imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800',
+    status: 'IN_STOCK',
+    specifications: {
+      sensor: '45.7MP Stacked BSI CMOS',
+      video: '8.3K 60p N-RAW',
     },
   },
 ];
@@ -326,6 +442,29 @@ export function App() {
             specifications: item.specifications || {},
           }));
           setProducts(mapped);
+        } else if (data && Array.isArray(data.items) && data.items.length === 0) {
+          // If database on AKS is currently empty, trigger auto seed and reload!
+          await fetch('/api/products/seed');
+          const retryRes = await fetch('/api/products?limit=100');
+          if (retryRes.ok) {
+            const retryData = await retryRes.json();
+            if (retryData && Array.isArray(retryData.items) && retryData.items.length > 0) {
+              const mapped: Product[] = retryData.items.map((item: any) => ({
+                id: String(item.id),
+                name: item.name,
+                sku: item.sku,
+                brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'DJI'),
+                category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
+                price: Number(item.price),
+                originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
+                stock: Number(item.stockQuantity ?? 10),
+                imageUrl: item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+                status: Number(item.stockQuantity ?? 10) <= 3 ? 'LOW_STOCK' : 'IN_STOCK',
+                specifications: item.specifications || {},
+              }));
+              setProducts(mapped);
+            }
+          }
         }
       }
     } catch (err) {
@@ -553,7 +692,7 @@ export function App() {
   // Reset Seed
   const handleResetSeed = async () => {
     try {
-      await fetch('/api/products/seed', { method: 'POST' });
+      await fetch('/api/products/seed');
       await fetchProducts();
     } catch (err) {
       console.error(err);

@@ -436,6 +436,36 @@ export function App() {
           setProducts(mapped);
           setIsBackendConnected(true);
           return;
+        } else if (data && Array.isArray(data.items) && data.items.length === 0) {
+          await fetch('/api/products/seed');
+          const retryRes = await fetch('/api/products?limit=100');
+          if (retryRes.ok) {
+            const retryData = await retryRes.json();
+            if (retryData && Array.isArray(retryData.items) && retryData.items.length > 0) {
+              const mapped: ProProduct[] = retryData.items.map((item: any) => ({
+                id: String(item.id),
+                name: item.name,
+                slug: item.slug,
+                sku: item.sku,
+                brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'DJI'),
+                category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
+                price: Number(item.price),
+                originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
+                stockQuantity: Number(item.stockQuantity ?? 10),
+                rating: 5.0,
+                reviewsCount: 38,
+                isFeatured: item.isFeatured ?? true,
+                badge: item.brand?.name?.toUpperCase() || 'CHÍNH HÃNG',
+                imageUrl: item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+                shortDesc: item.shortDesc || item.name,
+                description: item.description || item.shortDesc || '',
+                specifications: item.specifications || {},
+              }));
+              setProducts(mapped);
+              setIsBackendConnected(true);
+              return;
+            }
+          }
         }
       }
     } catch {
