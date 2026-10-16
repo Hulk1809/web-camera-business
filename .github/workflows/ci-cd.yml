@@ -119,6 +119,6 @@ jobs:
 
       - name: Verify Rollout Status (Zero Downtime)
         run: |
-          kubectl rollout status deployment/backend -n camera-shop --timeout=180s
-          kubectl rollout status deployment/web-store -n camera-shop --timeout=180s
-          kubectl rollout status deployment/web-admin -n camera-shop --timeout=180s
+          kubectl rollout status deployment/backend -n camera-shop --timeout=300s
+          kubectl rollout status deployment/web-store -n camera-shop --timeout=300s
+          kubectl rollout status deployment/web-admin -n camera-shop --timeout=300s
