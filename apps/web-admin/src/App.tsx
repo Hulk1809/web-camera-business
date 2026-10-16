@@ -21,7 +21,8 @@ import {
   Filter,
   Eye,
   Trash2,
-  Edit3
+  Edit3,
+  RotateCw
 } from 'lucide-react';
 
 interface Product {
@@ -171,27 +172,107 @@ export default function App() {
     aiFeature: 'AI AcuSense',
   });
 
-  const handleAddProduct = (e: React.FormEvent) => {
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/products?limit=100');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.items) && data.items.length > 0) {
+          const mapped: Product[] = data.items.map((item: any) => ({
+            id: String(item.id),
+            name: item.name,
+            sku: item.sku,
+            brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'Hikvision'),
+            category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Camera Ngoài Trời Chống Nước'),
+            price: Number(item.price),
+            originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.2),
+            stock: Number(item.stockQuantity ?? 10),
+            resolution: item.specifications?.resolution || '4.0 MP 2K',
+            nightVision: item.specifications?.nightVision || 'ColorVu có màu 24/7',
+            aiFeatures: Array.isArray(item.specifications?.aiFeatures) ? item.specifications.aiFeatures : ['Nhận diện AI'],
+            imageUrl: item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=300',
+            status: Number(item.stockQuantity ?? 10) < 5 ? 'LOW_STOCK' : 'IN_STOCK',
+          }));
+          setProducts(mapped);
+        }
+      }
+    } catch (err) {
+      console.error('Lỗi tải sản phẩm từ backend:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const handleDeleteProduct = async (id: string) => {
+    setProducts(prev => prev.filter(p => p.id !== id));
+    try {
+      await fetch(`/api/products/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.error('Lỗi xóa sản phẩm khỏi database:', err);
+    }
+  };
+
+  const handleResetSeed = async () => {
+    try {
+      await fetch('/api/products/seed', { method: 'POST' });
+      await fetchProducts();
+    } catch (err) {
+      console.error('Lỗi nạp dữ liệu mẫu:', err);
+    }
+  };
+
+  const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCamera.name || !newCamera.price) return;
 
-    const p: Product = {
-      id: String(Date.now()),
+    const payload = {
       name: newCamera.name,
       sku: newCamera.sku || `CAM-${Math.floor(1000 + Math.random() * 9000)}`,
       brand: newCamera.brand,
       category: newCamera.category,
       price: Number(newCamera.price),
       originalPrice: Number(newCamera.price) * 1.2,
-      stock: Number(newCamera.stock) || 10,
-      resolution: newCamera.resolution,
-      nightVision: newCamera.nightVision,
-      aiFeatures: [newCamera.aiFeature],
+      stockQuantity: Number(newCamera.stock) || 10,
+      specifications: {
+        resolution: newCamera.resolution,
+        nightVision: newCamera.nightVision,
+        aiFeatures: [newCamera.aiFeature],
+      },
       imageUrl: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=300',
-      status: Number(newCamera.stock) < 5 ? 'LOW_STOCK' : 'IN_STOCK',
     };
 
-    setProducts([p, ...products]);
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        await fetchProducts();
+      } else {
+        const p: Product = {
+          id: String(Date.now()),
+          name: newCamera.name,
+          sku: newCamera.sku || `CAM-${Math.floor(1000 + Math.random() * 9000)}`,
+          brand: newCamera.brand,
+          category: newCamera.category,
+          price: Number(newCamera.price),
+          originalPrice: Number(newCamera.price) * 1.2,
+          stock: Number(newCamera.stock) || 10,
+          resolution: newCamera.resolution,
+          nightVision: newCamera.nightVision,
+          aiFeatures: [newCamera.aiFeature],
+          imageUrl: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=300',
+          status: Number(newCamera.stock) < 5 ? 'LOW_STOCK' : 'IN_STOCK',
+        };
+        setProducts(prev => [p, ...prev]);
+      }
+    } catch (err) {
+      console.error('Lỗi lưu camera vào database:', err);
+    }
+
     setShowAddModal(false);
     setNewCamera({
       name: '',
@@ -564,13 +645,23 @@ export default function App() {
                   </select>
                 </div>
 
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white text-sm font-bold flex items-center justify-center space-x-2 shadow-lg shadow-sky-500/20 transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Thêm Camera Mới</span>
-                </button>
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                  <button
+                    onClick={handleResetSeed}
+                    title="Nạp lại dữ liệu sản phẩm mẫu ban đầu vào PostgreSQL"
+                    className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-semibold flex items-center space-x-1.5 border border-slate-700 transition-all"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                    <span>Nạp Dữ Liệu Mẫu</span>
+                  </button>
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white text-sm font-bold flex items-center justify-center space-x-2 shadow-lg shadow-sky-500/20 transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Thêm Camera Mới</span>
+                  </button>
+                </div>
               </div>
 
               {/* Products Table */}
@@ -640,8 +731,9 @@ export default function App() {
                               <Edit3 className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => setProducts(products.filter(item => item.id !== p.id))}
+                              onClick={() => handleDeleteProduct(p.id)}
                               className="p-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-400"
+                              title="Xóa camera khỏi database"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

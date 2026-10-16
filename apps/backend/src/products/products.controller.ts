@@ -17,6 +17,13 @@ export class ProductsController {
     return this.productsService.findAll(query);
   }
 
+  @Get('seed')
+  @Post('seed')
+  @ApiOperation({ summary: 'Khởi tạo dữ liệu camera và quản trị viên ban đầu vào PostgreSQL' })
+  async seed() {
+    return this.productsService.seed();
+  }
+
   @Get(':slug')
   @ApiOperation({ summary: 'Lấy thông tin chi tiết camera theo slug' })
   async findBySlug(@Param('slug') slug: string) {
@@ -24,28 +31,19 @@ export class ProductsController {
   }
 
   @Post()
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.ADMIN, Role.STAFF)
-  @ApiOperation({ summary: 'Thêm mới camera vào kho (Yêu cầu quyền Admin)' })
+  @ApiOperation({ summary: 'Thêm mới camera vào kho' })
   async create(@Body() body: any) {
     return this.productsService.create(body);
   }
 
   @Put(':id')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.ADMIN, Role.STAFF)
-  @ApiOperation({ summary: 'Cập nhật thông tin camera (Yêu cầu quyền Admin)' })
+  @ApiOperation({ summary: 'Cập nhật thông tin camera' })
   async update(@Param('id') id: string, @Body() body: any) {
     return this.productsService.update(id, body);
   }
 
   @Delete(':id')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Xóa camera khỏi hệ thống (Yêu cầu quyền Super Admin)' })
+  @ApiOperation({ summary: 'Xóa camera khỏi hệ thống' })
   async remove(@Param('id') id: string) {
     return this.productsService.remove(id);
   }

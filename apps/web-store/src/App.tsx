@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Camera,
   Search,
@@ -55,8 +55,8 @@ interface CartItem {
 }
 
 export default function App() {
-  // Products dataset matching PostgreSQL seed
-  const [products] = useState<CameraProduct[]>([
+  // Products dataset matching PostgreSQL seed (with fallback)
+  const [products, setProducts] = useState<CameraProduct[]>([
     {
       id: '1',
       name: 'Camera IP Hikvision ColorVu 4MP DS-2CD2047G2-LU (Có Màu Ban Đêm 24/7)',
@@ -175,6 +175,44 @@ export default function App() {
 
   // Detail Modal State
   const [selectedProduct, setSelectedProduct] = useState<CameraProduct | null>(null);
+
+  // Sync products with backend API
+  useEffect(() => {
+    fetch('/api/products?limit=100')
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.items) && data.items.length > 0) {
+          const mapped: CameraProduct[] = data.items.map((item: any) => ({
+            id: String(item.id),
+            name: item.name,
+            sku: item.sku,
+            brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'Hikvision'),
+            category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Camera Ngoài Trời Chống Nước'),
+            price: Number(item.price),
+            originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.25),
+            rating: 5.0,
+            reviewsCount: 38,
+            isFeatured: item.isFeatured ?? true,
+            imageUrl: item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600',
+            resolution: item.specifications?.resolution || '4.0 MP 2K',
+            nightVision: item.specifications?.nightVision || 'ColorVu có màu 24/7',
+            aiFeatures: Array.isArray(item.specifications?.aiFeatures) ? item.specifications.aiFeatures : ['Phát hiện người và xe'],
+            specs: {
+              resolution: item.specifications?.resolution || '4.0 Megapixel 2K',
+              lens: item.specifications?.lens || 'Khẩu độ F1.0 siêu thu sáng',
+              nightVision: item.specifications?.nightVision || 'Có màu 24/7 tầm xa 40m',
+              audio: item.specifications?.audio || 'Micro thu âm thanh thực',
+              weatherproof: item.specifications?.weatherproof || 'IP67 chống bụi nước hoàn toàn',
+              ai: (item.specifications?.aiFeatures && item.specifications.aiFeatures[0]) || 'AI AcuSense',
+              power: item.specifications?.power || 'PoE 802.3af hoặc 12V DC',
+              storage: item.specifications?.storage || 'MicroSD 256GB / Đầu ghi NVR',
+            },
+          }));
+          setProducts(mapped);
+        }
+      })
+      .catch(err => console.error('Lỗi tải sản phẩm cho Storefront:', err));
+  }, []);
 
   // Warranty Modal State
   const [showWarrantyModal, setShowWarrantyModal] = useState(false);
