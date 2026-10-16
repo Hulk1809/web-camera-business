@@ -15,7 +15,6 @@ import {
   CreditCard,
   QrCode,
   MapPin,
-  ExternalLink,
   SlidersHorizontal,
   Flame,
   Award,
@@ -289,15 +288,6 @@ export default function App() {
               <Award className="w-3.5 h-3.5" />
               <span>Tra Cứu Bảo Hành (SN)</span>
             </button>
-            <a
-              href="http://localhost:3001"
-              target="_blank"
-              rel="noreferrer"
-              className="px-2.5 py-0.5 rounded bg-black/30 hover:bg-black/50 text-[11px] font-bold border border-white/20 transition-all flex items-center space-x-1"
-            >
-              <span>Trang Admin</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
           </div>
         </div>
       </div>
