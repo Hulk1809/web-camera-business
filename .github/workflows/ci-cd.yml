@@ -124,9 +124,15 @@ jobs:
 
       - name: Verify Rollout Status (Zero Downtime)
         run: |
-          kubectl rollout status deployment/backend -n camera-shop --timeout=120s
-          kubectl rollout status deployment/web-store -n camera-shop --timeout=120s
-          kubectl rollout status deployment/web-admin -n camera-shop --timeout=120s
+          kubectl rollout status deployment/backend -n camera-shop --timeout=90s || {
+            echo "=== BACKEND POD LOGS ==="
+            kubectl logs -l app=backend -n camera-shop --tail=100 || true
+            echo "=== BACKEND POD DESCRIBE ==="
+            kubectl describe pod -l app=backend -n camera-shop || true
+            exit 1
+          }
+          kubectl rollout status deployment/web-store -n camera-shop --timeout=60s
+          kubectl rollout status deployment/web-admin -n camera-shop --timeout=60s
 
           echo "=== Danh sách Pods & Dịch vụ sau khi Deploy Thành Công ==="
           kubectl get pods,svc,ingress -n camera-shop

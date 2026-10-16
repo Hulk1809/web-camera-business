@@ -1,7 +1,9 @@
-# Multi-stage Dockerfile for NestJS Backend
-FROM node:20-alpine AS builder
+# Multi-stage Dockerfile for NestJS Backend with Debian slim (glibc & openssl native)
+FROM node:20-slim AS builder
 
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Copy package files and install dependencies
 COPY package*.json ./
@@ -19,9 +21,11 @@ RUN npm run build
 # ----------------------------------------------------
 # Production Runner Stage
 # ----------------------------------------------------
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV PORT=4000
