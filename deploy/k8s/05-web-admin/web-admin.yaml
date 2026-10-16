@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: web-admin
-          image: ghcr.io/username/camera-admin:latest
+          image: ghcr.io/hulk1809/camera-admin:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80

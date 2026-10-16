@@ -42,7 +42,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ghcr.io/username/camera-backend:latest # GitHub Actions sẽ update tag này khi deploy
+          image: ghcr.io/hulk1809/camera-backend:latest # GitHub Actions sẽ update tag này khi deploy
           imagePullPolicy: Always
           ports:
             - containerPort: 4000

@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: web-store
-          image: ghcr.io/username/camera-store:latest
+          image: ghcr.io/hulk1809/camera-store:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000

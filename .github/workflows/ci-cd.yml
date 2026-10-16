@@ -8,9 +8,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_BACKEND: ghcr.io/${{ github.repository }}/camera-backend
-  IMAGE_STORE: ghcr.io/${{ github.repository }}/camera-store
-  IMAGE_ADMIN: ghcr.io/${{ github.repository }}/camera-admin
+  IMAGE_BACKEND: ghcr.io/hulk1809/camera-backend
+  IMAGE_STORE: ghcr.io/hulk1809/camera-store
+  IMAGE_ADMIN: ghcr.io/hulk1809/camera-admin
   AKS_CLUSTER_NAME: k8s-hulk-lab
 
 jobs:
