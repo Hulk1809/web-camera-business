@@ -20,6 +20,7 @@ spec:
       labels:
         app: web-store
     spec:
+      terminationGracePeriodSeconds: 10
       imagePullSecrets:
         - name: ghcr-secret
       containers:
