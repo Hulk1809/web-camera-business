@@ -2,12 +2,12 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "Camera E-Commerce NestJS Backend API",
-  "main": "dist/main.js",
+  "main": "dist/src/main.js",
   "scripts": {
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts"
