@@ -95,39 +95,38 @@ jobs:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG || secrets.KUBECONFIG }}
 
-      - name: Apply Kubernetes Manifests
+      - name: Apply Kubernetes Manifests & Deploy
         run: |
           kubectl apply -f deploy/k8s/00-namespace.yaml
+
+          # Tạo image pull secret cho GHCR
           kubectl create secret docker-registry ghcr-secret \
             --namespace=camera-shop \
             --docker-server=ghcr.io \
             --docker-username=${{ github.actor }} \
             --docker-password=${{ secrets.GITHUB_TOKEN }} \
             --dry-run=client -o yaml | kubectl apply -f -
+
+          # Áp dụng cơ sở dữ liệu Postgres & Redis
           kubectl apply -f deploy/k8s/01-postgres/
           kubectl apply -f deploy/k8s/02-redis/
+
+          # Thay thế trực tiếp image tag với commit SHA vào manifests
+          sed -i "s|ghcr.io/hulk1809/camera-backend:latest|${{ env.IMAGE_BACKEND }}:${{ github.sha }}|g" deploy/k8s/03-backend/backend.yaml
+          sed -i "s|ghcr.io/hulk1809/camera-store:latest|${{ env.IMAGE_STORE }}:${{ github.sha }}|g" deploy/k8s/04-web-store/web-store.yaml
+          sed -i "s|ghcr.io/hulk1809/camera-admin:latest|${{ env.IMAGE_ADMIN }}:${{ github.sha }}|g" deploy/k8s/05-web-admin/web-admin.yaml
+
+          # Áp dụng manifests (chỉ 1 lần rollout duy nhất)
           kubectl apply -f deploy/k8s/03-backend/backend.yaml
           kubectl apply -f deploy/k8s/04-web-store/web-store.yaml
           kubectl apply -f deploy/k8s/05-web-admin/web-admin.yaml
           kubectl apply -f deploy/k8s/06-ingress/ingress.yaml
 
-      - name: Rolling Update Deployments with New Images
-        run: |
-          kubectl set image deployment/backend backend=${{ env.IMAGE_BACKEND }}:${{ github.sha }} -n camera-shop
-          kubectl set image deployment/web-store web-store=${{ env.IMAGE_STORE }}:${{ github.sha }} -n camera-shop
-          kubectl set image deployment/web-admin web-admin=${{ env.IMAGE_ADMIN }}:${{ github.sha }} -n camera-shop
-
       - name: Verify Rollout Status (Zero Downtime)
         run: |
-          echo "=== Trạng thái Pods hiện tại ==="
-          kubectl get pods -n camera-shop
-
-          # Dọn dẹp bất kỳ pod cũ nào bị kẹt terminating từ các lần chạy trước
-          kubectl get pods -n camera-shop | grep Terminating | awk '{print $1}' | xargs -r kubectl delete pod -n camera-shop --force --grace-period=0 || true
-
-          kubectl rollout status deployment/backend -n camera-shop --timeout=180s
-          kubectl rollout status deployment/web-store -n camera-shop --timeout=180s
-          kubectl rollout status deployment/web-admin -n camera-shop --timeout=180s
+          kubectl rollout status deployment/backend -n camera-shop --timeout=120s
+          kubectl rollout status deployment/web-store -n camera-shop --timeout=120s
+          kubectl rollout status deployment/web-admin -n camera-shop --timeout=120s
 
           echo "=== Danh sách Pods & Dịch vụ sau khi Deploy Thành Công ==="
           kubectl get pods,svc,ingress -n camera-shop
