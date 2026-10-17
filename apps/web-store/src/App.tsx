@@ -28,7 +28,8 @@ import {
   Layers,
   Cpu,
   Eye,
-  Award
+  Award,
+  Trash2
 } from 'lucide-react';
 
 export interface ProProduct {
@@ -630,6 +631,14 @@ export function App() {
         })
         .filter(Boolean) as CartItem[]
     );
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  };
+
+  const clearCart = () => {
+    setCart([]);
   };
 
   const totalAmount = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -1565,23 +1574,44 @@ export function App() {
 
       {/* ----------------- CART & CHECKOUT DRAWER ----------------- */}
       {showCartDrawer && (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-black/70 backdrop-blur-sm flex justify-end">
-          <div className="w-full max-w-md bg-slate-900 border-l border-slate-800 h-full flex flex-col shadow-2xl">
+        <div
+          className="fixed inset-0 z-50 overflow-hidden bg-black/70 backdrop-blur-sm flex justify-end"
+          onClick={() => setShowCartDrawer(false)}
+        >
+          <div
+            className="w-full max-w-md bg-slate-900 border-l border-slate-800 h-full flex flex-col shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header */}
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <ShoppingBag className="w-5 h-5 text-red-500" />
                 <h3 className="font-bold text-white text-base">Giỏ Hàng Thiết Bị</h3>
-                <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
+                <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">
                   {cart.reduce((s, i) => s + i.quantity, 0)}
                 </span>
               </div>
-              <button
-                onClick={() => setShowCartDrawer(false)}
-                className="text-slate-400 hover:text-white p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center space-x-2">
+                {cart.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearCart}
+                    className="text-[11px] text-red-400 hover:text-red-300 hover:bg-red-950/40 px-2.5 py-1 rounded-lg border border-red-900/40 transition flex items-center space-x-1"
+                    title="Hủy toàn bộ giỏ hàng"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Hủy giỏ</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowCartDrawer(false)}
+                  className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition flex items-center"
+                  title="Đóng / Hủy xem giỏ hàng"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Cart Items List */}
@@ -1596,33 +1626,54 @@ export function App() {
                 cart.map((item) => (
                   <div
                     key={item.product.id}
-                    className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl flex items-center space-x-3"
+                    className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl flex items-center space-x-3 group hover:border-slate-700 transition"
                   >
                     <img
                       src={item.product.imageUrl}
                       alt={item.product.name}
-                      className="w-14 h-14 object-cover rounded-lg bg-black shrink-0"
+                      className="w-14 h-14 object-cover rounded-lg bg-black shrink-0 border border-slate-800"
                     />
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-bold text-white truncate">{item.product.name}</h4>
+                      <div className="flex items-start justify-between gap-1">
+                        <h4 className="text-xs font-bold text-white truncate">{item.product.name}</h4>
+                        <button
+                          type="button"
+                          onClick={() => removeFromCart(item.product.id)}
+                          className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-slate-800 transition shrink-0"
+                          title="Hủy sản phẩm này khỏi giỏ"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                       <div className="text-xs text-amber-400 font-mono font-bold mt-0.5">
                         {formatVND(item.product.price)}
                       </div>
-                      <div className="flex items-center space-x-2 mt-2">
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.product.id, -1)}
+                            className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-xs transition"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="text-xs font-bold text-white w-4 text-center font-mono">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.product.id, 1)}
+                            className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-xs transition"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
                         <button
-                          onClick={() => updateQuantity(item.product.id, -1)}
-                          className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-xs"
+                          type="button"
+                          onClick={() => removeFromCart(item.product.id)}
+                          className="text-[10px] text-slate-500 hover:text-red-400 transition"
                         >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="text-xs font-bold text-white w-4 text-center">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(item.product.id, 1)}
-                          className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-xs"
-                        >
-                          <Plus className="w-3 h-3" />
+                          Xóa món
                         </button>
                       </div>
                     </div>
@@ -1723,22 +1774,52 @@ export function App() {
                     </div>
                   </div>
 
-                  {/* Submit Button */}
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      disabled={isSubmittingOrder}
-                      className="w-full py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black text-xs rounded-xl shadow-xl shadow-red-950 transition flex items-center justify-center space-x-2 disabled:opacity-50"
-                    >
-                      {isSubmittingOrder ? (
-                        <span>Đang xử lý kết nối API...</span>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Xác Nhận Đặt Hàng ({formatVND(totalAmount)})</span>
-                        </>
-                      )}
-                    </button>
+                  {/* Submit & Cancel Buttons */}
+                  <div className="pt-2 space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowCartDrawer(false)}
+                        className="w-28 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition flex items-center justify-center space-x-1.5"
+                      >
+                        <X className="w-4 h-4" />
+                        <span>Hủy</span>
+                      </button>
+
+                      <button
+                        type="submit"
+                        disabled={isSubmittingOrder}
+                        className="flex-1 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black text-xs rounded-xl shadow-xl shadow-red-950 transition flex items-center justify-center space-x-2 disabled:opacity-50"
+                      >
+                        {isSubmittingOrder ? (
+                          <span>Đang xử lý kết nối API...</span>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Xác Nhận Đặt Hàng ({formatVND(totalAmount)})</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={clearCart}
+                        className="text-red-400/80 hover:text-red-400 transition flex items-center space-x-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Hủy giỏ hàng (Xóa tất cả)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowCartDrawer(false)}
+                        className="text-slate-400 hover:text-slate-200 transition"
+                      >
+                        Tiếp tục xem sản phẩm →
+                      </button>
+                    </div>
                   </div>
                 </form>
               )}
