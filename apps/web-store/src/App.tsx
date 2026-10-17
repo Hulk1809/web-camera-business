@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import confetti from 'canvas-confetti';
 import {
   Camera,
   Film,
@@ -767,14 +766,6 @@ export function App() {
     setOrderSuccess(confirmedOrder);
     setCart([]);
     setIsSubmittingOrder(false);
-    try {
-      confetti({
-        particleCount: 160,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'],
-      });
-    } catch {}
   };
 
   // WARRANTY CHECK VIA REAL API
