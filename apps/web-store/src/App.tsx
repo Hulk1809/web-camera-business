@@ -42,7 +42,6 @@ import {
   FileText,
   AlertTriangle
 } from 'lucide-react';
-import { DayNightVisionShowcase } from './components/DayNightVisionShowcase';
 import { SpotlightProductCard } from './components/SpotlightProductCard';
 import { triggerConfetti } from './utils/confetti';
 
@@ -1518,9 +1517,6 @@ export function App() {
           </div>
         </div>
       </section>
-
-      {/* ----------------- INTERACTIVE OPTICAL LENS & DAY/NIGHT VISION SHOWCASE ----------------- */}
-      <DayNightVisionShowcase />
 
       {/* ----------------- PRODUCT LISTING SECTION ----------------- */}
       <main className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
