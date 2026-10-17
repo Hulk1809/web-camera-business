@@ -1273,7 +1273,7 @@ export function App() {
               <ShoppingBag className="w-4 h-4" />
               <span className="hidden sm:inline">Giỏ Hàng</span>
               {cart.length > 0 && (
-                <span className="bg-amber-400 text-slate-950 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black animate-bounce">
+                <span className="bg-amber-400 text-slate-950 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black">
                   {cart.reduce((s, i) => s + i.quantity, 0)}
                 </span>
               )}
@@ -1464,7 +1464,7 @@ export function App() {
                       (hotProduct.stockQuantity ?? 0) <= 0
                         ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-950/40'
                         : 'btn-primary-genz shadow-red-950'
-                    } animate-shimmer text-white text-xs font-black rounded-xl shadow-lg transition flex items-center space-x-1.5 active:scale-95`}
+                    } text-white text-xs font-black rounded-xl shadow-lg transition flex items-center space-x-1.5 active:scale-95`}
                   >
                     {(hotProduct.stockQuantity ?? 0) <= 0 ? (
                       <>
@@ -1804,7 +1804,7 @@ export function App() {
                       addToCart(selectedProduct);
                       setSelectedProduct(null);
                     }}
-                    className={`flex-1 py-3.5 animate-shimmer text-white font-black text-sm rounded-2xl shadow-xl transition flex items-center justify-center space-x-2 active:scale-98 ${
+                    className={`flex-1 py-3.5 text-white font-black text-sm rounded-2xl shadow-xl transition flex items-center justify-center space-x-2 active:scale-98 ${
                       (selectedProduct.stockQuantity ?? 0) <= 0
                         ? 'bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 shadow-amber-950/60'
                         : 'btn-primary-genz shadow-red-950/60'
@@ -2209,7 +2209,7 @@ export function App() {
                           cart.some((i) => (i.product.stockQuantity ?? 0) <= 0)
                             ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-950/40'
                             : 'btn-primary-genz shadow-red-950'
-                        } animate-shimmer text-white font-black text-xs rounded-2xl shadow-xl transition flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-95`}
+                        } text-white font-black text-xs rounded-2xl shadow-xl transition flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-95`}
                       >
                         {isSubmittingOrder ? (
                           <span>Đang xử lý đặt hàng...</span>
