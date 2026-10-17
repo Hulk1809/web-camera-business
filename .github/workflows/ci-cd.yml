@@ -134,10 +134,9 @@ jobs:
           kubectl rollout status deployment/web-store -n camera-shop --timeout=60s
           kubectl rollout status deployment/web-admin -n camera-shop --timeout=60s
 
-          # Đồng bộ Prisma schema & seed dữ liệu camera + tài khoản admin vào PostgreSQL
-          echo "=== Seeding camera products & admin user into database ==="
+          # Đồng bộ Prisma schema vào PostgreSQL (KHÔNG chạy seed để bảo vệ dữ liệu sản phẩm & đơn hàng thực tế)
+          echo "=== Synchronizing Prisma schema into database ==="
           kubectl exec deployment/backend -n camera-shop -- npx prisma db push --skip-generate || true
-          kubectl exec deployment/backend -n camera-shop -- npx prisma db seed || true
 
           echo "=== Danh sách Pods & Dịch vụ sau khi Deploy Thành Công ==="
           kubectl get pods,svc,ingress -n camera-shop

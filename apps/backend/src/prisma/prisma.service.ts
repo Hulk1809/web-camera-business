@@ -35,15 +35,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     try {
       const productCount = await this.product.count();
       if (productCount > 0 && !forceUpdate) {
-        const imageCount = await this.productImage.count();
-        if (imageCount >= productCount * 2) {
-          this.logger.log(`📦 Database already has ${productCount} products with ${imageCount} gallery images.`);
-          return;
-        }
-        this.logger.log(`🔄 Upgrading existing ${productCount} products with multi-image galleries...`);
-      } else {
-        this.logger.log('🌱 Seeding / Refreshing Pro Camera, Cinema & DJI products with multi-image gallery...');
+        this.logger.log(`📦 Database already has ${productCount} products. Skipping autoSeed to protect live user data.`);
+        return;
       }
+      this.logger.log('🌱 Seeding / Refreshing Pro Camera, Cinema & DJI products with multi-image gallery...');
 
       // 1. Admin user
       const passwordHash = await bcrypt.hash('admin123456', 10);
