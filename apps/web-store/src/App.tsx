@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import {
   Camera,
   Film,
@@ -29,7 +30,11 @@ import {
   Cpu,
   Eye,
   Award,
-  Trash2
+  Trash2,
+  Heart,
+  Check,
+  Gift,
+  Tag
 } from 'lucide-react';
 
 export interface ProProduct {
@@ -510,6 +515,41 @@ export function App() {
   const [orderCancelSuccessMsg, setOrderCancelSuccessMsg] = useState<string>('');
   const [isCancellingOrder, setIsCancellingOrder] = useState<boolean>(false);
 
+  // Gen Z Shopper Wishlist & Live Floating Toast
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('PRO_GEAR_WISHLIST');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [showOnlyWishlist, setShowOnlyWishlist] = useState<boolean>(false);
+  const [toast, setToast] = useState<{ message: string; show: boolean } | null>(null);
+
+  const showToast = (message: string) => {
+    setToast({ message, show: true });
+    setTimeout(() => {
+      setToast(null);
+    }, 3200);
+  };
+
+  const toggleWishlist = (productId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setWishlist((prev) => {
+      const isAdded = !prev.includes(productId);
+      const next = isAdded
+        ? [...prev, productId]
+        : prev.filter((id) => id !== productId);
+      try {
+        localStorage.setItem('PRO_GEAR_WISHLIST', JSON.stringify(next));
+      } catch {}
+      showToast(isAdded ? 'Đã thêm thiết bị vào danh sách Yêu Thích ❤️' : 'Đã xóa khỏi Yêu Thích');
+      return next;
+    });
+  };
+
   // Helper to extract multi-images array from API response
   const parseImagesFromItem = (item: any): string[] => {
     if (Array.isArray(item.images) && item.images.length > 0) {
@@ -600,6 +640,7 @@ export function App() {
 
   // Filter Products
   const filteredProducts = products.filter((p) => {
+    const matchWishlist = !showOnlyWishlist || wishlist.includes(p.id);
     const matchCat = selectedCategory === 'Tất Cả' || p.category === selectedCategory;
     const matchBrand = selectedBrand === 'Tất Cả' || p.brand.toLowerCase() === selectedBrand.toLowerCase();
     const query = searchQuery.toLowerCase().trim();
@@ -609,7 +650,7 @@ export function App() {
       p.sku.toLowerCase().includes(query) ||
       p.brand.toLowerCase().includes(query) ||
       p.category.toLowerCase().includes(query);
-    return matchCat && matchBrand && matchSearch;
+    return matchWishlist && matchCat && matchBrand && matchSearch;
   });
 
   // Cart operations
@@ -624,6 +665,7 @@ export function App() {
       }
       return [...prev, { product, quantity: 1 }];
     });
+    showToast(`Đã thêm ${product.name} vào giỏ hàng! 🛒`);
     setShowCartDrawer(true);
   };
 
@@ -725,6 +767,14 @@ export function App() {
     setOrderSuccess(confirmedOrder);
     setCart([]);
     setIsSubmittingOrder(false);
+    try {
+      confetti({
+        particleCount: 160,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'],
+      });
+    } catch {}
   };
 
   // WARRANTY CHECK VIA REAL API
@@ -967,13 +1017,41 @@ export function App() {
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-2.5">
+            {/* Wishlist Button */}
+            <button
+              onClick={() => {
+                setShowOnlyWishlist((prev) => !prev);
+                if (!showOnlyWishlist) {
+                  showToast(wishlist.length > 0 ? `Đang lọc ${wishlist.length} thiết bị yêu thích ❤️` : 'Danh sách yêu thích đang trống! Nhấn ❤️ trên máy để thêm');
+                } else {
+                  showToast('Đang hiển thị toàn bộ sản phẩm');
+                }
+              }}
+              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition active:scale-95 ${
+                showOnlyWishlist
+                  ? 'bg-red-500/20 border-red-500/80 text-red-400 shadow-lg shadow-red-950 ring-1 ring-red-500/50'
+                  : wishlist.length > 0
+                  ? 'bg-red-500/10 border-red-500/40 text-red-400 hover:bg-red-500/20'
+                  : 'btn-secondary-genz text-slate-300'
+              }`}
+              title="Danh sách thiết bị yêu thích"
+            >
+              <Heart className={`w-4 h-4 ${wishlist.length > 0 ? 'fill-red-500 text-red-500 animate-pulse' : 'text-slate-400'}`} />
+              <span className="hidden sm:inline">Yêu Thích</span>
+              {wishlist.length > 0 && (
+                <span className="bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black">
+                  {wishlist.length}
+                </span>
+              )}
+            </button>
+
             {/* Order Lookup & Cancel Button */}
             <button
               onClick={() => {
                 setShowOrderLookupModal(true);
                 setOrderCancelSuccessMsg('');
               }}
-              className="hidden sm:flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-xs font-semibold transition"
+              className="hidden sm:flex items-center space-x-1.5 px-3 py-2 rounded-xl btn-secondary-genz text-slate-300 text-xs font-semibold"
               title="Tra cứu tình trạng đơn hàng hoặc hủy đơn"
             >
               <Truck className="w-4 h-4 text-amber-400" />
@@ -983,7 +1061,7 @@ export function App() {
             {/* Warranty Button */}
             <button
               onClick={() => setShowWarrantyModal(true)}
-              className="hidden lg:flex items-center space-x-2 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-xs font-semibold transition"
+              className="hidden lg:flex items-center space-x-2 px-3 py-2 rounded-xl btn-secondary-genz text-slate-300 text-xs font-semibold"
             >
               <ShieldCheck className="w-4 h-4 text-red-500" />
               <span>Bảo Hành</span>
@@ -992,12 +1070,12 @@ export function App() {
             {/* Cart Button */}
             <button
               onClick={() => setShowCartDrawer(true)}
-              className="relative flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold text-xs shadow-lg shadow-red-950 transition active:scale-95"
+              className="relative btn-primary-genz flex items-center space-x-2 px-4 py-2 rounded-xl text-white font-bold text-xs shadow-lg shadow-red-950 transition active:scale-95"
             >
               <ShoppingBag className="w-4 h-4" />
               <span className="hidden sm:inline">Giỏ Hàng</span>
               {cart.length > 0 && (
-                <span className="bg-amber-400 text-slate-950 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black">
+                <span className="bg-amber-400 text-slate-950 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black animate-bounce">
                   {cart.reduce((s, i) => s + i.quantity, 0)}
                 </span>
               )}
@@ -1021,14 +1099,17 @@ export function App() {
 
         {/* Category Navigation Bar */}
         <div className="border-t border-slate-800/80 bg-slate-950/60 overflow-x-auto scrollbar-none">
-          <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1 py-1.5 whitespace-nowrap text-xs">
+          <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1.5 py-1.5 whitespace-nowrap text-xs">
             {CATEGORIES.map((cat) => {
-              const active = selectedCategory === cat;
+              const active = selectedCategory === cat && !showOnlyWishlist;
               return (
                 <button
                   key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                  onClick={() => {
+                    setSelectedCategory(cat);
+                    setShowOnlyWishlist(false);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl font-medium transition ${
                     active
                       ? 'bg-red-600 text-white font-bold shadow-md shadow-red-950'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
@@ -1038,6 +1119,19 @@ export function App() {
                 </button>
               );
             })}
+
+            {/* Wishlist Quick Filter Pill */}
+            <button
+              onClick={() => setShowOnlyWishlist((prev) => !prev)}
+              className={`px-3 py-1.5 rounded-xl font-medium transition flex items-center space-x-1.5 ${
+                showOnlyWishlist
+                  ? 'bg-red-600 text-white font-bold shadow-md shadow-red-950 ring-1 ring-red-400'
+                  : 'text-red-400/90 hover:text-red-300 hover:bg-slate-900 border border-red-500/20'
+              }`}
+            >
+              <Heart className={`w-3.5 h-3.5 ${showOnlyWishlist || wishlist.length > 0 ? 'fill-current' : ''}`} />
+              <span>Yêu Thích ({wishlist.length})</span>
+            </button>
           </div>
         </div>
       </header>
@@ -1106,9 +1200,22 @@ export function App() {
 
           {/* Flagship Hero Card */}
           <div className="lg:col-span-5">
-            <div className="relative rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-950 p-6 border border-slate-700 shadow-2xl overflow-hidden group">
-              <div className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full uppercase shadow">
-                HOT PRODUCT 2026
+            <div className="relative rounded-3xl glass-panel glass-panel-hover p-6 border border-slate-700/60 shadow-2xl overflow-hidden group">
+              <div className="absolute top-3 right-3 flex items-center space-x-1.5">
+                <button
+                  onClick={(e) => toggleWishlist(DEFAULT_PRODUCTS[0].id, e)}
+                  className={`p-2 rounded-full backdrop-blur-md border transition active:scale-75 ${
+                    wishlist.includes(DEFAULT_PRODUCTS[0].id)
+                      ? 'bg-red-600 border-red-400 text-white'
+                      : 'bg-black/60 border-white/10 text-slate-300 hover:text-red-400'
+                  }`}
+                  title="Lưu yêu thích"
+                >
+                  <Heart className={`w-3.5 h-3.5 ${wishlist.includes(DEFAULT_PRODUCTS[0].id) ? 'fill-current' : ''}`} />
+                </button>
+                <div className="bg-gradient-to-r from-red-600 to-amber-500 text-white text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full uppercase shadow">
+                  HOT PRODUCT 2026
+                </div>
               </div>
 
               <div className="text-xs text-red-400 font-bold tracking-wider uppercase mb-1">
@@ -1121,7 +1228,7 @@ export function App() {
                 3 Camera Hasselblad 4/3 CMOS, Tele 70mm & 166mm, quay Apple ProRes 5.1K, bay 43 phút liên tục.
               </p>
 
-              <div className="relative h-48 rounded-xl overflow-hidden bg-black/40 mb-4 flex items-center justify-center">
+              <div className="relative h-48 rounded-2xl overflow-hidden bg-black/40 mb-4 flex items-center justify-center">
                 <img
                   src="https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800"
                   alt="DJI Mavic 3 Pro"
@@ -1135,11 +1242,13 @@ export function App() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-xs text-slate-400 line-through">87.500.000₫</div>
-                  <div className="text-xl font-black text-white">79.990.000₫</div>
+                  <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-300">
+                    79.990.000₫
+                  </div>
                 </div>
                 <button
                   onClick={() => addToCart(DEFAULT_PRODUCTS[0])}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-red-950 transition flex items-center space-x-1.5"
+                  className="px-5 py-2.5 btn-primary-genz animate-shimmer text-white text-xs font-black rounded-xl shadow-lg shadow-red-950 transition flex items-center space-x-1.5 active:scale-95"
                 >
                   <ShoppingBag className="w-3.5 h-3.5" />
                   <span>Mua Ngay</span>
@@ -1221,62 +1330,98 @@ export function App() {
 
         {/* Product Grid */}
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-16 bg-slate-900/40 rounded-2xl border border-slate-800">
-            <Camera className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-slate-300 mb-1">Không tìm thấy thiết bị phù hợp</h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto mb-4">
-              Hãy thử tìm kiếm với từ khóa khác như "A7M4", "Pocket 3", "Mavic 3", "FX3" hoặc chọn danh mục Tất Cả.
-            </p>
-            <button
-              onClick={() => {
-                setSelectedCategory('Tất Cả');
-                setSelectedBrand('Tất Cả');
-                setSearchQuery('');
-              }}
-              className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-500 transition"
-            >
-              Xem Tất Cả Thiết Bị
-            </button>
+          <div className="text-center py-16 bg-slate-900/40 rounded-3xl border border-slate-800 glass-panel">
+            {showOnlyWishlist ? (
+              <>
+                <Heart className="w-12 h-12 text-red-500/60 mx-auto mb-3 animate-pulse" />
+                <h3 className="text-base font-bold text-slate-200 mb-1">Chưa có thiết bị nào trong danh sách Yêu Thích</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">
+                  Hãy nhấn biểu tượng trái tim ❤️ trên bất kỳ chiếc máy ảnh, ống kính hay flycam nào để lưu lại danh sách riêng của bạn!
+                </p>
+                <button
+                  onClick={() => setShowOnlyWishlist(false)}
+                  className="px-5 py-2.5 btn-primary-genz text-white rounded-xl text-xs font-bold transition shadow-lg shadow-red-950"
+                >
+                  Khám Phá Toàn Bộ Thiết Bị
+                </button>
+              </>
+            ) : (
+              <>
+                <Camera className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-slate-300 mb-1">Không tìm thấy thiết bị phù hợp</h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto mb-4">
+                  Hãy thử tìm kiếm với từ khóa khác như "A7M4", "Pocket 3", "Mavic 3", "FX3" hoặc chọn danh mục Tất Cả.
+                </p>
+                <button
+                  onClick={() => {
+                    setSelectedCategory('Tất Cả');
+                    setSelectedBrand('Tất Cả');
+                    setSearchQuery('');
+                  }}
+                  className="px-5 py-2.5 btn-primary-genz text-white rounded-xl text-xs font-bold transition shadow-lg shadow-red-950"
+                >
+                  Xem Tất Cả Thiết Bị
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filteredProducts.map((product) => {
               const specs = product.specifications || {};
+              const discountPercent =
+                product.originalPrice > product.price
+                  ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+                  : 0;
+
               return (
                 <div
                   key={product.id}
                   onClick={() => openProductDetail(product)}
-                  className="group bg-slate-900/80 hover:bg-slate-900 rounded-2xl border border-slate-800 hover:border-red-500/50 transition-all duration-300 flex flex-col overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-red-950/30 cursor-pointer"
+                  className="group glass-panel glass-panel-hover rounded-3xl border border-slate-800/80 hover:border-red-500/50 transition-all duration-300 flex flex-col overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-red-950/40 cursor-pointer"
                 >
                   {/* Image Container */}
                   <div className="relative aspect-[4/3] bg-black/60 overflow-hidden">
                     <img
                       src={product.imageUrl}
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                     />
 
-                    {/* Badge */}
-                    <div className="absolute top-2.5 left-2.5">
-                      <span className="bg-red-600/90 backdrop-blur-md text-white text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded shadow">
+                    {/* Top Left: Badges */}
+                    <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 items-center z-10">
+                      <span className="bg-red-600/90 backdrop-blur-md text-white text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded-lg shadow-md border border-red-400/30">
                         {product.badge || product.brand}
                       </span>
+                      {discountPercent > 0 && (
+                        <span className="bg-gradient-to-r from-red-600 to-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-lg shadow-md animate-pulse">
+                          -{discountPercent}%
+                        </span>
+                      )}
                     </div>
 
-                    {/* Brand Pill */}
-                    <div className="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-slate-300 font-bold border border-white/10">
-                      {product.brand}
-                    </div>
+                    {/* Top Right: Wishlist Heart Button */}
+                    <button
+                      onClick={(e) => toggleWishlist(product.id, e)}
+                      className={`absolute top-2.5 right-2.5 z-20 p-2 rounded-full backdrop-blur-md border transition-all duration-300 active:scale-75 ${
+                        wishlist.includes(product.id)
+                          ? 'bg-red-600/90 border-red-400 text-white shadow-lg shadow-red-600/50 scale-105'
+                          : 'bg-black/60 border-white/10 text-slate-300 hover:text-red-400 hover:border-red-500/50 hover:bg-black/80'
+                      }`}
+                      title={wishlist.includes(product.id) ? 'Bỏ yêu thích' : 'Lưu vào yêu thích'}
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${wishlist.includes(product.id) ? 'fill-current text-white' : ''}`} />
+                    </button>
 
                     {/* Stock Pill */}
-                    <div className="absolute bottom-2 left-2 bg-black/80 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-emerald-400 font-semibold flex items-center space-x-1">
+                    <div className="absolute bottom-2 left-2 bg-black/80 backdrop-blur-md px-2 py-0.5 rounded-lg text-[10px] text-emerald-400 font-semibold flex items-center space-x-1 border border-white/5">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       <span>Sẵn hàng: {product.stockQuantity} máy</span>
                     </div>
 
                     {/* Multi-angle Pill */}
                     {product.images && product.images.length > 1 && (
-                      <div className="absolute bottom-2 right-2 bg-black/85 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-amber-300 font-semibold flex items-center space-x-1 border border-amber-500/30 shadow">
+                      <div className="absolute bottom-2 right-2 bg-black/85 backdrop-blur-md px-2 py-0.5 rounded-lg text-[10px] text-amber-300 font-semibold flex items-center space-x-1 border border-amber-500/30 shadow">
                         <Camera className="w-3 h-3 text-amber-400" />
                         <span>{product.images.length} góc ảnh</span>
                       </div>
@@ -1298,6 +1443,19 @@ export function App() {
                       <h3 className="font-bold text-white text-sm line-clamp-2 group-hover:text-red-400 transition leading-snug">
                         {product.name}
                       </h3>
+
+                      {/* Gen Z Fast Shopping Perks */}
+                      <div className="mt-2 flex items-center space-x-2 text-[10px] text-slate-400 font-medium">
+                        <span className="inline-flex items-center text-amber-400">
+                          <Zap className="w-3 h-3 mr-0.5 text-amber-400" />
+                          Hỏa tốc 2H
+                        </span>
+                        <span>•</span>
+                        <span className="inline-flex items-center text-emerald-400">
+                          <Award className="w-3 h-3 mr-0.5 text-emerald-400" />
+                          Trả góp 0%
+                        </span>
+                      </div>
 
                       {/* Specs Pill Summary */}
                       <div className="mt-2.5 space-y-1 text-[11px]">
@@ -1329,7 +1487,7 @@ export function App() {
                     </div>
 
                     {/* Price and Add button */}
-                    <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+                    <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
                       <div>
                         {product.originalPrice > product.price && (
                           <div className="text-[11px] text-slate-500 line-through">
@@ -1341,13 +1499,26 @@ export function App() {
                         </div>
                       </div>
 
-                      <button
-                        onClick={(e) => addToCart(product, e)}
-                        className="p-2 rounded-xl bg-slate-800 hover:bg-red-600 text-slate-200 hover:text-white transition shadow active:scale-90"
-                        title="Thêm vào giỏ"
-                      >
-                        <ShoppingBag className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center space-x-1.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openProductDetail(product);
+                          }}
+                          className="p-2 rounded-xl btn-secondary-genz text-slate-300 hover:text-white"
+                          title="Xem chi tiết & bộ ảnh"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => addToCart(product, e)}
+                          className="px-3 py-2 rounded-xl btn-primary-genz text-white font-bold text-xs flex items-center space-x-1 shadow-lg shadow-red-950 active:scale-95"
+                          title="Thêm vào giỏ hàng"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline text-[11px]">Thêm</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1526,16 +1697,28 @@ export function App() {
                   </div>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-2 flex items-center space-x-2.5">
                   <button
                     onClick={() => {
                       addToCart(selectedProduct);
                       setSelectedProduct(null);
                     }}
-                    className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-red-950 transition flex items-center justify-center space-x-2 hover:scale-[1.01]"
+                    className="flex-1 py-3.5 btn-primary-genz animate-shimmer text-white font-black text-sm rounded-2xl shadow-xl shadow-red-950/60 transition flex items-center justify-center space-x-2 active:scale-98"
                   >
                     <ShoppingBag className="w-5 h-5" />
                     <span>Thêm Vào Giỏ Hàng Ngay</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => toggleWishlist(selectedProduct.id, e)}
+                    className={`p-3.5 rounded-2xl border transition-all active:scale-90 ${
+                      wishlist.includes(selectedProduct.id)
+                        ? 'bg-red-500/20 border-red-500/60 text-red-400'
+                        : 'btn-secondary-genz text-slate-300 hover:text-red-400'
+                    }`}
+                    title="Lưu yêu thích"
+                  >
+                    <Heart className={`w-5 h-5 ${wishlist.includes(selectedProduct.id) ? 'fill-current text-red-500' : ''}`} />
                   </button>
                 </div>
               </div>
@@ -1879,7 +2062,7 @@ export function App() {
                       <button
                         type="button"
                         onClick={() => setShowCartDrawer(false)}
-                        className="w-28 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition flex items-center justify-center space-x-1.5"
+                        className="w-24 py-3.5 btn-secondary-genz text-slate-300 hover:text-white font-bold text-xs rounded-2xl transition flex items-center justify-center space-x-1.5 active:scale-95"
                       >
                         <X className="w-4 h-4" />
                         <span>Hủy</span>
@@ -1888,7 +2071,7 @@ export function App() {
                       <button
                         type="submit"
                         disabled={isSubmittingOrder}
-                        className="flex-1 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black text-xs rounded-xl shadow-xl shadow-red-950 transition flex items-center justify-center space-x-2 disabled:opacity-50"
+                        className="flex-1 py-3.5 btn-primary-genz animate-shimmer text-white font-black text-xs rounded-2xl shadow-xl shadow-red-950 transition flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-95"
                       >
                         {isSubmittingOrder ? (
                           <span>Đang xử lý đặt hàng...</span>
@@ -2374,6 +2557,25 @@ export function App() {
           </div>
         </div>
       </footer>
+
+      {/* Gen Z Live Floating Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900/95 backdrop-blur-2xl border border-red-500/50 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 animate-in slide-in-from-bottom-5 duration-300">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-red-600 to-amber-500 flex items-center justify-center shrink-0 shadow-md">
+            <Check className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-white">{toast.message}</div>
+            <div className="text-[10px] text-slate-400">Đã cập nhật tức thì vào phiên mua sắm.</div>
+          </div>
+          <button
+            onClick={() => setShowCartDrawer(true)}
+            className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[11px] font-bold transition ml-2 shadow active:scale-95"
+          >
+            Xem giỏ
+          </button>
+        </div>
+      )}
     </div>
   );
 }
