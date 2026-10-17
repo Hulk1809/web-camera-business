@@ -147,13 +147,94 @@ export class WarrantyController {
   }
 
   @Get(':query')
-  @ApiOperation({ summary: 'Tra cứu thông tin bảo hành theo Serial Number hoặc Số Điện Thoại' })
+  @ApiOperation({ summary: 'Tra cứu thông tin bảo hành theo Mã Đơn Hàng, Serial Number hoặc Số Điện Thoại' })
   async checkWarranty(@Param('query') query: string) {
     const cleanQuery = query.trim().toUpperCase();
     const cleanDigits = query.replace(/[\s\-\.]/g, '');
     const isPhone = cleanDigits.length >= 9 && /^[0-9]+$/.test(cleanDigits);
 
-    // If searching by phone
+    // 1. First check if searching by Order Number
+    const order = await this.prisma.order.findFirst({
+      where: {
+        OR: [
+          { orderNumber: { equals: cleanQuery, mode: 'insensitive' } },
+          { id: cleanQuery },
+        ],
+      },
+      include: {
+        items: true,
+        serialsAssigned: {
+          include: { product: true },
+        },
+      },
+    });
+
+    if (order) {
+      const isCompleted = order.orderStatus === OrderStatus.COMPLETED;
+      const isPaid = order.paymentStatus === PaymentStatus.PAID || isCompleted;
+
+      const itemsWithWarranty = await Promise.all(
+        order.items.map(async (item) => {
+          let assigned: any = order.serialsAssigned.find((s) => s.productId === item.productId);
+          if (!assigned) {
+            assigned = await this.prisma.cameraSerial.findFirst({
+              where: {
+                OR: [
+                  { orderId: order.id },
+                  { serialNumber: { contains: order.orderNumber } },
+                ],
+                productId: item.productId,
+              },
+              include: { product: true },
+            });
+          }
+
+          const warrantyMonths = 24;
+          const soldDate = order.createdAt;
+          const expDate = new Date(soldDate);
+          expDate.setMonth(expDate.getMonth() + warrantyMonths);
+          const now = new Date();
+          const daysRemaining = Math.max(0, Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+          const generatedSn =
+            assigned?.serialNumber ||
+            `${item.productSku || 'PRO'}-${order.orderNumber.replace(/[^a-zA-Z0-9]/g, '').slice(-4)}-VN`;
+
+          return {
+            productId: item.productId,
+            productName: item.productName,
+            productSku: item.productSku || 'PRO-GEAR',
+            quantity: item.quantity,
+            price: item.price,
+            subtotal: item.subtotal,
+            serialNumber: generatedSn,
+            warrantyMonths,
+            soldDate: soldDate.toLocaleDateString('vi-VN'),
+            warrantyExpires: expDate.toLocaleDateString('vi-VN'),
+            daysRemaining: isCompleted ? daysRemaining : warrantyMonths * 30,
+            isActivated: isCompleted,
+          };
+        }),
+      );
+
+      return {
+        type: 'ORDER_RESULT',
+        orderNumber: order.orderNumber,
+        customerName: order.customerName,
+        customerPhone: order.customerPhone,
+        shippingAddress: order.shippingAddress,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        orderStatus: order.orderStatus,
+        totalAmount: order.totalAmount,
+        createdAt: order.createdAt.toLocaleDateString('vi-VN'),
+        isCompleted,
+        isPaid,
+        items: itemsWithWarranty,
+        devices: itemsWithWarranty,
+      };
+    }
+
+    // 2. If searching by phone
     if (isPhone) {
       const orders = await this.prisma.order.findMany({
         where: { customerPhone: { contains: cleanDigits } },
@@ -168,6 +249,7 @@ export class WarrantyController {
         o.serialsAssigned.map((s) => ({
           serialNumber: s.serialNumber,
           productName: s.product.name,
+          productSku: s.product.sku || 'PRO-GEAR',
           brand: s.product.brand?.name || 'Pro Gear',
           status: s.status,
           warrantyMonths: s.warrantyMonths,
@@ -184,7 +266,7 @@ export class WarrantyController {
       };
     }
 
-    // Otherwise search by Serial Number
+    // 3. Otherwise search by Serial Number
     const serial = await this.prisma.cameraSerial.findUnique({
       where: { serialNumber: cleanQuery },
       include: {
@@ -198,7 +280,7 @@ export class WarrantyController {
     });
 
     if (!serial) {
-      throw new NotFoundException(`Không tìm thấy thông tin sản phẩm với số Serial: ${cleanQuery}`);
+      throw new NotFoundException(`Không tìm thấy thông tin sản phẩm với số Serial hoặc Mã Đơn: ${cleanQuery}`);
     }
 
     const isActivated = serial.status === SerialStatus.SOLD && !!serial.soldDate;

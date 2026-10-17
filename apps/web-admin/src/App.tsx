@@ -401,8 +401,8 @@ const DEFAULT_ORDERS: Order[] = [
     createdAt: '15 phút trước',
     note: 'Cần kiểm tra kỹ trước khi giao, xuất hóa đơn VAT',
     items: [
-      { productName: 'Sony Cinema Line FX3 Body', price: 94990000, quantity: 1, subtotal: 94990000 },
-      { productName: 'DJI RS 4 Pro Gimbal Combo', price: 19990000, quantity: 1, subtotal: 19990000 },
+      { productName: 'Sony Cinema Line FX3 Body', productSku: 'ILME-FX3-BODY', price: 94990000, quantity: 1, subtotal: 94990000 },
+      { productName: 'DJI RS 4 Pro Gimbal Combo', productSku: 'DJI-RS4PRO-COMBO', price: 19990000, quantity: 1, subtotal: 19990000 },
     ],
   },
   {
@@ -420,7 +420,7 @@ const DEFAULT_ORDERS: Order[] = [
     createdAt: '1 giờ trước',
     note: 'Bay test trực tiếp khi nhận hàng',
     items: [
-      { productName: 'DJI Mavic 3 Pro Cine Combo (Apple ProRes)', price: 79990000, quantity: 1, subtotal: 79990000 },
+      { productName: 'DJI Mavic 3 Pro Cine Combo (Apple ProRes)', productSku: 'DJI-MAVIC3-PRO-CINE', price: 79990000, quantity: 1, subtotal: 79990000 },
     ],
   },
   {
@@ -437,7 +437,7 @@ const DEFAULT_ORDERS: Order[] = [
     status: 'COMPLETED',
     createdAt: 'Hôm qua',
     items: [
-      { productName: 'DJI Osmo Pocket 3 Creator Combo', price: 15890000, quantity: 1, subtotal: 15890000 },
+      { productName: 'DJI Osmo Pocket 3 Creator Combo', productSku: 'DJI-POCKET3-CREATOR', price: 15890000, quantity: 1, subtotal: 15890000 },
     ],
   },
   {
@@ -460,7 +460,7 @@ const DEFAULT_ORDERS: Order[] = [
     createdAt: 'Vừa xong',
     note: '[ĐẶT HÀNG CHỜ VỀ - PRE-ORDER] Khách đặt trước khi hàng tạm hết sẵn tại kho. CSKH liên hệ hẹn ngày giao máy.',
     items: [
-      { productName: 'Sony Cinema Line FX6 (ILME-FX6V)', price: 189990000, quantity: 1, subtotal: 189990000 },
+      { productName: 'Sony Cinema Line FX6 (ILME-FX6V)', productSku: 'ILME-FX6V', price: 189990000, quantity: 1, subtotal: 189990000 },
     ],
   },
 ];
@@ -2859,8 +2859,17 @@ export function App() {
                           className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex justify-between items-center"
                         >
                           <div>
-                            <div className="font-bold text-white">{itm.productName}</div>
-                            <div className="text-[11px] text-slate-500">Số lượng: x{itm.quantity}</div>
+                            <div className="font-bold text-white flex items-center space-x-2">
+                              <span>{itm.productName}</span>
+                              {(itm.productSku || itm.sku) && (
+                                <span className="px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-500/40 text-amber-300 font-mono text-[10px] font-bold">
+                                  Mã hàng: {itm.productSku || itm.sku}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                              <span>Mã SKU: <strong className="text-slate-300">{itm.productSku || itm.sku || 'N/A'}</strong></span> • <span>Số lượng: x{itm.quantity}</span>
+                            </div>
                           </div>
                           <div className="font-bold text-amber-400 font-mono">
                             {formatVND(itm.subtotal || itm.price * itm.quantity)}
