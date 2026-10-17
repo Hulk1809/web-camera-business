@@ -29,7 +29,11 @@ import {
   Upload,
   X,
   Eye,
-  Maximize2
+  Maximize2,
+  Phone,
+  PhoneCall,
+  Calendar,
+  Save
 } from 'lucide-react';
 import { BentoMetricsGrid } from './components/BentoMetricsGrid';
 import { DynamicIslandToast, type ToastMessage } from './components/DynamicIslandToast';
@@ -74,6 +78,11 @@ export interface Order {
   createdAt: string;
   items?: OrderItem[];
   note?: string;
+  isPreOrder?: boolean;
+  orderType?: string;
+  scheduledDate?: string;
+  staffCallStatus?: 'NOT_CALLED' | 'CALLED_SCHEDULED' | 'STOCK_READY' | 'CANCELLED';
+  staffNotes?: string;
 }
 
 export interface SerialItem {
@@ -412,6 +421,29 @@ const DEFAULT_ORDERS: Order[] = [
       { productName: 'DJI Osmo Pocket 3 Creator Combo', price: 15890000, quantity: 1, subtotal: 15890000 },
     ],
   },
+  {
+    id: 'ord-104-pre',
+    orderNumber: 'PRE-20261017-9921',
+    customerName: 'Đạo diễn Trần Quang Huy (Studio Hà Nội)',
+    customerPhone: '0988 991 223',
+    shippingAddress: 'Tòa nhà Artemis, Số 3 Lê Trọng Tấn, Thanh Xuân, Hà Nội',
+    totalAmount: 189990000,
+    itemsCount: 1,
+    paymentMethod: 'VIETQR',
+    paymentStatus: 'PAID',
+    orderStatus: 'PRE_ORDER',
+    status: 'PRE_ORDER',
+    isPreOrder: true,
+    orderType: 'PRE_ORDER',
+    staffCallStatus: 'NOT_CALLED',
+    scheduledDate: '2026-10-25',
+    staffNotes: 'Khách cần trước ngày 26 để quay TVC, nhân viên cần gọi báo lịch nhập hàng lô mới.',
+    createdAt: 'Vừa xong',
+    note: '[ĐẶT HÀNG CHỜ VỀ - PRE-ORDER] Khách đặt trước khi hàng tạm hết sẵn tại kho. CSKH liên hệ hẹn ngày giao máy.',
+    items: [
+      { productName: 'Sony Cinema Line FX6 (ILME-FX6V)', price: 189990000, quantity: 1, subtotal: 189990000 },
+    ],
+  },
 ];
 
 const DEFAULT_SERIALS: SerialItem[] = [
@@ -480,6 +512,13 @@ export function App() {
   const [selectedOrderStatus, setSelectedOrderStatus] = useState<string>('ALL');
   const [isOrdersLoading, setIsOrdersLoading] = useState<boolean>(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<Order | null>(null);
+
+  // CSKH Call & Schedule States for Pre-Orders
+  const [scheduleDateInput, setScheduleDateInput] = useState<string>('');
+  const [staffCallStatusInput, setStaffCallStatusInput] = useState<
+    'NOT_CALLED' | 'CALLED_SCHEDULED' | 'STOCK_READY' | 'CANCELLED'
+  >('NOT_CALLED');
+  const [staffNotesInput, setStaffNotesInput] = useState<string>('');
 
   // Serials State
   const [serials, setSerials] = useState<SerialItem[]>(DEFAULT_SERIALS);
@@ -789,6 +828,15 @@ export function App() {
             }),
             items: item.items || [],
             note: item.note,
+            isPreOrder:
+              item.isPreOrder ??
+              (item.orderStatus === 'PRE_ORDER' ||
+                (item.orderNumber && item.orderNumber.startsWith('PRE-')) ||
+                (item.note && item.note.includes('PRE-ORDER'))),
+            orderType: item.orderType ?? (item.orderStatus === 'PRE_ORDER' ? 'PRE_ORDER' : 'STANDARD'),
+            staffCallStatus: item.staffCallStatus || 'NOT_CALLED',
+            scheduledDate: item.scheduledDate,
+            staffNotes: item.staffNotes,
           }));
         }
       }
@@ -813,9 +861,11 @@ export function App() {
     // 1. First add backend orders
     backendOrders.forEach((o) => combinedMap.set(o.orderNumber, o));
 
-    // 2. Add shared orders from storefront
+    // 2. Add shared orders from storefront (overlay shared values like scheduling notes)
     sharedOrders.forEach((o) => {
-      if (!combinedMap.has(o.orderNumber)) {
+      if (combinedMap.has(o.orderNumber)) {
+        combinedMap.set(o.orderNumber, { ...combinedMap.get(o.orderNumber)!, ...o });
+      } else {
         combinedMap.set(o.orderNumber, o);
       }
     });
@@ -910,6 +960,69 @@ export function App() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  // Sync inputs whenever selectedOrderDetails modal is opened
+  useEffect(() => {
+    if (selectedOrderDetails) {
+      setScheduleDateInput(selectedOrderDetails.scheduledDate || '');
+      setStaffCallStatusInput(selectedOrderDetails.staffCallStatus || 'NOT_CALLED');
+      setStaffNotesInput(selectedOrderDetails.staffNotes || '');
+    }
+  }, [selectedOrderDetails]);
+
+  // Save Pre-Order Schedule & CSKH Call Status
+  const handleSavePreOrderSchedule = (
+    orderId: string,
+    scheduledDate: string,
+    staffCallStatus: 'NOT_CALLED' | 'CALLED_SCHEDULED' | 'STOCK_READY' | 'CANCELLED',
+    staffNotes: string
+  ) => {
+    // 1. Update local orders state
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId || o.orderNumber === orderId
+          ? { ...o, scheduledDate, staffCallStatus, staffNotes }
+          : o
+      )
+    );
+
+    // 2. Update currently open modal state
+    setSelectedOrderDetails((prev) =>
+      prev && (prev.id === orderId || prev.orderNumber === orderId)
+        ? { ...prev, scheduledDate, staffCallStatus, staffNotes }
+        : prev
+    );
+
+    // 3. Persist to shared localStorage sync
+    try {
+      const raw = localStorage.getItem('PROGEAR_SHARED_ORDERS');
+      if (raw) {
+        const list: Order[] = JSON.parse(raw);
+        const updated = list.map((o) =>
+          o.id === orderId || o.orderNumber === orderId
+            ? { ...o, scheduledDate, staffCallStatus, staffNotes }
+            : o
+        );
+        localStorage.setItem('PROGEAR_SHARED_ORDERS', JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    const callStatusText: Record<string, string> = {
+      NOT_CALLED: 'Chưa gọi khách',
+      CALLED_SCHEDULED: 'Đã gọi & Chốt ngày hẹn',
+      STOCK_READY: 'Hàng đã về sẵn kho',
+      CANCELLED: 'Khách đã hủy',
+    };
+
+    showToast({
+      id: String(Date.now()),
+      type: 'success',
+      title: 'Đã lưu lịch hẹn khách hàng',
+      message: `Đơn ${orderId}: Ngày có hàng ${scheduledDate || 'Chưa đặt'}, CSKH: ${callStatusText[staffCallStatus] || staffCallStatus}`,
+    });
   };
 
   // Add Product
@@ -1027,11 +1140,27 @@ export function App() {
   };
 
   // Filtered Orders
+  const isOrderPreOrder = (o: Order) => {
+    const st = o.orderStatus || o.status || 'PENDING';
+    return Boolean(
+      o.isPreOrder ||
+      o.orderType === 'PRE_ORDER' ||
+      st === 'PRE_ORDER' ||
+      (o.orderNumber && o.orderNumber.startsWith('PRE-')) ||
+      (o.note && o.note.includes('PRE-ORDER'))
+    );
+  };
+
   const filteredOrders = orders.filter((o) => {
     const st = o.orderStatus || o.status || 'PENDING';
     if (selectedOrderStatus === 'ALL') return true;
+    if (selectedOrderStatus === 'PRE_ORDER') {
+      return isOrderPreOrder(o);
+    }
     return st === selectedOrderStatus;
   });
+
+  const preOrdersCount = orders.filter(isOrderPreOrder).length;
 
   // Filtered Products
   const filteredProducts = products.filter((p) => {
@@ -1777,27 +1906,36 @@ export function App() {
 
             {/* Filter by Status */}
             <div className="flex flex-wrap gap-2 text-xs">
-              {['ALL', 'PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED', 'CANCELLED'].map((st) => (
+              {['ALL', 'PRE_ORDER', 'PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED', 'CANCELLED'].map((st) => (
                 <button
                   key={st}
                   onClick={() => setSelectedOrderStatus(st)}
-                  className={`px-3 py-1.5 rounded-xl font-semibold transition ${
+                  className={`px-3 py-1.5 rounded-xl font-semibold transition flex items-center space-x-1.5 ${
                     selectedOrderStatus === st
-                      ? 'bg-red-600 text-white'
+                      ? st === 'PRE_ORDER'
+                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-950/50'
+                        : 'bg-red-600 text-white shadow-lg shadow-red-950'
+                      : st === 'PRE_ORDER'
+                      ? 'bg-amber-950/40 text-amber-300 border border-amber-500/40 hover:bg-amber-900/40'
                       : 'bg-slate-900 text-slate-400 hover:bg-slate-800'
                   }`}
                 >
-                  {st === 'ALL'
-                    ? `Tất Cả (${orders.length})`
-                    : st === 'PENDING'
-                    ? `Chờ Xác Nhận (${orders.filter((o) => (o.orderStatus || o.status) === 'PENDING').length})`
-                    : st === 'CONFIRMED'
-                    ? `Đã Xác Nhận (${orders.filter((o) => (o.orderStatus || o.status) === 'CONFIRMED').length})`
-                    : st === 'SHIPPING'
-                    ? `Đang Giao (${orders.filter((o) => (o.orderStatus || o.status) === 'SHIPPING').length})`
-                    : st === 'COMPLETED'
-                    ? `Hoàn Tất (${orders.filter((o) => (o.orderStatus || o.status) === 'COMPLETED').length})`
-                    : 'Đã Hủy'}
+                  {st === 'PRE_ORDER' && <PhoneCall className="w-3.5 h-3.5 text-amber-300 animate-pulse" />}
+                  <span>
+                    {st === 'ALL'
+                      ? `Tất Cả (${orders.length})`
+                      : st === 'PRE_ORDER'
+                      ? `Đặt Hàng Chờ Về (${preOrdersCount})`
+                      : st === 'PENDING'
+                      ? `Chờ Xác Nhận (${orders.filter((o) => (o.orderStatus || o.status) === 'PENDING').length})`
+                      : st === 'CONFIRMED'
+                      ? `Đã Xác Nhận (${orders.filter((o) => (o.orderStatus || o.status) === 'CONFIRMED').length})`
+                      : st === 'SHIPPING'
+                      ? `Đang Giao (${orders.filter((o) => (o.orderStatus || o.status) === 'SHIPPING').length})`
+                      : st === 'COMPLETED'
+                      ? `Hoàn Tất (${orders.filter((o) => (o.orderStatus || o.status) === 'COMPLETED').length})`
+                      : 'Đã Hủy'}
+                  </span>
                 </button>
               ))}
             </div>
@@ -1827,15 +1965,33 @@ export function App() {
                     ) : (
                       filteredOrders.map((ord) => {
                         const st = ord.orderStatus || ord.status || 'PENDING';
+                        const isPre = isOrderPreOrder(ord);
+
                         return (
                           <tr key={ord.id} className="hover:bg-slate-800/40 transition">
                             <td className="py-3 px-4">
                               <span className="font-mono font-bold text-red-400">{ord.orderNumber}</span>
                               <div className="text-[10px] text-slate-500">{ord.createdAt}</div>
+                              {isPre && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 inline-flex items-center gap-1 mt-1">
+                                  <Clock className="w-2.5 h-2.5" /> ĐẶT CHỜ VỀ
+                                </span>
+                              )}
                             </td>
                             <td className="py-3 px-4">
                               <div className="font-bold text-white">{ord.customerName}</div>
-                              <div className="text-slate-400">{ord.customerPhone}</div>
+                              <div className="text-slate-400 flex items-center gap-1">
+                                <span>{ord.customerPhone}</span>
+                                {isPre && (
+                                  <a
+                                    href={`tel:${ord.customerPhone.replace(/[^0-9+]/g, '')}`}
+                                    className="p-1 rounded bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white transition"
+                                    title="Bấm gọi khách ngay"
+                                  >
+                                    <Phone className="w-2.5 h-2.5" />
+                                  </a>
+                                )}
+                              </div>
                             </td>
                             <td className="py-3 px-4 max-w-xs truncate text-slate-400">
                               {ord.shippingAddress || 'Nhận tại Showroom'}
@@ -1849,56 +2005,107 @@ export function App() {
                               </span>
                             </td>
                             <td className="py-3 px-4">
-                              <span
-                                className={`px-2.5 py-1 rounded text-[10px] font-bold ${
-                                  st === 'CONFIRMED'
-                                    ? 'bg-blue-900/40 text-blue-400 border border-blue-500/30'
+                              {isPre ? (
+                                <div className="space-y-1">
+                                  <span
+                                    className={`px-2.5 py-1 rounded text-[10px] font-bold inline-block ${
+                                      ord.staffCallStatus === 'CALLED_SCHEDULED'
+                                        ? 'bg-blue-900/50 text-blue-300 border border-blue-500/40'
+                                        : ord.staffCallStatus === 'STOCK_READY'
+                                        ? 'bg-emerald-900/50 text-emerald-300 border border-emerald-500/40'
+                                        : ord.staffCallStatus === 'CANCELLED'
+                                        ? 'bg-red-900/50 text-red-300 border border-red-500/40'
+                                        : 'bg-amber-950/70 text-amber-300 border border-amber-500/50 animate-pulse'
+                                    }`}
+                                  >
+                                    {ord.staffCallStatus === 'CALLED_SCHEDULED'
+                                      ? '✓ Đã Hẹn Ngày'
+                                      : ord.staffCallStatus === 'STOCK_READY'
+                                      ? '★ Hàng Đã Về Kho'
+                                      : ord.staffCallStatus === 'CANCELLED'
+                                      ? '✕ Khách Hủy'
+                                      : '☎ Cần Gọi Khách'}
+                                  </span>
+                                  {ord.scheduledDate && (
+                                    <div className="text-[10px] text-amber-400/90 font-mono flex items-center gap-1">
+                                      <Calendar className="w-2.5 h-2.5" /> Hẹn: {ord.scheduledDate}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span
+                                  className={`px-2.5 py-1 rounded text-[10px] font-bold ${
+                                    st === 'CONFIRMED'
+                                      ? 'bg-blue-900/40 text-blue-400 border border-blue-500/30'
+                                      : st === 'SHIPPING'
+                                      ? 'bg-amber-900/40 text-amber-400 border border-amber-500/30'
+                                      : st === 'COMPLETED'
+                                      ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-500/30'
+                                      : st === 'CANCELLED'
+                                      ? 'bg-red-900/40 text-red-400 border border-red-500/30'
+                                      : 'bg-slate-800 text-slate-300 border border-slate-700'
+                                  }`}
+                                >
+                                  {st === 'PENDING'
+                                    ? 'Chờ xác nhận'
+                                    : st === 'CONFIRMED'
+                                    ? 'Đã xác nhận'
                                     : st === 'SHIPPING'
-                                    ? 'bg-amber-900/40 text-amber-400 border border-amber-500/30'
+                                    ? 'Đang giao hàng'
                                     : st === 'COMPLETED'
-                                    ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-500/30'
+                                    ? 'Đã hoàn tất'
                                     : st === 'CANCELLED'
-                                    ? 'bg-red-900/40 text-red-400 border border-red-500/30'
-                                    : 'bg-slate-800 text-slate-300 border border-slate-700'
-                                }`}
-                              >
-                                {st === 'PENDING'
-                                  ? 'Chờ xác nhận'
-                                  : st === 'CONFIRMED'
-                                  ? 'Đã xác nhận'
-                                  : st === 'SHIPPING'
-                                  ? 'Đang giao hàng'
-                                  : st === 'COMPLETED'
-                                  ? 'Đã hoàn tất'
-                                  : st === 'CANCELLED'
-                                  ? 'Đã hủy'
-                                  : st}
-                              </span>
+                                    ? 'Đã hủy'
+                                    : st}
+                                </span>
+                              )}
                             </td>
                             <td className="py-3 px-4 text-right space-x-1">
-                              {st === 'PENDING' && (
-                                <button
-                                  onClick={() => handleUpdateOrderStatus(ord.id || ord.orderNumber, 'CONFIRMED')}
-                                  className="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] transition shadow"
-                                >
-                                  Xác nhận
-                                </button>
-                              )}
-                              {st === 'CONFIRMED' && (
-                                <button
-                                  onClick={() => handleUpdateOrderStatus(ord.id || ord.orderNumber, 'SHIPPING')}
-                                  className="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] transition shadow"
-                                >
-                                  Giao hàng
-                                </button>
-                              )}
-                              {st === 'SHIPPING' && (
-                                <button
-                                  onClick={() => handleUpdateOrderStatus(ord.id || ord.orderNumber, 'COMPLETED')}
-                                  className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition shadow"
-                                >
-                                  Hoàn tất
-                                </button>
+                              {isPre ? (
+                                <>
+                                  <button
+                                    onClick={() => setSelectedOrderDetails(ord)}
+                                    className="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] transition shadow inline-flex items-center space-x-1"
+                                  >
+                                    <PhoneCall className="w-3 h-3" />
+                                    <span>Gọi & Hẹn</span>
+                                  </button>
+                                  {ord.staffCallStatus === 'STOCK_READY' && (
+                                    <button
+                                      onClick={() => handleUpdateOrderStatus(ord.id || ord.orderNumber, 'SHIPPING')}
+                                      className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition shadow"
+                                    >
+                                      Giao hàng
+                                    </button>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  {st === 'PENDING' && (
+                                    <button
+                                      onClick={() => handleUpdateOrderStatus(ord.id || ord.orderNumber, 'CONFIRMED')}
+                                      className="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] transition shadow"
+                                    >
+                                      Xác nhận
+                                    </button>
+                                  )}
+                                  {st === 'CONFIRMED' && (
+                                    <button
+                                      onClick={() => handleUpdateOrderStatus(ord.id || ord.orderNumber, 'SHIPPING')}
+                                      className="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] transition shadow"
+                                    >
+                                      Giao hàng
+                                    </button>
+                                  )}
+                                  {st === 'SHIPPING' && (
+                                    <button
+                                      onClick={() => handleUpdateOrderStatus(ord.id || ord.orderNumber, 'COMPLETED')}
+                                      className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition shadow"
+                                    >
+                                      Hoàn tất
+                                    </button>
+                                  )}
+                                </>
                               )}
                               <button
                                 onClick={() => setSelectedOrderDetails(ord)}
@@ -1919,26 +2126,47 @@ export function App() {
             {/* Order Detail View Modal */}
             {selectedOrderDetails && (
               <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 relative shadow-2xl text-xs space-y-4">
+                <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 relative shadow-2xl text-xs space-y-4">
                   <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-                    <h4 className="font-bold text-white text-sm flex items-center space-x-2">
-                      <ShoppingBag className="w-4 h-4 text-red-500" />
-                      <span>Chi Tiết Đơn: {selectedOrderDetails.orderNumber}</span>
-                    </h4>
+                    <div>
+                      <h4 className="font-bold text-white text-sm flex items-center space-x-2">
+                        <ShoppingBag className="w-4 h-4 text-red-500" />
+                        <span>Hóa Đơn Đơn Hàng: {selectedOrderDetails.orderNumber}</span>
+                      </h4>
+                      {isOrderPreOrder(selectedOrderDetails) && (
+                        <div className="mt-1">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> ĐƠN ĐẶT HÀNG CHỜ VỀ (PRE-ORDER)
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <button
                       onClick={() => setSelectedOrderDetails(null)}
-                      className="text-slate-400 hover:text-white"
+                      className="text-slate-400 hover:text-white p-1"
                     >
                       ✕
                     </button>
                   </div>
 
-                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-slate-300">
-                    <div>
-                      Khách hàng: <strong className="text-white">{selectedOrderDetails.customerName}</strong>
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 text-slate-300">
+                    <div className="flex justify-between items-center">
+                      <span>Khách hàng:</span>
+                      <strong className="text-white text-sm">{selectedOrderDetails.customerName}</strong>
                     </div>
-                    <div>
-                      Số điện thoại: <strong className="text-white">{selectedOrderDetails.customerPhone}</strong>
+                    <div className="flex justify-between items-center">
+                      <span>Số điện thoại:</span>
+                      <div className="flex items-center space-x-2">
+                        <strong className="text-white font-mono">{selectedOrderDetails.customerPhone}</strong>
+                        <a
+                          href={`tel:${selectedOrderDetails.customerPhone.replace(/[^0-9+]/g, '')}`}
+                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-[10px] shadow flex items-center space-x-1 transition active:scale-95"
+                          title="Bấm gọi ngay cho khách hàng"
+                        >
+                          <PhoneCall className="w-3 h-3" />
+                          <span>Gọi Ngay</span>
+                        </a>
+                      </div>
                     </div>
                     <div>
                       Địa chỉ nhận: <span className="text-slate-200">{selectedOrderDetails.shippingAddress}</span>
@@ -1947,15 +2175,91 @@ export function App() {
                       Phương thức thanh toán: <strong>{selectedOrderDetails.paymentMethod}</strong>
                     </div>
                     {selectedOrderDetails.note && (
-                      <div>
-                        Ghi chú khách: <span className="text-amber-400">{selectedOrderDetails.note}</span>
+                      <div className="pt-1 border-t border-slate-850">
+                        Ghi chú khách: <span className="text-amber-400 font-medium">{selectedOrderDetails.note}</span>
                       </div>
                     )}
                   </div>
 
+                  {/* CSKH Gọi Điện & Hẹn Ngày Có Hàng Cho Khách */}
+                  <div className="bg-gradient-to-br from-amber-950/40 to-slate-950 border border-amber-500/40 rounded-xl p-3.5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 text-amber-300 font-bold text-xs">
+                        <PhoneCall className="w-4 h-4 text-amber-400" />
+                        <span>CSKH Gọi Khách & Hẹn Ngày Có Hàng</span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+                        Lịch Hẹn Cung Cấp
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] text-slate-300 block mb-1 font-semibold flex items-center space-x-1">
+                          <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Ngày Hẹn Có Hàng & Giao:</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={scheduleDateInput}
+                          onChange={(e) => setScheduleDateInput(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-lg px-2.5 py-1.5 text-white text-xs outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] text-slate-300 block mb-1 font-semibold flex items-center space-x-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Trạng Thái Cuộc Gọi:</span>
+                        </label>
+                        <select
+                          value={staffCallStatusInput}
+                          onChange={(e) => setStaffCallStatusInput(e.target.value as any)}
+                          className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-lg px-2.5 py-1.5 text-white text-xs outline-none"
+                        >
+                          <option value="NOT_CALLED">Chưa gọi cho khách</option>
+                          <option value="CALLED_SCHEDULED">Đã gọi & Hẹn ngày có hàng</option>
+                          <option value="STOCK_READY">Hàng đã về kho (Sẵn sàng xuất)</option>
+                          <option value="CANCELLED">Khách đã hủy đơn</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] text-slate-300 block mb-1 font-semibold">
+                        Ghi Chú Cuộc Gọi CSKH:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="VD: Đã hẹn khách 25/10 nhận hàng buổi chiều..."
+                        value={staffNotesInput}
+                        onChange={(e) => setStaffNotesInput(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-lg px-2.5 py-1.5 text-white text-xs outline-none"
+                      />
+                    </div>
+
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSavePreOrderSchedule(
+                            selectedOrderDetails.id || selectedOrderDetails.orderNumber,
+                            scheduleDateInput,
+                            staffCallStatusInput,
+                            staffNotesInput
+                          );
+                        }}
+                        className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs shadow flex items-center space-x-1.5 transition active:scale-95"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Lưu Lịch Hẹn & Cập Nhật CSKH</span>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Items */}
                   <div>
-                    <h5 className="font-bold text-slate-300 mb-2">Thiết Bị Khách Đặt Mua:</h5>
+                    <h5 className="font-bold text-slate-300 mb-2">Thiết Bị Khách Đặt:</h5>
                     <div className="space-y-2">
                       {(selectedOrderDetails.items || []).map((itm, idx) => (
                         <div

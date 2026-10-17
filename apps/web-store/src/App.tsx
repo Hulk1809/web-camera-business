@@ -31,7 +31,10 @@ import {
   Heart,
   Check,
   Gift,
-  Tag
+  Tag,
+  Calendar,
+  AlertCircle,
+  PhoneCall
 } from 'lucide-react';
 import { LiveActivityTicker } from './components/LiveActivityTicker';
 import { DayNightVisionShowcase } from './components/DayNightVisionShowcase';
@@ -689,6 +692,7 @@ export function App() {
   // Cart operations
   const addToCart = (product: ProProduct, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    const isOutOfStock = (product.stockQuantity ?? 0) <= 0;
     setCart((prev) => {
       const exist = prev.find((item) => item.product.id === product.id);
       if (exist) {
@@ -698,7 +702,11 @@ export function App() {
       }
       return [...prev, { product, quantity: 1 }];
     });
-    showToast(`Đã thêm ${product.name} vào giỏ hàng! 🛒`);
+    if (isOutOfStock) {
+      showToast(`Đã thêm ${product.name} vào danh sách Đặt Hàng Chờ Về (Pre-Order)! 📞`);
+    } else {
+      showToast(`Đã thêm ${product.name} vào giỏ hàng! 🛒`);
+    }
     setShowCartDrawer(true);
   };
 
@@ -736,12 +744,15 @@ export function App() {
 
     setIsSubmittingOrder(true);
 
+    const hasPreOrderItem = cart.some((i) => (i.product.stockQuantity ?? 0) <= 0);
+    const orderPrefixNote = hasPreOrderItem ? '[ĐẶT HÀNG CHỜ VỀ - PRE-ORDER] ' : '';
+
     const orderPayload = {
       customerName: customerName.trim(),
       customerPhone: customerPhone.trim(),
       shippingAddress: customerAddress.trim(),
       paymentMethod,
-      note: orderNote.trim() || 'Đơn hàng thiết bị Pro Gear từ Storefront',
+      note: `${orderPrefixNote}${orderNote.trim() || 'Đơn hàng thiết bị Pro Gear từ Storefront'}`.trim(),
       items: cart.map((i) => ({
         productId: i.product.id,
         quantity: i.quantity,
@@ -770,14 +781,19 @@ export function App() {
       const randomCode = Math.floor(1000 + Math.random() * 9000);
       confirmedOrder = {
         id: `local-ord-${Date.now()}`,
-        orderNumber: `PRO-${dateStr}-${randomCode}`,
+        orderNumber: hasPreOrderItem ? `PRE-${dateStr}-${randomCode}` : `PRO-${dateStr}-${randomCode}`,
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
         shippingAddress: customerAddress.trim(),
         paymentMethod,
         totalAmount,
-        orderStatus: 'PENDING',
-        createdAt: new Date().toISOString(),
+        orderStatus: hasPreOrderItem ? 'PRE_ORDER' : 'PENDING',
+        status: hasPreOrderItem ? 'PRE_ORDER' : 'PENDING',
+        isPreOrder: hasPreOrderItem,
+        orderType: hasPreOrderItem ? 'PRE_ORDER' : 'STANDARD',
+        staffCallStatus: 'NOT_CALLED',
+        createdAt: 'Vừa xong',
+        note: `${orderPrefixNote}${orderNote.trim() || 'Đơn hàng thiết bị Pro Gear từ Storefront'}`.trim(),
         items: cart.map((i) => ({
           productName: i.product.name,
           productSku: i.product.sku,
@@ -786,9 +802,38 @@ export function App() {
           subtotal: i.product.price * i.quantity,
         })),
       };
+    } else {
+      if (hasPreOrderItem) {
+        confirmedOrder.isPreOrder = true;
+        confirmedOrder.orderType = 'PRE_ORDER';
+        confirmedOrder.staffCallStatus = 'NOT_CALLED';
+        if (!confirmedOrder.note || !confirmedOrder.note.includes('PRE-ORDER')) {
+          confirmedOrder.note = `${orderPrefixNote}${confirmedOrder.note || ''}`.trim();
+        }
+      }
     }
 
-    // Always persist to shared localStorage sync layer so Admin and Storefront stay 100% in sync
+    // 1. Tự động trừ tồn kho khi có người đặt hàng
+    setProducts((prev) => {
+      const updated = prev.map((p) => {
+        const cartMatch = cart.find((c) => c.product.id === p.id);
+        if (cartMatch && (p.stockQuantity ?? 0) > 0) {
+          const remaining = Math.max(0, p.stockQuantity - cartMatch.quantity);
+          return {
+            ...p,
+            stockQuantity: remaining,
+            badge: remaining === 0 ? 'TẠM HẾT HÀNG' : p.badge,
+          };
+        }
+        return p;
+      });
+      try {
+        localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    // 2. Always persist to shared localStorage sync layer so Admin and Storefront stay 100% in sync
     try {
       const existingStr = localStorage.getItem('PROGEAR_SHARED_ORDERS');
       const existing = existingStr ? JSON.parse(existingStr) : [];
@@ -1576,16 +1621,47 @@ export function App() {
                   </div>
                 </div>
 
+                {/* Out of Stock Notice vs In Stock Pill */}
+                {(selectedProduct.stockQuantity ?? 0) <= 0 ? (
+                  <div className="p-3 bg-amber-950/40 rounded-xl border border-amber-500/40 text-xs text-amber-200 flex items-start space-x-2.5">
+                    <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5 animate-pulse" />
+                    <div>
+                      <div className="font-bold text-white">Thiết bị hiện đang tạm hết hàng sẵn tại showroom</div>
+                      <div className="text-[11px] text-amber-300/80 mt-0.5">
+                        Bạn có thể gửi đơn đặt trước (Pre-Order). Đơn hàng sẽ được chuyển trực tiếp tới chuyên viên Pro Gear để gọi điện thoại hẹn ngày hàng về sớm nhất!
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2 text-xs text-emerald-400 font-semibold">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Sẵn hàng: Còn {selectedProduct.stockQuantity} máy tại showroom Pro Gear</span>
+                  </div>
+                )}
+
                 <div className="pt-2 flex items-center space-x-2.5">
                   <button
                     onClick={() => {
                       addToCart(selectedProduct);
                       setSelectedProduct(null);
                     }}
-                    className="flex-1 py-3.5 btn-primary-genz animate-shimmer text-white font-black text-sm rounded-2xl shadow-xl shadow-red-950/60 transition flex items-center justify-center space-x-2 active:scale-98"
+                    className={`flex-1 py-3.5 animate-shimmer text-white font-black text-sm rounded-2xl shadow-xl transition flex items-center justify-center space-x-2 active:scale-98 ${
+                      (selectedProduct.stockQuantity ?? 0) <= 0
+                        ? 'bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 shadow-amber-950/60'
+                        : 'btn-primary-genz shadow-red-950/60'
+                    }`}
                   >
-                    <ShoppingBag className="w-5 h-5" />
-                    <span>Thêm Vào Giỏ Hàng Ngay</span>
+                    {(selectedProduct.stockQuantity ?? 0) <= 0 ? (
+                      <>
+                        <Clock className="w-5 h-5 text-amber-200" />
+                        <span>Đặt Hàng Chờ Về (Pre-Order) — CSKH Hẹn Ngày Giao</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="w-5 h-5" />
+                        <span>Thêm Vào Giỏ Hàng Ngay</span>
+                      </>
+                    )}
                   </button>
                   <button
                     type="button"
@@ -1806,8 +1882,15 @@ export function App() {
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      <div className="text-xs text-amber-400 font-mono font-bold mt-0.5">
-                        {formatVND(item.product.price)}
+                      <div className="flex items-center space-x-1.5 mt-0.5">
+                        <span className="text-xs text-amber-400 font-mono font-bold">
+                          {formatVND(item.product.price)}
+                        </span>
+                        {(item.product.stockQuantity ?? 0) <= 0 && (
+                          <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold">
+                            ĐẶT CHỜ VỀ
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center space-x-2">
@@ -1935,6 +2018,19 @@ export function App() {
                     </div>
                   </div>
 
+                  {/* Pre-order notification if cart contains out-of-stock items */}
+                  {cart.some((i) => (i.product.stockQuantity ?? 0) <= 0) && (
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start space-x-2 text-xs text-amber-200">
+                      <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-bold text-amber-300">Đơn hàng chứa sản phẩm Đặt Chờ Về:</div>
+                        <p className="text-[11px] text-amber-300/80 mt-0.5 leading-relaxed">
+                          Sản phẩm tạm hết sẵn sẽ được chuyển thành đơn Đặt Trước. Sau khi gửi đơn, nhân viên CSKH Pro Gear sẽ gọi điện qua số điện thoại của bạn để thông báo lịch hàng về và hẹn ngày giao máy.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Submit & Cancel Buttons */}
                   <div className="pt-2 space-y-2">
                     <div className="flex items-center space-x-2">
@@ -1950,10 +2046,19 @@ export function App() {
                       <button
                         type="submit"
                         disabled={isSubmittingOrder}
-                        className="flex-1 py-3.5 btn-primary-genz animate-shimmer text-white font-black text-xs rounded-2xl shadow-xl shadow-red-950 transition flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-95"
+                        className={`flex-1 py-3.5 ${
+                          cart.some((i) => (i.product.stockQuantity ?? 0) <= 0)
+                            ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-950/40'
+                            : 'btn-primary-genz shadow-red-950'
+                        } animate-shimmer text-white font-black text-xs rounded-2xl shadow-xl transition flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-95`}
                       >
                         {isSubmittingOrder ? (
                           <span>Đang xử lý đặt hàng...</span>
+                        ) : cart.some((i) => (i.product.stockQuantity ?? 0) <= 0) ? (
+                          <>
+                            <Calendar className="w-4 h-4 text-amber-200" />
+                            <span>Gửi Đơn Đặt Trước & Hẹn Lịch ({formatVND(totalAmount)})</span>
+                          </>
                         ) : (
                           <>
                             <CheckCircle2 className="w-4 h-4" />
@@ -2016,13 +2121,25 @@ export function App() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="w-14 h-14 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-3">
-              <CheckCircle2 className="w-8 h-8" />
+            <div className={`w-14 h-14 ${orderSuccess.isPreOrder ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'} border rounded-full flex items-center justify-center mx-auto mb-3`}>
+              {orderSuccess.isPreOrder ? (
+                <PhoneCall className="w-8 h-8 animate-bounce" />
+              ) : (
+                <CheckCircle2 className="w-8 h-8" />
+              )}
             </div>
 
-            <h3 className="text-xl font-bold text-white mb-1">ĐẶT HÀNG THÀNH CÔNG!</h3>
+            <h3 className="text-xl font-bold text-white mb-1">
+              {orderSuccess.isPreOrder ? 'TIẾP NHẬN ĐƠN ĐẶT HÀNG CHỜ VỀ!' : 'ĐẶT HÀNG THÀNH CÔNG!'}
+            </h3>
             <p className="text-xs text-slate-400 mb-4">
-              Đơn hàng của bạn đã được chuyển tới hệ thống điều phối Pro Gear Operations.
+              {orderSuccess.isPreOrder ? (
+                <span className="text-amber-200">
+                  Hệ thống đã chuyển đơn tới Admin. Nhân viên CSKH sẽ <strong>gọi điện cho bạn qua số {orderSuccess.customerPhone}</strong> để hẹn lịch hàng về và giao máy sớm nhất!
+                </span>
+              ) : (
+                'Đơn hàng của bạn đã được chuyển tới hệ thống điều phối Pro Gear Operations.'
+              )}
             </p>
 
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-left space-y-2 text-xs mb-4">
@@ -2032,6 +2149,14 @@ export function App() {
                   {orderSuccess.orderNumber || orderSuccess.id}
                 </span>
               </div>
+              {orderSuccess.isPreOrder && (
+                <div className="flex justify-between border-b border-slate-800/80 pb-2 text-amber-300">
+                  <span className="text-slate-400">Loại đơn hàng:</span>
+                  <span className="font-bold flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> Đặt Hàng Chờ Về (CSKH Sẽ Gọi Hẹn Ngày)
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-slate-400">Khách hàng:</span>
                 <span className="text-white font-medium">{orderSuccess.customerName}</span>
