@@ -100,9 +100,9 @@ export class WarrantyController {
         customerPhone: body.customerPhone.trim(),
         shippingAddress: 'Showroom Quầy Trực Tiếp (125 Điện Biên Phủ, P. Đa Kao, Q.1, TP.HCM)',
         totalAmount: finalPrice,
-        paymentMethod: PaymentMethod.BANK_TRANSFER,
+        paymentMethod: body.paymentMethod === 'COD' ? PaymentMethod.COD : PaymentMethod.VIETQR,
         paymentStatus: PaymentStatus.PAID,
-        orderStatus: OrderStatus.DELIVERED,
+        orderStatus: OrderStatus.COMPLETED,
         note: `[BÁN TẠI QUẦY POS] Bàn giao trực tiếp tại showroom. Serial: ${cleanSn}`,
         items: {
           create: {
