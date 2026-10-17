@@ -459,8 +459,17 @@ const DEFAULT_SERIALS: SerialItem[] = [
 export function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'warranty' | 'k8s'>('dashboard');
 
-  // Products State
-  const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS);
+  // Products State with Persistent Sync Layer
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const local = localStorage.getItem('PROGEAR_SHARED_PRODUCTS');
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_PRODUCTS;
+  });
   const [isProductsLoading, setIsProductsLoading] = useState<boolean>(false);
 
   // Orders State
@@ -550,6 +559,9 @@ export function App() {
             };
           });
           setProducts(mapped);
+          try {
+            localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(mapped));
+          } catch {}
         } else if (data && Array.isArray(data.items) && data.items.length === 0) {
           // If database on AKS is currently empty, trigger auto seed and reload!
           await fetch('/api/products/seed');
@@ -575,12 +587,22 @@ export function App() {
                 };
               });
               setProducts(mapped);
+              try {
+                localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(mapped));
+              } catch {}
             }
           }
         }
       }
     } catch (err) {
-      console.warn('Backend API offline, keeping local products:', err);
+      console.warn('Backend API offline, keeping local products from persistent layer:', err);
+      try {
+        const local = localStorage.getItem('PROGEAR_SHARED_PRODUCTS');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
+        }
+      } catch {}
     } finally {
       setIsProductsLoading(false);
     }
@@ -706,13 +728,15 @@ export function App() {
       : ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800'];
 
     // Optimistically update product list
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === imageManagerProduct.id
-          ? { ...p, images: updatedImgs, imageUrl: updatedImgs[0] }
-          : p
-      )
+    const updatedWithImages = products.map((p) =>
+      p.id === imageManagerProduct.id
+        ? { ...p, images: updatedImgs, imageUrl: updatedImgs[0] }
+        : p
     );
+    setProducts(updatedWithImages);
+    try {
+      localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(updatedWithImages));
+    } catch {}
 
     try {
       await fetch(`/api/products/${imageManagerProduct.id}`, {
@@ -912,7 +936,11 @@ export function App() {
       status: 'IN_STOCK',
       specifications: payload.specifications,
     };
-    setProducts([newProdItem, ...products]);
+    const updatedProdList = [newProdItem, ...products];
+    setProducts(updatedProdList);
+    try {
+      localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(updatedProdList));
+    } catch {}
 
     // Send to backend
     try {

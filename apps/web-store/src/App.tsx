@@ -450,7 +450,16 @@ const CATEGORIES = [
 const BRANDS = ['Tất Cả', 'DJI', 'Sony', 'Canon', 'Fujifilm', 'Blackmagic Design', 'Nikon'];
 
 export function App() {
-  const [products, setProducts] = useState<ProProduct[]>(DEFAULT_PRODUCTS);
+  const [products, setProducts] = useState<ProProduct[]>(() => {
+    try {
+      const local = localStorage.getItem('PROGEAR_SHARED_PRODUCTS');
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_PRODUCTS;
+  });
   const [selectedCategory, setSelectedCategory] = useState<string>('Tất Cả');
   const [selectedBrand, setSelectedBrand] = useState<string>('Tất Cả');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -590,6 +599,9 @@ export function App() {
           });
           setProducts(mapped);
           setIsBackendConnected(true);
+          try {
+            localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(mapped));
+          } catch {}
           return;
         } else if (data && Array.isArray(data.items) && data.items.length === 0) {
           await fetch('/api/products/seed');
@@ -622,19 +634,39 @@ export function App() {
               });
               setProducts(mapped);
               setIsBackendConnected(true);
+              try {
+                localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(mapped));
+              } catch {}
               return;
             }
           }
         }
       }
     } catch {
-      // Backend not running, use default products
+      // Backend not running, load from persistent storage
       setIsBackendConnected(false);
+      try {
+        const local = localStorage.getItem('PROGEAR_SHARED_PRODUCTS');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
+        }
+      } catch {}
     }
   };
 
   useEffect(() => {
     fetchProducts();
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'PROGEAR_SHARED_PRODUCTS' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Filter Products
@@ -949,16 +981,6 @@ export function App() {
             </button>
             <span>•</span>
             <span className="text-slate-400">Hotline: <strong className="text-white">1900 8899</strong></span>
-            <span>•</span>
-            <a
-              href="/admin"
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs bg-red-600/20 text-red-300 border border-red-500/30 px-2 py-0.5 rounded hover:bg-red-600 hover:text-white transition flex items-center space-x-1"
-            >
-              <span>Vào Admin Portal</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
           </div>
         </div>
       </div>
@@ -2189,19 +2211,10 @@ export function App() {
                   setOrderSuccess(null);
                   setShowCartDrawer(false);
                 }}
-                className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow transition"
+                className="w-full py-3 btn-primary-genz text-white font-bold text-xs rounded-xl shadow-lg shadow-red-950 transition flex items-center justify-center space-x-1.5"
               >
-                Tiếp Tục Mua Sắm
+                <span>Tiếp Tục Mua Sắm</span>
               </button>
-              <a
-                href="http://localhost:3001"
-                target="_blank"
-                rel="noreferrer"
-                className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center space-x-1"
-              >
-                <span>Xem Trên Admin</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
             </div>
           </div>
         </div>
