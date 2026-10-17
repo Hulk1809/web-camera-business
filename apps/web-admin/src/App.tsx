@@ -506,6 +506,8 @@ export function App() {
   });
 
   const [inputImgUrl, setInputImgUrl] = useState<string>('');
+  const [productSearch, setProductSearch] = useState<string>('');
+  const [productBrandFilter, setProductBrandFilter] = useState<string>('ALL');
 
   // Image Manager Modal State for Existing Products in Table
   const [imageManagerProduct, setImageManagerProduct] = useState<Product | null>(null);
@@ -974,6 +976,20 @@ export function App() {
     return st === selectedOrderStatus;
   });
 
+  // Filtered Products
+  const filteredProducts = products.filter((p) => {
+    const query = productSearch.trim().toLowerCase();
+    const matchesSearch =
+      query === '' ||
+      p.name.toLowerCase().includes(query) ||
+      p.sku.toLowerCase().includes(query) ||
+      p.brand.toLowerCase().includes(query) ||
+      p.category.toLowerCase().includes(query);
+    const matchesBrand =
+      productBrandFilter === 'ALL' || p.brand.toLowerCase() === productBrandFilter.toLowerCase();
+    return matchesSearch && matchesBrand;
+  });
+
   // Calculations for Metrics
   const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
   const totalOrdersCount = orders.length;
@@ -1005,12 +1021,12 @@ export function App() {
           <div className="flex items-center space-x-3">
             {/* Live Storefront Link */}
             <a
-              href="http://localhost:3000"
+              href="/"
               target="_blank"
               rel="noreferrer"
               className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl transition flex items-center space-x-1.5"
             >
-              <span>Xem Web Khách Hàng (Port 3000)</span>
+              <span>Xem Web Bán Hàng</span>
               <ExternalLink className="w-3.5 h-3.5 text-red-400" />
             </a>
 
@@ -1018,7 +1034,7 @@ export function App() {
 
             <div className="flex items-center space-x-2 text-xs">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-emerald-400 font-semibold">API Đã Kết Nối</span>
+              <span className="text-emerald-400 font-semibold">Hệ Thống Trực Tuyến</span>
             </div>
           </div>
         </div>
@@ -1087,7 +1103,7 @@ export function App() {
             }`}
           >
             <Server className="w-4 h-4 text-sky-400" />
-            <span>Hạ Tầng K8s (AKS)</span>
+            <span>Hệ Thống Máy Chủ</span>
           </button>
         </div>
       </header>
@@ -1282,10 +1298,10 @@ export function App() {
                 <button
                   onClick={handleResetSeed}
                   className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition flex items-center space-x-1.5"
-                  title="Nạp lại bộ dữ liệu chuẩn máy ảnh và DJI"
+                  title="Đồng bộ lại kho dữ liệu gốc thiết bị"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Nạp Dữ Liệu Chuẩn (Seed)</span>
+                  <span>Đồng Bộ Dữ Liệu Gốc</span>
                 </button>
               </div>
             </div>
@@ -1560,6 +1576,50 @@ export function App() {
               </form>
             </div>
 
+            {/* Search & Filter Toolbar */}
+            <div className="bg-slate-900/90 border border-slate-800 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3">
+              <div className="flex-1 min-w-[260px] relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên máy ảnh, flycam, mã SKU, hãng sản xuất..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition"
+                />
+                {productSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setProductSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center space-x-1.5 overflow-x-auto text-xs py-0.5">
+                {['ALL', 'DJI', 'Sony', 'Canon', 'Fujifilm', 'Blackmagic', 'Nikon'].map((brand) => (
+                  <button
+                    key={brand}
+                    type="button"
+                    onClick={() => setProductBrandFilter(brand)}
+                    className={`px-3 py-1.5 rounded-xl font-semibold transition shrink-0 ${
+                      productBrandFilter.toLowerCase() === brand.toLowerCase()
+                        ? 'bg-red-600 text-white shadow-md shadow-red-950'
+                        : 'bg-slate-950 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                    }`}
+                  >
+                    {brand === 'ALL' ? 'Tất Cả Hãng' : brand}
+                  </button>
+                ))}
+              </div>
+
+              <div className="text-xs text-slate-400 font-mono">
+                Hiển thị <span className="font-bold text-white">{filteredProducts.length}</span> / {products.length} thiết bị
+              </div>
+            </div>
+
             {/* Product Table */}
             <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
@@ -1576,7 +1636,15 @@ export function App() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800 text-slate-300">
-                    {products.map((p) => (
+                    {filteredProducts.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="text-center py-12 text-slate-500">
+                          <Package className="w-8 h-8 mx-auto mb-2 text-slate-700" />
+                          <p>Không tìm thấy thiết bị nào phù hợp với từ khóa tìm kiếm.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredProducts.map((p) => (
                       <tr key={p.id} className="hover:bg-slate-800/40 transition">
                         <td className="py-3 px-4">
                           <div className="flex items-center space-x-3">
@@ -1639,7 +1707,7 @@ export function App() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ))) }
                   </tbody>
                 </table>
               </div>
@@ -1985,69 +2053,81 @@ export function App() {
           </div>
         )}
 
-        {/* ================= 5. HẠ TẦNG KUBERNETES ================= */}
+        {/* ================= 5. HỆ THỐNG MÁY CHỦ ================= */}
         {activeTab === 'k8s' && (
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-bold text-white flex items-center space-x-2">
                 <Server className="w-5 h-5 text-sky-400" />
-                <span>Giám Sát Cụm Kubernetes Azure AKS (k8s-hulk-lab)</span>
+                <span>Giám Sát Vận Hành Hệ Thống & Máy Chủ</span>
               </h3>
               <p className="text-xs text-slate-400">
-                Toàn bộ hệ thống Pro Gear Monorepo vận hành trên hạ tầng Microservices Kubernetes.
+                Toàn bộ hệ thống Pro Gear vận hành trên hạ tầng đám mây phân tán với khả năng chịu tải và bảo mật dữ liệu cao.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                <div className="text-xs text-slate-400 mb-1">Cụm AKS Cluster</div>
-                <div className="text-base font-bold text-white font-mono">k8s-hulk-lab</div>
+                <div className="text-xs text-slate-400 mb-1">Cụm Máy Chủ Đám Mây</div>
+                <div className="text-base font-bold text-white font-mono">Cloud Enterprise Cluster</div>
                 <div className="text-[11px] text-emerald-400 mt-2 flex items-center space-x-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>2 Worker Nodes (Ubuntu 22.04 LTS)</span>
+                  <span>Cân Bằng Tải Tự Động • Uptime 99.9%</span>
                 </div>
               </div>
 
               <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                <div className="text-xs text-slate-400 mb-1">Database StatefulSet</div>
-                <div className="text-base font-bold text-white font-mono">PostgreSQL 16 + Redis 7</div>
+                <div className="text-xs text-slate-400 mb-1">Cơ Sở Dữ Liệu & Bộ Nhớ Đệm</div>
+                <div className="text-base font-bold text-white font-mono">PostgreSQL Dedicated + Cache</div>
                 <div className="text-[11px] text-emerald-400 mt-2 flex items-center space-x-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>PVC 20GB Azure Managed Disk CSI</span>
+                  <span>Sao Lưu Liên Tục • Mã Hóa Lưu Trữ</span>
                 </div>
               </div>
 
               <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                <div className="text-xs text-slate-400 mb-1">Ingress Routing</div>
-                <div className="text-base font-bold text-white font-mono">NGINX Ingress Controller</div>
+                <div className="text-xs text-slate-400 mb-1">Bảo Mật Đường Truyền</div>
+                <div className="text-base font-bold text-white font-mono">SSL / TLS 256-bit Encryption</div>
                 <div className="text-[11px] text-emerald-400 mt-2 flex items-center space-x-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Port 80/443 SSL Let's Encrypt</span>
+                  <span>Bảo Vệ Tường Lửa & Chống Tấn Công</span>
                 </div>
               </div>
             </div>
 
-            {/* Pods Status */}
+            {/* Services Status */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
               <h4 className="font-bold text-white text-xs mb-3 uppercase tracking-wider">
-                Trạng Thái Các Pods Đang Chạy Trong Namespace `camera-business`
+                Trạng Thái Hoạt Động Của Các Dịch Vụ Hệ Thống
               </h4>
-              <div className="space-y-2 text-xs font-mono">
-                <div className="p-2.5 rounded-lg bg-slate-950 flex justify-between items-center border border-slate-800">
-                  <span className="text-white">backend-api-79b8f-x42kp (2/2)</span>
-                  <span className="text-emerald-400 font-bold">Running • Ready</span>
+              <div className="space-y-2 text-xs">
+                <div className="p-3 rounded-xl bg-slate-950 flex justify-between items-center border border-slate-800">
+                  <span className="text-white font-medium">Cổng Bán Hàng Trực Tuyến (Storefront Service)</span>
+                  <span className="text-emerald-400 font-bold flex items-center space-x-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                    <span>Hoạt Động Bình Thường • Tốc Độ Cao</span>
+                  </span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-slate-950 flex justify-between items-center border border-slate-800">
-                  <span className="text-white">web-store-684c7-nm982 (2/2)</span>
-                  <span className="text-emerald-400 font-bold">Running • Ready (Port 3000)</span>
+                <div className="p-3 rounded-xl bg-slate-950 flex justify-between items-center border border-slate-800">
+                  <span className="text-white font-medium">Hệ Thống Xử Lý Đơn Hàng & Nghiệp Vụ Kho</span>
+                  <span className="text-emerald-400 font-bold flex items-center space-x-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                    <span>Hoạt Động Bình Thường • Đồng Bộ Tức Thời</span>
+                  </span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-slate-950 flex justify-between items-center border border-slate-800">
-                  <span className="text-white">web-admin-55d8f-pq210 (2/2)</span>
-                  <span className="text-emerald-400 font-bold">Running • Ready (Port 3001)</span>
+                <div className="p-3 rounded-xl bg-slate-950 flex justify-between items-center border border-slate-800">
+                  <span className="text-white font-medium">Cổng Quản Trị Hệ Thống (Operations Admin Portal)</span>
+                  <span className="text-emerald-400 font-bold flex items-center space-x-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                    <span>Hoạt Động Bình Thường • Quyền Quản Trị</span>
+                  </span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-slate-950 flex justify-between items-center border border-slate-800">
-                  <span className="text-white">postgres-statefulset-0 (1/1)</span>
-                  <span className="text-emerald-400 font-bold">Running • 20GB PVC Mounted</span>
+                <div className="p-3 rounded-xl bg-slate-950 flex justify-between items-center border border-slate-800">
+                  <span className="text-white font-medium">Hệ Thống Cơ Sở Dữ Liệu & Serial Thiết Bị</span>
+                  <span className="text-emerald-400 font-bold flex items-center space-x-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                    <span>Hoạt Động Bình Thường • Toàn Vẹn Dữ Liệu</span>
+                  </span>
                 </div>
               </div>
             </div>

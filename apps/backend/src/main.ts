@@ -25,19 +25,24 @@ async function bootstrap() {
   // Global API Prefix
   app.setGlobalPrefix('api');
 
-  // Swagger Documentation Setup
-  const config = new DocumentBuilder()
-    .setTitle('Camera E-Commerce Smart API')
-    .setDescription('API documentation for Camera Storefront & Admin Portal on Kubernetes AKS')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  // Swagger Documentation Setup (Hidden in production to protect internal API schemas)
+  const isSwaggerEnabled = process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true';
+  if (isSwaggerEnabled) {
+    const config = new DocumentBuilder()
+      .setTitle('Camera E-Commerce Smart API')
+      .setDescription('Internal API documentation')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = process.env.PORT || 4000;
   await app.listen(port, '0.0.0.0');
-  console.log(`🚀 Camera Backend API is running on: http://0.0.0.0:${port}/api`);
-  console.log(`📚 Swagger Documentation is available at: http://localhost:${port}/api/docs`);
+  console.log(`🚀 Camera Backend Service is running on: port ${port}`);
+  if (isSwaggerEnabled) {
+    console.log(`📚 Swagger Documentation is available at: /api/docs`);
+  }
 }
 bootstrap();

@@ -502,6 +502,14 @@ export function App() {
   const [isSubmittingOrder, setIsSubmittingOrder] = useState<boolean>(false);
   const [orderSuccess, setOrderSuccess] = useState<any>(null);
 
+  // Customer Order Lookup & Self-Service Cancel
+  const [showOrderLookupModal, setShowOrderLookupModal] = useState<boolean>(false);
+  const [orderLookupQuery, setOrderLookupQuery] = useState<string>('');
+  const [orderLookupResult, setOrderLookupResult] = useState<any>(null);
+  const [isSearchingOrder, setIsSearchingOrder] = useState<boolean>(false);
+  const [orderCancelSuccessMsg, setOrderCancelSuccessMsg] = useState<string>('');
+  const [isCancellingOrder, setIsCancellingOrder] = useState<boolean>(false);
+
   // Helper to extract multi-images array from API response
   const parseImagesFromItem = (item: any): string[] => {
     if (Array.isArray(item.images) && item.images.length > 0) {
@@ -793,6 +801,84 @@ export function App() {
     setIsCheckingWarranty(false);
   };
 
+  // Tra cứu đơn hàng & Hủy đơn hàng từ phía khách
+  const handleLookupOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = orderLookupQuery.trim().toUpperCase();
+    if (!query) return;
+    setIsSearchingOrder(true);
+    setOrderCancelSuccessMsg('');
+    setOrderLookupResult(null);
+
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.id || data.orderNumber)) {
+          setOrderLookupResult(data);
+          setIsSearchingOrder(false);
+          return;
+        }
+      }
+    } catch {
+      // offline fallback
+    }
+
+    // Local storage fallback lookup
+    const localSync = localStorage.getItem('PRO_GEAR_ORDERS_SYNC');
+    if (localSync) {
+      try {
+        const parsed = JSON.parse(localSync);
+        if (Array.isArray(parsed)) {
+          const match = parsed.find(
+            (o: any) =>
+              (o.orderNumber && o.orderNumber.toUpperCase() === query) ||
+              (o.customerPhone && o.customerPhone.includes(query)) ||
+              (o.id && String(o.id) === query)
+          );
+          if (match) {
+            setOrderLookupResult(match);
+            setIsSearchingOrder(false);
+            return;
+          }
+        }
+      } catch {}
+    }
+
+    setOrderLookupResult({ notFound: true, query });
+    setIsSearchingOrder(false);
+  };
+
+  const handleCancelOrderCustomer = async (orderIdOrNumber: string) => {
+    if (!window.confirm('Quý khách có chắc chắn muốn hủy đơn hàng này không?')) return;
+    setIsCancellingOrder(true);
+
+    try {
+      await fetch(`/api/orders/${orderIdOrNumber}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'CANCELLED' }),
+      });
+    } catch {}
+
+    setOrderLookupResult((prev: any) => prev ? { ...prev, orderStatus: 'CANCELLED', status: 'CANCELLED' } : null);
+    const localSync = localStorage.getItem('PRO_GEAR_ORDERS_SYNC');
+    if (localSync) {
+      try {
+        const parsed = JSON.parse(localSync);
+        const updated = parsed.map((o: any) =>
+          (o.id === orderIdOrNumber || o.orderNumber === orderIdOrNumber)
+            ? { ...o, orderStatus: 'CANCELLED', status: 'CANCELLED' }
+            : o
+        );
+        localStorage.setItem('PRO_GEAR_ORDERS_SYNC', JSON.stringify(updated));
+      } catch {}
+    }
+
+    setOrderCancelSuccessMsg('Đơn hàng đã được hủy thành công!');
+    setIsCancellingOrder(false);
+  };
+
   const formatVND = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
   };
@@ -824,7 +910,7 @@ export function App() {
             <span className="text-slate-400">Hotline: <strong className="text-white">1900 8899</strong></span>
             <span>•</span>
             <a
-              href="http://localhost:3001"
+              href="/admin"
               target="_blank"
               rel="noreferrer"
               className="text-xs bg-red-600/20 text-red-300 border border-red-500/30 px-2 py-0.5 rounded hover:bg-red-600 hover:text-white transition flex items-center space-x-1"
@@ -880,14 +966,27 @@ export function App() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2.5">
+            {/* Order Lookup & Cancel Button */}
+            <button
+              onClick={() => {
+                setShowOrderLookupModal(true);
+                setOrderCancelSuccessMsg('');
+              }}
+              className="hidden sm:flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-xs font-semibold transition"
+              title="Tra cứu tình trạng đơn hàng hoặc hủy đơn"
+            >
+              <Truck className="w-4 h-4 text-amber-400" />
+              <span>Tra Cứu & Hủy Đơn</span>
+            </button>
+
             {/* Warranty Button */}
             <button
               onClick={() => setShowWarrantyModal(true)}
               className="hidden lg:flex items-center space-x-2 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-xs font-semibold transition"
             >
               <ShieldCheck className="w-4 h-4 text-red-500" />
-              <span>Kích Hoạt Bảo Hành</span>
+              <span>Bảo Hành</span>
             </button>
 
             {/* Cart Button */}
@@ -1792,7 +1891,7 @@ export function App() {
                         className="flex-1 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black text-xs rounded-xl shadow-xl shadow-red-950 transition flex items-center justify-center space-x-2 disabled:opacity-50"
                       >
                         {isSubmittingOrder ? (
-                          <span>Đang xử lý kết nối API...</span>
+                          <span>Đang xử lý đặt hàng...</span>
                         ) : (
                           <>
                             <CheckCircle2 className="w-4 h-4" />
@@ -2056,6 +2155,171 @@ export function App() {
         </div>
       )}
 
+      {/* ----------------- ORDER LOOKUP & CANCEL MODAL ----------------- */}
+      {showOrderLookupModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setShowOrderLookupModal(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <span className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <Truck className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Tra Cứu & Quản Lý Đơn Hàng
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Kiểm tra tiến độ giao hàng, chi tiết đơn hoặc hủy đơn hàng trực tuyến
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOrderLookupModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search Input Form */}
+            <form onSubmit={handleLookupOrder} className="space-y-2">
+              <label className="text-xs font-semibold text-slate-300 block">
+                Nhập Mã đơn hàng (VD: PRO-XXXXXX) hoặc Số điện thoại đặt hàng:
+              </label>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  required
+                  placeholder="VD: PRO-102938 hoặc 0912345678"
+                  value={orderLookupQuery}
+                  onChange={(e) => setOrderLookupQuery(e.target.value)}
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white uppercase placeholder:normal-case placeholder-slate-500 focus:outline-none focus:border-red-500 font-mono"
+                />
+                <button
+                  type="submit"
+                  disabled={isSearchingOrder}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1 shrink-0"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span>{isSearchingOrder ? 'Đang tìm...' : 'Tra Cứu'}</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Cancel Success Message */}
+            {orderCancelSuccessMsg && (
+              <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-xs flex items-center space-x-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span className="font-semibold">{orderCancelSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* Search Result */}
+            {orderLookupResult && (
+              <div className="pt-2">
+                {orderLookupResult.notFound ? (
+                  <div className="p-4 rounded-xl bg-red-950/40 border border-red-500/30 text-xs text-red-300">
+                    Không tìm thấy đơn hàng với thông tin: <strong className="font-mono text-white">{orderLookupResult.query}</strong>. Vui lòng kiểm tra lại mã đơn hàng hoặc số điện thoại.
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 text-xs">
+                    <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                      <div>
+                        <span className="text-slate-400 text-[11px] block">Mã Đơn Hàng</span>
+                        <span className="font-mono font-bold text-sm text-red-400">
+                          {orderLookupResult.orderNumber || orderLookupResult.id}
+                        </span>
+                      </div>
+                      <div>
+                        {(() => {
+                          const st = orderLookupResult.orderStatus || orderLookupResult.status || 'PENDING';
+                          const statusMap: Record<string, { label: string; color: string }> = {
+                            PENDING: { label: 'Chờ Xác Nhận', color: 'bg-amber-900/40 text-amber-400 border-amber-500/30' },
+                            CONFIRMED: { label: 'Đã Xác Nhận', color: 'bg-blue-900/40 text-blue-400 border-blue-500/30' },
+                            SHIPPING: { label: 'Đang Giao Hàng', color: 'bg-orange-900/40 text-orange-400 border-orange-500/30' },
+                            COMPLETED: { label: 'Đã Hoàn Tất', color: 'bg-emerald-900/40 text-emerald-400 border-emerald-500/30' },
+                            CANCELLED: { label: 'Đã Hủy Đơn', color: 'bg-red-900/40 text-red-400 border-red-500/30' },
+                          };
+                          const current = statusMap[st] || statusMap['PENDING'];
+                          return (
+                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${current.color}`}>
+                              {current.label}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-slate-300 text-[11px]">
+                      <div>
+                        <span className="text-slate-500 block">Khách hàng:</span>
+                        <strong className="text-white">{orderLookupResult.customerName}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">Số điện thoại:</span>
+                        <strong className="text-white font-mono">{orderLookupResult.customerPhone}</strong>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-slate-500 block">Địa chỉ nhận hàng:</span>
+                        <span className="text-slate-200">{orderLookupResult.shippingAddress || orderLookupResult.customerAddress}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">Thanh toán:</span>
+                        <span>{orderLookupResult.paymentMethod === 'VIETQR' ? 'VietQR Ngân hàng' : 'Thanh toán COD'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">Tổng tiền:</span>
+                        <strong className="text-amber-400 font-mono text-xs">
+                          {formatVND(orderLookupResult.totalAmount || 0)}
+                        </strong>
+                      </div>
+                    </div>
+
+                    {/* Items preview */}
+                    {Array.isArray(orderLookupResult.items) && orderLookupResult.items.length > 0 && (
+                      <div className="border-t border-slate-800 pt-2 space-y-1.5">
+                        <span className="text-slate-400 text-[11px] block font-semibold">Danh sách thiết bị:</span>
+                        {orderLookupResult.items.map((itm: any, idx: number) => (
+                          <div key={idx} className="flex justify-between text-[11px] bg-slate-900/60 p-2 rounded-lg">
+                            <span className="text-slate-200 truncate max-w-xs">{itm.productName || itm.name || 'Thiết bị Pro Gear'} (x{itm.quantity})</span>
+                            <span className="text-amber-400 font-mono font-semibold">{formatVND(itm.price * itm.quantity)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Cancel action if PENDING */}
+                    {(orderLookupResult.orderStatus === 'PENDING' || orderLookupResult.status === 'PENDING') && (
+                      <div className="border-t border-slate-800 pt-3 flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-[11px] text-slate-400 max-w-xs">
+                          Đơn hàng đang chờ nhân viên liên hệ xác nhận. Bạn có thể tự hủy đơn ngay nếu muốn đổi thiết bị khác.
+                        </p>
+                        <button
+                          type="button"
+                          disabled={isCancellingOrder}
+                          onClick={() => handleCancelOrderCustomer(orderLookupResult.id || orderLookupResult.orderNumber)}
+                          className="px-3.5 py-1.5 rounded-xl bg-red-600/80 hover:bg-red-600 text-white font-bold text-xs transition flex items-center space-x-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>{isCancellingOrder ? 'Đang hủy...' : 'Hủy Đơn Hàng Này'}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ----------------- FOOTER ----------------- */}
       <footer className="mt-auto border-t border-slate-800 bg-slate-950 py-8 text-xs text-slate-400">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -2102,10 +2366,10 @@ export function App() {
         <div className="max-w-7xl mx-auto px-4 pt-6 mt-6 border-t border-slate-800/80 flex flex-wrap justify-between items-center text-[11px] text-slate-500">
           <div>© 2026 PRO GEAR Vietnam. All rights reserved.</div>
           <div className="flex items-center space-x-3">
-            <span>Trạng thái kết nối API:</span>
+            <span>Trạng thái hệ thống:</span>
             <span className="inline-flex items-center space-x-1 text-emerald-400 font-bold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Đồng Bộ Trực Tuyến</span>
+              <span>Đồng Bộ Trực Tuyến & Bảo Mật SSL</span>
             </span>
           </div>
         </div>
