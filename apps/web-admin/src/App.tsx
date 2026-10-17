@@ -926,14 +926,14 @@ export function App() {
       console.error(e);
     }
 
-    // Merge backend, shared and default orders (deduplicating by orderNumber)
+    // Merge orders: DEFAULT_ORDERS (base) -> backendOrders (db) -> sharedOrders (latest admin/client state)
     const combinedMap = new Map<string, Order>();
 
-    // 1. First add backend orders
-    backendOrders.forEach((o) => combinedMap.set(o.orderNumber, o));
+    // 1. Fallback default orders first (as base templates)
+    DEFAULT_ORDERS.forEach((o) => combinedMap.set(o.orderNumber, o));
 
-    // 2. Add shared orders from storefront (overlay shared values like scheduling notes)
-    sharedOrders.forEach((o) => {
+    // 2. Overlay backend orders from PostgreSQL database
+    backendOrders.forEach((o) => {
       if (combinedMap.has(o.orderNumber)) {
         combinedMap.set(o.orderNumber, { ...combinedMap.get(o.orderNumber)!, ...o });
       } else {
@@ -941,9 +941,11 @@ export function App() {
       }
     });
 
-    // 3. Fallback default orders
-    DEFAULT_ORDERS.forEach((o) => {
-      if (!combinedMap.has(o.orderNumber)) {
+    // 3. Overlay shared orders from localStorage (contains customer orders + admin status overrides)
+    sharedOrders.forEach((o) => {
+      if (combinedMap.has(o.orderNumber)) {
+        combinedMap.set(o.orderNumber, { ...combinedMap.get(o.orderNumber)!, ...o });
+      } else {
         combinedMap.set(o.orderNumber, o);
       }
     });
@@ -1292,11 +1294,20 @@ export function App() {
 
   // Update Order Status - THÔNG API BACKEND & KÍCH HOẠT BẢO HÀNH!
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    const targetOrder = orders.find((o) => o.id === orderId || o.orderNumber === orderId);
+    const targetId = targetOrder?.id || orderId;
+    const targetOrderNumber = targetOrder?.orderNumber || orderId;
+
     // 1. Update local state immediately
     setOrders((prev) =>
       prev.map((o) =>
-        o.id === orderId || o.orderNumber === orderId
-          ? { ...o, orderStatus: newStatus, status: newStatus }
+        o.id === orderId || o.orderNumber === orderId || o.id === targetId || o.orderNumber === targetOrderNumber
+          ? {
+              ...o,
+              orderStatus: newStatus,
+              status: newStatus,
+              paymentStatus: newStatus === 'COMPLETED' ? 'PAID' : o.paymentStatus,
+            }
           : o
       )
     );
@@ -1312,12 +1323,12 @@ export function App() {
       id: String(Date.now()),
       type: 'success',
       title: 'Cập nhật trạng thái đơn hàng',
-      message: `Đơn ${orderId} đã chuyển sang "${statusLabels[newStatus] || newStatus}"`,
+      message: `Đơn ${targetOrderNumber} đã chuyển sang "${statusLabels[newStatus] || newStatus}"`,
     });
 
     // If order is completed, activate any serial assigned to this order
     if (newStatus === 'COMPLETED' || newStatus === 'DELIVERED') {
-      const order = orders.find((o) => o.id === orderId || o.orderNumber === orderId);
+      const order = targetOrder || orders.find((o) => o.id === orderId || o.orderNumber === orderId);
       if (order) {
         const now = new Date();
         const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
@@ -1332,7 +1343,7 @@ export function App() {
             const expDateFormatted = `${pad(expDate.getDate())}/${pad(expDate.getMonth() + 1)}/${expDate.getFullYear()}`;
             return {
               ...s,
-              status: 'SOLD',
+              status: 'SOLD' as const,
               soldDate: dateFormatted,
               warrantyExpires: expDateFormatted,
               customerName: order.customerName,
@@ -1350,29 +1361,53 @@ export function App() {
       }
     }
 
-    // 2. Call backend PATCH /api/orders/:id/status
+    // 2. Call backend PATCH /api/orders/:id/status (with targetId and fallback targetOrderNumber)
     try {
-      await fetch(`/api/orders/${orderId}/status`, {
+      const res = await fetch(`/api/orders/${targetId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({
+          status: newStatus,
+          paymentStatus: newStatus === 'COMPLETED' ? 'PAID' : undefined,
+        }),
       });
+      if (!res.ok && targetOrderNumber !== targetId) {
+        await fetch(`/api/orders/${targetOrderNumber}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: newStatus,
+            paymentStatus: newStatus === 'COMPLETED' ? 'PAID' : undefined,
+          }),
+        });
+      }
     } catch (err) {
       console.warn('API update order status offline fallback:', err);
     }
 
-    // 3. Update localStorage shared orders
+    // 3. Update localStorage shared orders with UPSERT (so mock orders & backend orders are permanently persisted)
     try {
       const raw = localStorage.getItem('PROGEAR_SHARED_ORDERS');
-      if (raw) {
-        const list: Order[] = JSON.parse(raw);
-        const updated = list.map((o) =>
-          o.id === orderId || o.orderNumber === orderId
-            ? { ...o, orderStatus: newStatus, status: newStatus }
-            : o
-        );
-        localStorage.setItem('PROGEAR_SHARED_ORDERS', JSON.stringify(updated));
+      let list: Order[] = raw ? JSON.parse(raw) : [];
+      const idx = list.findIndex(
+        (o) => o.id === targetId || o.orderNumber === targetOrderNumber || o.id === orderId || o.orderNumber === orderId
+      );
+      if (idx >= 0) {
+        list[idx] = {
+          ...list[idx],
+          orderStatus: newStatus,
+          status: newStatus,
+          paymentStatus: newStatus === 'COMPLETED' ? 'PAID' : list[idx].paymentStatus,
+        };
+      } else if (targetOrder) {
+        list.push({
+          ...targetOrder,
+          orderStatus: newStatus,
+          status: newStatus,
+          paymentStatus: newStatus === 'COMPLETED' ? 'PAID' : targetOrder.paymentStatus,
+        });
       }
+      localStorage.setItem('PROGEAR_SHARED_ORDERS', JSON.stringify(list));
     } catch (e) {
       console.error(e);
     }
@@ -1410,18 +1445,20 @@ export function App() {
         : prev
     );
 
-    // 3. Persist to shared localStorage sync
+    // 3. Persist to shared localStorage sync with UPSERT
     try {
       const raw = localStorage.getItem('PROGEAR_SHARED_ORDERS');
-      if (raw) {
-        const list: Order[] = JSON.parse(raw);
-        const updated = list.map((o) =>
-          o.id === orderId || o.orderNumber === orderId
-            ? { ...o, scheduledDate, staffCallStatus, staffNotes }
-            : o
-        );
-        localStorage.setItem('PROGEAR_SHARED_ORDERS', JSON.stringify(updated));
+      let list: Order[] = raw ? JSON.parse(raw) : [];
+      const idx = list.findIndex((o) => o.id === orderId || o.orderNumber === orderId);
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], scheduledDate, staffCallStatus, staffNotes };
+      } else {
+        const orderToSave = orders.find((o) => o.id === orderId || o.orderNumber === orderId);
+        if (orderToSave) {
+          list.push({ ...orderToSave, scheduledDate, staffCallStatus, staffNotes });
+        }
       }
+      localStorage.setItem('PROGEAR_SHARED_ORDERS', JSON.stringify(list));
     } catch (e) {
       console.error(e);
     }

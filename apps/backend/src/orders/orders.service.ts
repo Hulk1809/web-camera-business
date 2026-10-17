@@ -130,13 +130,26 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, status: OrderStatus, paymentStatus?: PaymentStatus) {
+    const order = await this.prisma.order.findFirst({
+      where: {
+        OR: [{ id }, { orderNumber: id }],
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Không tìm thấy đơn hàng với mã: ${id}`);
+    }
+
+    const updatedPaymentStatus =
+      paymentStatus || (status === OrderStatus.COMPLETED ? PaymentStatus.PAID : undefined);
+
     return this.prisma.order.update({
-      where: { id },
+      where: { id: order.id },
       data: {
         orderStatus: status,
-        ...(paymentStatus ? { paymentStatus } : {}),
+        ...(updatedPaymentStatus ? { paymentStatus: updatedPaymentStatus } : {}),
       },
-      include: { items: true },
+      include: { items: true, serialsAssigned: true },
     });
   }
 }
