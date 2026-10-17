@@ -34,7 +34,13 @@ import {
   Tag,
   Calendar,
   AlertCircle,
-  PhoneCall
+  PhoneCall,
+  Store,
+  Barcode,
+  BadgeCheck,
+  Copy,
+  FileText,
+  AlertTriangle
 } from 'lucide-react';
 import { DayNightVisionShowcase } from './components/DayNightVisionShowcase';
 import { SpotlightProductCard } from './components/SpotlightProductCard';
@@ -850,74 +856,203 @@ export function App() {
     triggerConfetti();
   };
 
-  // WARRANTY CHECK VIA REAL API
+  // Helper to calculate days remaining
+  const calculateDaysRemaining = (expireDateStr?: string) => {
+    if (!expireDateStr) return null;
+    let exp: Date | null = null;
+    if (expireDateStr.includes('/')) {
+      const parts = expireDateStr.split('/');
+      if (parts.length === 3) {
+        exp = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+      }
+    } else {
+      exp = new Date(expireDateStr);
+    }
+    if (!exp || isNaN(exp.getTime())) return null;
+    const now = new Date();
+    const diffMs = exp.getTime() - now.getTime();
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  };
+
+  const maskCustomerName = (name?: string) => {
+    if (!name) return 'Khách Hàng Pro Gear';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0].slice(0, 2) + '***';
+    return parts.map((p, idx) => (idx === 0 ? p : p[0] + '**')).join(' ');
+  };
+
+  const maskPhoneNumber = (phone?: string) => {
+    if (!phone) return '0908 *** ***';
+    const clean = phone.replace(/\s+/g, '');
+    if (clean.length < 7) return clean;
+    return clean.slice(0, 4) + ' *** ' + clean.slice(-3);
+  };
+
+  // WARRANTY CHECK VIA REAL API & SHARED SERIALS (TIN HỌC NGÔI SAO STANDARD)
   const handleCheckWarranty = async (e: React.FormEvent) => {
     e.preventDefault();
-    const query = serialQuery.trim().toUpperCase();
-    if (!query) return;
+    const rawQuery = serialQuery.trim();
+    if (!rawQuery) return;
 
     setIsCheckingWarranty(true);
     setWarrantyResult(null);
 
+    // 1. Load serials from shared storage layer (synchronized with Admin in real-time)
+    let allSerials: any[] = [];
     try {
-      const res = await fetch(`/api/warranty/${encodeURIComponent(query)}`);
+      const shared = localStorage.getItem('PROGEAR_SHARED_SERIALS');
+      if (shared) {
+        const parsed = JSON.parse(shared);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          allSerials = parsed;
+        }
+      }
+    } catch {}
+
+    // Fallback baseline serials if storage empty
+    if (allSerials.length === 0) {
+      allSerials = [
+        {
+          serialNumber: 'DJI-M3PRO-2026-8899',
+          productName: 'DJI Mavic 3 Pro Cine Combo (Apple ProRes)',
+          productSku: 'DJI-MAVIC3-PRO-CINE',
+          brand: 'DJI',
+          status: 'IN_STOCK',
+          warrantyMonths: 24,
+        },
+        {
+          serialNumber: 'SONY-FX3-VN-9901',
+          productName: 'Sony Cinema Line FX3 Body Chính Hãng',
+          productSku: 'ILME-FX3-BODY',
+          brand: 'Sony',
+          status: 'SOLD',
+          warrantyMonths: 24,
+          soldDate: '10/02/2026',
+          warrantyExpires: '10/02/2028',
+          orderNumber: 'PRO-20261016-8942',
+          customerName: 'Đoàn Phim CineArt',
+          customerPhone: '0908123456',
+          soldChannel: 'ONLINE',
+        },
+        {
+          serialNumber: 'DJI-POCKET3-2026-5521',
+          productName: 'DJI Osmo Pocket 3 Creator Combo',
+          productSku: 'DJI-POCKET3-CREATOR',
+          brand: 'DJI',
+          status: 'SOLD',
+          warrantyMonths: 12,
+          soldDate: '01/04/2026',
+          warrantyExpires: '01/04/2027',
+          orderNumber: 'POS-20260401-1109',
+          customerName: 'Lê Tuấn Anh',
+          customerPhone: '0988776655',
+          soldChannel: 'POS_STORE',
+        },
+        {
+          serialNumber: 'SONY-A7M4-VN-1102',
+          productName: 'Sony Alpha 7 IV (A7M4) Body',
+          productSku: 'ILCE-7M4-BODY',
+          brand: 'Sony',
+          status: 'IN_STOCK',
+          warrantyMonths: 24,
+        },
+      ];
+    }
+
+    // 2. Try backend API first
+    try {
+      const res = await fetch(`/api/warranty/${encodeURIComponent(rawQuery)}`);
       if (res.ok) {
         const data = await res.json();
-        setWarrantyResult(data);
+        if (data && data.serialNumber) {
+          const days = calculateDaysRemaining(data.warrantyExpires);
+          setWarrantyResult({
+            ...data,
+            daysRemaining: days,
+            type: data.status === 'IN_STOCK' ? 'IN_STOCK' : 'SOLD_ACTIVE',
+          });
+          setIsCheckingWarranty(false);
+          return;
+        }
+      }
+    } catch {
+      // Backend offline fallback
+    }
+
+    // 3. Check if query is a phone number (e.g. 9-11 digits)
+    const cleanDigits = rawQuery.replace(/[\s\-\.]/g, '');
+    const isPhone = cleanDigits.length >= 9 && /^[0-9]+$/.test(cleanDigits);
+
+    if (isPhone) {
+      const matchedDevices = allSerials.filter((s) => {
+        if (!s.customerPhone) return false;
+        const sPhone = s.customerPhone.replace(/[\s\-\.]/g, '');
+        return sPhone.includes(cleanDigits) || cleanDigits.includes(sPhone);
+      });
+
+      if (matchedDevices.length > 0) {
+        setWarrantyResult({
+          type: 'PHONE_RESULT',
+          phone: rawQuery,
+          devices: matchedDevices.map((d) => ({
+            ...d,
+            daysRemaining: calculateDaysRemaining(d.warrantyExpires),
+          })),
+        });
+        setIsCheckingWarranty(false);
+        return;
+      } else {
+        setWarrantyResult({
+          type: 'NOT_FOUND',
+          query: rawQuery,
+          message: `Không tìm thấy thiết bị nào được đăng ký bảo hành với số điện thoại "${rawQuery}". Quý khách vui lòng kiểm tra lại số điện thoại hoặc tra cứu bằng mã Serial in trên máy.`,
+        });
         setIsCheckingWarranty(false);
         return;
       }
-    } catch {
-      // API error or offline fallback
     }
 
-    // Smart fallback check for common demo serials
-    const validSampleSerials: Record<string, any> = {
-      'DJI-M3PRO-2026-8899': {
-        serialNumber: 'DJI-M3PRO-2026-8899',
-        productName: 'DJI Mavic 3 Pro Cine Combo (Apple ProRes)',
-        brand: 'DJI',
-        warrantyMonths: 24,
-        soldDate: '15/03/2026',
-        warrantyExpires: '15/03/2028 (Còn 720 ngày)',
-        isGenuine: true,
-      },
-      'SONY-FX3-VN-9901': {
-        serialNumber: 'SONY-FX3-VN-9901',
-        productName: 'Sony Cinema Line FX3 Body Chính Hãng',
-        brand: 'Sony',
-        warrantyMonths: 24,
-        soldDate: '10/02/2026',
-        warrantyExpires: '10/02/2028 (Còn 690 ngày)',
-        isGenuine: true,
-      },
-      'DJI-POCKET3-2026-5521': {
-        serialNumber: 'DJI-POCKET3-2026-5521',
-        productName: 'DJI Osmo Pocket 3 Creator Combo',
-        brand: 'DJI',
-        warrantyMonths: 12,
-        soldDate: '01/04/2026',
-        warrantyExpires: '01/04/2027 (Còn 350 ngày)',
-        isGenuine: true,
-      },
-      'SONY-A7M4-VN-1102': {
-        serialNumber: 'SONY-A7M4-VN-1102',
-        productName: 'Sony Alpha 7 IV (A7M4) Body',
-        brand: 'Sony',
-        warrantyMonths: 24,
-        soldDate: '20/01/2026',
-        warrantyExpires: '20/01/2028 (Còn 650 ngày)',
-        isGenuine: true,
-      },
-    };
+    // 4. Otherwise search by Serial Number
+    const cleanQuery = rawQuery.toUpperCase();
+    const matched = allSerials.find((s) => s.serialNumber.toUpperCase() === cleanQuery);
 
-    if (validSampleSerials[query]) {
-      setWarrantyResult(validSampleSerials[query]);
+    if (matched) {
+      if (matched.status === 'IN_STOCK') {
+        setWarrantyResult({
+          type: 'IN_STOCK',
+          serialNumber: matched.serialNumber,
+          productName: matched.productName,
+          productSku: matched.productSku,
+          brand: matched.brand,
+          warrantyMonths: matched.warrantyMonths || 24,
+          isGenuine: true,
+          isActivated: false,
+        });
+      } else {
+        const days = calculateDaysRemaining(matched.warrantyExpires);
+        setWarrantyResult({
+          type: 'SOLD_ACTIVE',
+          serialNumber: matched.serialNumber,
+          productName: matched.productName,
+          productSku: matched.productSku,
+          brand: matched.brand,
+          warrantyMonths: matched.warrantyMonths || 24,
+          soldDate: matched.soldDate || '10/02/2026',
+          warrantyExpires: matched.warrantyExpires || '10/02/2028',
+          daysRemaining: days,
+          customerName: matched.customerName,
+          customerPhone: matched.customerPhone,
+          orderNumber: matched.orderNumber,
+          soldChannel: matched.soldChannel || 'POS_STORE',
+          isGenuine: true,
+          isActivated: true,
+        });
+      }
     } else {
       setWarrantyResult({
-        serialNumber: query,
-        isGenuine: false,
-        message: 'Mã Serial Number không tồn tại trên hệ thống bảo hành hoặc chưa được kích hoạt xuất kho.',
+        type: 'NOT_FOUND',
+        query: rawQuery,
+        message: `Mã Serial "${rawQuery}" không tồn tại trên hệ thống bảo hành điện tử của Pro Gear. Quý khách vui lòng kiểm tra lại dãy ký tự in trên thân máy hoặc liên hệ hotline 1900 8899.`,
       });
     }
 
@@ -2235,75 +2370,75 @@ export function App() {
         </div>
       )}
 
-      {/* ----------------- WARRANTY LOOKUP MODAL ----------------- */}
+      {/* ----------------- WARRANTY LOOKUP MODAL (TIN HỌC NGÔI SAO STANDARD) ----------------- */}
       {showWarrantyModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 relative shadow-2xl text-slate-100">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 relative shadow-2xl text-slate-100 max-h-[92vh] overflow-y-auto animate-in fade-in duration-200">
             <button
               onClick={() => {
                 setShowWarrantyModal(false);
                 setWarrantyResult(null);
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800 transition"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="flex items-center space-x-2 text-red-500 mb-1">
               <ShieldCheck className="w-5 h-5" />
-              <h3 className="font-bold text-base text-white">Tra Cứu Bảo Hành Điện Tử Serial</h3>
+              <h3 className="font-bold text-base text-white">Tra Cứu Bảo Hành Điện Tử Pro Gear</h3>
             </div>
             <p className="text-xs text-slate-400 mb-4">
-              Nhập mã số Serial Number in trên thân máy ảnh, gimbal hoặc hộp máy DJI để xác thực xuất xứ chính hãng và thời hạn bảo hành.
+              Nhập mã số Serial Number (SN) in trên thân máy hoặc Số Điện Thoại mua hàng để tra cứu trạng thái bảo hành chuẩn doanh nghiệp.
             </p>
 
-            <form onSubmit={handleCheckWarranty} className="flex space-x-2 mb-4">
+            <form onSubmit={handleCheckWarranty} className="flex space-x-2 mb-3">
               <input
                 type="text"
-                placeholder="VD: DJI-M3PRO-2026-8899, SONY-FX3-VN-9901..."
+                placeholder="Nhập Mã Serial (SN) hoặc Số Điện Thoại mua hàng..."
                 value={serialQuery}
                 onChange={(e) => setSerialQuery(e.target.value)}
-                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 font-mono uppercase"
+                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 font-mono"
               />
               <button
                 type="submit"
                 disabled={isCheckingWarranty}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition flex items-center space-x-1"
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition flex items-center space-x-1 shrink-0 shadow-lg shadow-red-950"
               >
                 {isCheckingWarranty ? (
                   <span>Đang tra cứu...</span>
                 ) : (
                   <>
                     <Search className="w-3.5 h-3.5" />
-                    <span>Kiểm Tra</span>
+                    <span>Tra Cứu</span>
                   </>
                 )}
               </button>
             </form>
 
-            {/* Quick Demo Serial Pills */}
-            <div className="text-[11px] text-slate-400 mb-4">
-              <span className="text-slate-500">Mã mẫu test: </span>
+            {/* Quick Demo Serial & Phone Pills */}
+            <div className="text-[11px] text-slate-400 mb-4 flex flex-wrap gap-1.5 items-center">
+              <span className="text-slate-500">Mẫu thử:</span>
               <button
                 type="button"
                 onClick={() => setSerialQuery('DJI-M3PRO-2026-8899')}
-                className="text-red-400 hover:underline font-mono mr-2"
+                className="px-2 py-0.5 rounded bg-amber-950/40 border border-amber-500/30 text-amber-300 hover:bg-amber-900/50 font-mono text-[10px]"
               >
-                DJI-M3PRO-2026-8899
+                DJI-M3PRO-2026-8899 (Hàng Tồn Kệ)
               </button>
               <button
                 type="button"
                 onClick={() => setSerialQuery('SONY-FX3-VN-9901')}
-                className="text-red-400 hover:underline font-mono mr-2"
+                className="px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-900/50 font-mono text-[10px]"
               >
-                SONY-FX3-VN-9901
+                SONY-FX3-VN-9901 (Đang Bảo Hành)
               </button>
               <button
                 type="button"
-                onClick={() => setSerialQuery('DJI-POCKET3-2026-5521')}
-                className="text-red-400 hover:underline font-mono"
+                onClick={() => setSerialQuery('0988776655')}
+                className="px-2 py-0.5 rounded bg-sky-950/40 border border-sky-500/30 text-sky-300 hover:bg-sky-900/50 font-mono text-[10px]"
               >
-                DJI-POCKET3-2026-5521
+                0988776655 (Theo SĐT)
               </button>
             </div>
 
@@ -2319,20 +2454,21 @@ export function App() {
 
             {/* Warranty Result Details */}
             {warrantyResult && (
-              <div
-                className={`p-4 rounded-xl border text-xs space-y-2 ${
-                  warrantyResult.isGenuine
-                    ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-300'
-                    : 'bg-red-950/20 border-red-500/40 text-red-300'
-                }`}
-              >
-                {warrantyResult.isGenuine ? (
-                  <>
-                    <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
-                      <CheckCircle2 className="w-4 h-4 shrink-0" />
-                      <span>SẢN PHẨM CHÍNH HÃNG — ĐÃ KÍCH HOẠT BẢO HÀNH</span>
+              <div className="space-y-3">
+                {/* CASE 1: IN_STOCK (Chưa kích hoạt bảo hành) */}
+                {warrantyResult.type === 'IN_STOCK' && (
+                  <div className="p-4 rounded-xl border bg-amber-950/20 border-amber-500/40 text-amber-200 text-xs space-y-3 animate-in fade-in duration-200">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-2 text-amber-400 font-bold text-sm">
+                        <AlertTriangle className="w-5 h-5 shrink-0" />
+                        <span>SẢN PHẨM CHÍNH HÃNG — CHƯA KÍCH HOẠT BẢO HÀNH</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-900/40 border border-amber-500/40 text-amber-300 shrink-0">
+                        TỒN KHO SHOWROOM
+                      </span>
                     </div>
-                    <div className="border-t border-emerald-900/50 pt-2 space-y-1 text-slate-200">
+
+                    <div className="border-t border-amber-900/50 pt-2.5 space-y-1.5 text-slate-200">
                       <div>
                         Thiết bị: <strong className="text-white">{warrantyResult.productName}</strong>
                       </div>
@@ -2340,25 +2476,170 @@ export function App() {
                         Thương hiệu: <strong className="text-white">{warrantyResult.brand}</strong>
                       </div>
                       <div>
-                        Mã Serial: <strong className="text-amber-400 font-mono">{warrantyResult.serialNumber}</strong>
+                        Mã Serial (SN): <strong className="text-amber-400 font-mono">{warrantyResult.serialNumber}</strong>
                       </div>
                       <div>
-                        Thời hạn bảo hành: <strong>{warrantyResult.warrantyMonths} tháng chính hãng</strong>
+                        Quyền lợi bảo hành chuẩn: <strong>{warrantyResult.warrantyMonths} Tháng Chính Hãng</strong>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-lg bg-amber-950/40 border border-amber-500/30 text-[11.5px] leading-relaxed text-amber-200/90 space-y-1">
+                      <div className="font-bold flex items-center space-x-1 text-amber-300">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Trạng Thái Lưu Kho Trên Kệ:</span>
+                      </div>
+                      <p>
+                        Thiết bị này đã được xác thực là sản phẩm chính hãng do Pro Gear nhập khẩu & phân phối, hiện đang lưu kho trên kệ trưng bày tại Showroom và <strong>CHƯA XUẤT BÁN</strong>.
+                      </p>
+                      <p className="text-amber-300 font-medium">
+                        ✦ Thời hạn bảo hành điện tử {warrantyResult.warrantyMonths} tháng sẽ tự động kích hoạt ngay khi quý khách mua máy trực tiếp tại Showroom hoặc nhận đơn hàng online thành công.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* CASE 2: SOLD_ACTIVE (Đang trong thời hạn bảo hành) */}
+                {warrantyResult.type === 'SOLD_ACTIVE' && (
+                  <div className="p-4 rounded-xl border bg-emerald-950/20 border-emerald-500/40 text-emerald-200 text-xs space-y-3 animate-in fade-in duration-200">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
+                        <CheckCircle2 className="w-5 h-5 shrink-0" />
+                        <span>CHỨNG NHẬN BẢO HÀNH ĐIỆN TỬ CHÍNH HÃNG</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-900/40 border border-emerald-500/40 text-emerald-300 shrink-0">
+                        ĐANG BẢO HÀNH
+                      </span>
+                    </div>
+
+                    <div className="border-t border-emerald-900/50 pt-2.5 space-y-1.5 text-slate-200">
+                      <div>
+                        Thiết bị: <strong className="text-white">{warrantyResult.productName}</strong>
                       </div>
                       <div>
-                        Hạn bảo hành tới: <strong className="text-emerald-400">{warrantyResult.warrantyExpires || '15/03/2028'}</strong>
+                        Mã Serial (SN): <strong className="text-amber-400 font-mono">{warrantyResult.serialNumber}</strong>
+                      </div>
+                      <div>
+                        Khách hàng: <strong className="text-white">{maskCustomerName(warrantyResult.customerName)}</strong>
+                      </div>
+                      <div>
+                        SĐT bảo hành: <strong className="text-white font-mono">{maskPhoneNumber(warrantyResult.customerPhone)}</strong>
+                      </div>
+                      <div>
+                        Kênh mua hàng:{' '}
+                        <strong className="text-sky-300">
+                          {warrantyResult.soldChannel === 'POS_STORE'
+                            ? 'Showroom Quầy Trực Tiếp (125 Điện Biên Phủ, Q.1)'
+                            : 'Đơn Hàng Trực Tuyến Web Store'}
+                        </strong>
+                      </div>
+                      <div>
+                        Mã Hóa Đơn: <strong className="text-red-400 font-mono">{warrantyResult.orderNumber || 'POS-20261017-0001'}</strong>
+                      </div>
+                      <div>
+                        Ngày kích hoạt: <strong className="text-white font-mono">{warrantyResult.soldDate}</strong>
+                      </div>
+                      <div>
+                        Hạn bảo hành tới:{' '}
+                        <strong className="text-emerald-400 font-mono">{warrantyResult.warrantyExpires}</strong>
                       </div>
                     </div>
-                  </>
-                ) : (
-                  <div>
-                    <div className="font-bold text-red-400 mb-1 flex items-center space-x-1.5">
-                      <X className="w-4 h-4" />
-                      <span>Không tìm thấy thông tin bảo hành</span>
+
+                    {/* Live Countdown Badge */}
+                    <div className="p-2.5 rounded-lg bg-emerald-900/30 border border-emerald-500/30 flex items-center justify-between">
+                      <span className="text-slate-300 text-[11px]">Thời gian hiệu lực còn lại:</span>
+                      <span className="font-bold text-emerald-300 text-xs flex items-center space-x-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>
+                          {typeof warrantyResult.daysRemaining === 'number'
+                            ? warrantyResult.daysRemaining > 0
+                              ? `Còn ${warrantyResult.daysRemaining} ngày bảo hành chính hãng`
+                              : 'Đã hết hạn bảo hành'
+                            : 'Đang bảo hành chính hãng'}
+                        </span>
+                      </span>
                     </div>
-                    <p className="text-slate-400 text-[11px]">
-                      {warrantyResult.message || 'Mã Serial không tồn tại trên hệ thống. Quý khách vui lòng kiểm tra lại dãy ký tự in trên thân máy hoặc liên hệ hotline 1900 8899.'}
+
+                    {/* Policy Box (Tin Học Ngôi Sao Standard) */}
+                    <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                      <div className="font-semibold text-slate-300">Cam Kết Hậu Mãi Pro Gear:</div>
+                      <div>• Đổi mới 1 đổi 1 trong 30 ngày nếu phát sinh lỗi phần cứng do nhà sản xuất.</div>
+                      <div>• Miễn phí vệ sinh cảm biến (sensor) và khử nấm mốc tia UV trọn đời tại Showroom.</div>
+                      <div>• Hotline tiếp nhận bảo hành 24/7: 1900 8899.</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* CASE 3: PHONE_RESULT (Tra cứu theo Số Điện Thoại) */}
+                {warrantyResult.type === 'PHONE_RESULT' && (
+                  <div className="space-y-3 animate-in fade-in duration-200">
+                    <div className="p-3 rounded-xl bg-sky-950/30 border border-sky-500/40 text-xs flex justify-between items-center">
+                      <div>
+                        <div className="font-bold text-sky-400 flex items-center space-x-1.5">
+                          <PhoneCall className="w-4 h-4" />
+                          <span>Danh Sách Thiết Bị Của Số Điện Thoại</span>
+                        </div>
+                        <div className="text-slate-300 text-[11px] mt-0.5 font-mono">
+                          {maskPhoneNumber(warrantyResult.phone)}
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-sky-900/40 border border-sky-500/40 text-sky-300 text-[11px] font-bold">
+                        {warrantyResult.devices.length} Thiết Bị Đã Mua
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {warrantyResult.devices.map((dev: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 transition space-y-2 text-xs"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="font-bold text-white text-xs">{dev.productName}</div>
+                              <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                                Serial (SN): <strong className="text-amber-400">{dev.serialNumber}</strong>
+                              </div>
+                            </div>
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                dev.status === 'SOLD'
+                                  ? 'bg-emerald-950/50 text-emerald-300 border border-emerald-500/30'
+                                  : 'bg-amber-950/50 text-amber-300 border border-amber-500/30'
+                              }`}
+                            >
+                              {dev.status === 'SOLD' ? 'Đang Bảo Hành' : 'Tồn Kệ Showroom'}
+                            </span>
+                          </div>
+
+                          <div className="border-t border-slate-800/80 pt-2 flex justify-between items-center text-[11px]">
+                            <div className="text-slate-400">
+                              Hạn BH: <strong className="text-emerald-400 font-mono">{dev.warrantyExpires || '24 Tháng'}</strong>
+                            </div>
+                            {typeof dev.daysRemaining === 'number' && dev.daysRemaining > 0 && (
+                              <div className="text-emerald-300 font-semibold">
+                                Còn {dev.daysRemaining} ngày
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* CASE 4: NOT_FOUND */}
+                {warrantyResult.type === 'NOT_FOUND' && (
+                  <div className="p-4 rounded-xl border bg-red-950/20 border-red-500/40 text-red-300 text-xs space-y-2 animate-in fade-in duration-200">
+                    <div className="font-bold text-red-400 flex items-center space-x-1.5 text-sm">
+                      <X className="w-4 h-4 shrink-0" />
+                      <span>Không Tìm Thấy Thông Tin Bảo Hành</span>
+                    </div>
+                    <p className="text-slate-300 text-[11.5px] leading-relaxed">
+                      {warrantyResult.message}
                     </p>
+                    <div className="pt-2 border-t border-red-900/40 text-[11px] text-slate-400">
+                      Gợi ý: Quý khách vui lòng kiểm tra lại tem dán trên thân máy hoặc liên hệ tổng đài <strong>1900 8899</strong> để được hỗ trợ kiểm tra thủ công.
+                    </div>
                   </div>
                 )}
               </div>
