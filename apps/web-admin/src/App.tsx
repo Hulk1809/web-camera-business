@@ -22,7 +22,6 @@ import {
   Film,
   Video,
   Layers,
-  Cpu,
   Battery,
   Flame,
   QrCode,

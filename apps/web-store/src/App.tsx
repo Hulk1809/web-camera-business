@@ -10,7 +10,6 @@ import {
   X,
   Plus,
   Minus,
-  Sparkles,
   QrCode,
   Truck,
   RotateCcw,
@@ -26,7 +25,6 @@ import {
   Clock,
   Battery,
   Layers,
-  Cpu,
   Eye,
   Award,
   Trash2,
@@ -158,7 +156,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
       'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
       'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
     ],
-    shortDesc: 'Cảm biến Exmor R CMOS 33MP Full-Frame, quay 4K 60p 10-bit 4:2:2, lấy nét theo mắt Real-time AF AI.',
+    shortDesc: 'Cảm biến Exmor R CMOS 33MP Full-Frame, quay 4K 60p 10-bit 4:2:2, lấy nét theo mắt Real-time Eye-AF đỉnh cao.',
     description: 'Sony Alpha 7 IV là chuẩn mực máy ảnh hybrid cho nhiếp ảnh gia và nhà sáng tạo video hiện đại. Trang bị chip xử lý hình ảnh BIONZ XR thế hệ mới, bộ lọc màu S-Cinetone kế thừa từ dòng Cinema cao cấp, chống rung thân máy IBIS 5.5 stops.',
     specifications: {
       sensor: 'Full-Frame 33.0 Megapixel Exmor R BSI CMOS',
@@ -339,7 +337,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
       'https://images.unsplash.com/photo-1493863641943-9b68992a8d07?w=1000',
     ],
     shortDesc: 'Độ phân giải 40.2MP siêu nét, 19 chế độ giả lập màu phim Film Simulation, quay 6.2K 30p, thiết kế hoài cổ đẳng cấp.',
-    description: 'Mẫu máy ảnh hoài cổ biểu tượng được giới nhiếp ảnh đường phố và du lịch mê đắm. Vòng xoay cơ học kim loại sang trọng, cảm biến APS-C 40.2MP cao nhất từ trước đến nay của Fujifilm, thuật toán lấy nét AI nhận diện chủ thể động vật, xe cộ, chim chóc.',
+    description: 'Mẫu máy ảnh hoài cổ biểu tượng được giới nhiếp ảnh đường phố và du lịch mê đắm. Vòng xoay cơ học kim loại sang trọng, cảm biến APS-C 40.2MP cao nhất từ trước đến nay của Fujifilm, thuật toán lấy nét tự động siêu nhanh nhận diện chủ thể động vật, xe cộ, chim chóc.',
     specifications: {
       sensor: '40.2 Megapixel APS-C X-Trans CMOS 5 HR',
       video: '6.2K 30p 4:2:2 10-bit nội bộ, 4K HQ 60p oversampled',
@@ -396,12 +394,12 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
       'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1000',
       'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
     ],
-    shortDesc: 'Thu âm 32-bit Float nội bộ chống vỡ tiếng, chống ồn thông minh AI, phạm vi truyền 250m, hộp sạc pin 18 giờ.',
+    shortDesc: 'Thu âm 32-bit Float nội bộ chống vỡ tiếng, chống ồn thông minh DSP, phạm vi truyền 250m, hộp sạc pin 18 giờ.',
     description: 'Tiêu chuẩn vàng cho âm thanh video creator và phóng viên. Tính năng ghi âm 32-bit float giúp không bao giờ bị méo tiếng dù tiếng hét lớn hay thì thầm nhỏ, kết nối Bluetooth trực tiếp với điện thoại hoặc máy quay qua jack 3.5mm / Type-C / Lightning.',
     specifications: {
       sensor: 'Thu âm 32-bit Float nội bộ 8GB, 48kHz / 24-bit chất lượng cao',
       flightTime: 'Thời lượng hoạt động 6 giờ (18 giờ kèm hộp sạc)',
-      stabilization: 'Khử ồn thông minh AI lọc sạch tiếng gió và môi trường',
+      stabilization: 'Khử ồn thông minh DSP lọc sạch tiếng gió và môi trường',
       weight: 'Bộ phát siêu nhẹ chỉ 28g',
     },
   },
@@ -426,7 +424,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
       'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1000',
     ],
     shortDesc: 'Cảm biến xếp chồng 45.7MP không màn trập cơ học, quay 8.3K 60p N-RAW nội bộ, chụp 120fps.',
-    description: 'Được mệnh danh là "Baby Z9", Nikon Z8 gói gọn sức mạnh của máy ảnh flagship thể thao vào thân máy nhỏ hơn 30%. Loại bỏ hoàn toàn màn trập cơ học nhờ tốc độ đọc cảm biến cực nhanh, nhận diện 9 loại chủ thể bằng Deep Learning AI.',
+    description: 'Được mệnh danh là "Baby Z9", Nikon Z8 gói gọn sức mạnh của máy ảnh flagship thể thao vào thân máy nhỏ hơn 30%. Loại bỏ hoàn toàn màn trập cơ học nhờ tốc độ đọc cảm biến cực nhanh, nhận diện 9 loại chủ thể thông minh theo thời gian thực.',
     specifications: {
       sensor: '45.7 Megapixel Stacked BSI CMOS Full-Frame',
       video: '8.3K 60p N-RAW 12-bit & 4.1K 120p, Apple ProRes 422 HQ',
@@ -1155,8 +1153,8 @@ export function App() {
         <div className="max-w-7xl mx-auto px-4 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-7 space-y-4">
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold tracking-wide uppercase">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Chuyên Gia Nhiếp Ảnh & Thiết Bị Điện Ảnh Chuyên Nghiệp</span>
+              <Award className="w-3.5 h-3.5 text-amber-400" />
+              <span>Hệ Thống Thiết Bị Nhiếp Ảnh & Điện Ảnh Chuyên Nghiệp</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
@@ -1181,7 +1179,7 @@ export function App() {
                 <span>APPLE PRORES 422 HQ</span>
               </span>
               <span className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700/60 text-slate-300 text-xs font-semibold flex items-center space-x-1.5">
-                <Cpu className="w-3.5 h-3.5 text-sky-400" />
+                <Camera className="w-3.5 h-3.5 text-sky-400" />
                 <span>FULL-FRAME 35MM</span>
               </span>
               <span className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700/60 text-slate-300 text-xs font-semibold flex items-center space-x-1.5">
@@ -1243,8 +1241,11 @@ export function App() {
 
               <div className="relative h-48 rounded-2xl overflow-hidden bg-black/40 mb-4 flex items-center justify-center">
                 <img
-                  src="https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800"
-                  alt="DJI Mavic 3 Pro"
+                  src={DEFAULT_PRODUCTS[0].imageUrl}
+                  alt={DEFAULT_PRODUCTS[0].name}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=800';
+                  }}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                 />
                 <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md px-2 py-1 rounded text-[10px] text-amber-300 font-mono font-bold">
@@ -1474,7 +1475,7 @@ export function App() {
                       <div className="mt-2.5 space-y-1 text-[11px]">
                         {specs.sensor && (
                           <div className="flex items-center space-x-1.5 text-slate-300">
-                            <Cpu className="w-3 h-3 text-red-400 shrink-0" />
+                            <Camera className="w-3 h-3 text-red-400 shrink-0" />
                             <span className="truncate">{specs.sensor}</span>
                           </div>
                         )}
