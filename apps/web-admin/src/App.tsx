@@ -26,7 +26,11 @@ import {
   Battery,
   Flame,
   QrCode,
-  DollarSign
+  DollarSign,
+  Upload,
+  X,
+  Eye,
+  Maximize2
 } from 'lucide-react';
 
 export interface Product {
@@ -39,6 +43,7 @@ export interface Product {
   originalPrice: number;
   stock: number;
   imageUrl: string;
+  images?: string[];
   status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
   specifications?: any;
 }
@@ -94,7 +99,13 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 79990000,
     originalPrice: 87500000,
     stock: 12,
-    imageUrl: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+      'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
+      'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
+      'https://images.unsplash.com/photo-1579829366248-204fe8413f31?w=1000',
+    ],
     status: 'IN_STOCK',
     specifications: {
       sensor: 'Hasselblad 4/3 CMOS 20MP',
@@ -111,7 +122,13 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 94990000,
     originalPrice: 102000000,
     stock: 8,
-    imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
+      'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1000',
+      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+    ],
     status: 'IN_STOCK',
     specifications: {
       sensor: 'Full-Frame 12.1MP BSI Exmor R',
@@ -128,7 +145,13 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 53990000,
     originalPrice: 59990000,
     stock: 18,
-    imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+      'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
+      'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
+    ],
     status: 'IN_STOCK',
     specifications: {
       sensor: 'Full-Frame 33MP Exmor R',
@@ -145,7 +168,12 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 19990000,
     originalPrice: 22500000,
     stock: 25,
-    imageUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
+      'https://images.unsplash.com/photo-1533158307587-828f0a76ef46?w=1000',
+      'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
+    ],
     status: 'IN_STOCK',
     specifications: {
       payload: 'Tải trọng 4.5kg',
@@ -162,7 +190,12 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 15890000,
     originalPrice: 17900000,
     stock: 30,
-    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1000',
+      'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1000',
+    ],
     status: 'IN_STOCK',
     specifications: {
       sensor: '1-inch CMOS',
@@ -179,7 +212,12 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 104990000,
     originalPrice: 115000000,
     stock: 6,
-    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+      'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1000',
+    ],
     status: 'IN_STOCK',
     specifications: {
       sensor: '45MP Stacked CMOS',
@@ -196,7 +234,12 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 24890000,
     originalPrice: 27900000,
     stock: 20,
-    imageUrl: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
+      'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+      'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
+    ],
     status: 'IN_STOCK',
     specifications: {
       weight: 'Dưới 249g',
@@ -213,7 +256,12 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 62500000,
     originalPrice: 68000000,
     stock: 10,
-    imageUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1000',
+      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
+    ],
     status: 'IN_STOCK',
     specifications: {
       sensor: 'Full-Frame 6K 6048x4032',
@@ -230,7 +278,12 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 41900000,
     originalPrice: 45900000,
     stock: 15,
-    imageUrl: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+      'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
+      'https://images.unsplash.com/photo-1493863641943-9b68992a8d07?w=1000',
+    ],
     status: 'IN_STOCK',
     specifications: {
       sensor: '40.2MP X-Trans CMOS 5 HR',
@@ -247,7 +300,12 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 49990000,
     originalPrice: 54900000,
     stock: 14,
-    imageUrl: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=1000',
+      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+      'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+    ],
     status: 'IN_STOCK',
     specifications: {
       focalLength: '24-70mm F2.8 GM',
@@ -263,7 +321,12 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 8490000,
     originalPrice: 9490000,
     stock: 40,
-    imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1000',
+      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1000',
+      'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
+    ],
     status: 'IN_STOCK',
     specifications: {
       audioQuality: 'Thu âm 32-bit Float nội bộ',
@@ -279,7 +342,12 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 86900000,
     originalPrice: 95000000,
     stock: 9,
-    imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
+      'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
+      'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1000',
+    ],
     status: 'IN_STOCK',
     specifications: {
       sensor: '45.7MP Stacked BSI CMOS',
@@ -407,7 +475,19 @@ export function App() {
   const [newSerialProductId, setNewSerialProductId] = useState<string>('');
 
   // Form State for Adding Product
-  const [newGear, setNewGear] = useState({
+  const [newGear, setNewGear] = useState<{
+    name: string;
+    sku: string;
+    brand: string;
+    category: string;
+    price: string;
+    stock: string;
+    sensor: string;
+    video: string;
+    stabilization: string;
+    imageUrl: string;
+    images: string[];
+  }>({
     name: '',
     sku: '',
     brand: 'DJI',
@@ -417,8 +497,30 @@ export function App() {
     sensor: 'Hasselblad 4/3 CMOS',
     video: '4K 120p / 5.1K ProRes',
     stabilization: 'Gimbal cơ học 3 trục',
-    imageUrl: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+      'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
+      'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
+    ],
   });
+
+  const [inputImgUrl, setInputImgUrl] = useState<string>('');
+
+  // Image Manager Modal State for Existing Products in Table
+  const [imageManagerProduct, setImageManagerProduct] = useState<Product | null>(null);
+  const [managerImages, setManagerImages] = useState<string[]>([]);
+  const [managerInputUrl, setManagerInputUrl] = useState<string>('');
+  const [isSavingImages, setIsSavingImages] = useState<boolean>(false);
+
+  // Helper to extract multi-images array from API response
+  const parseImagesFromItem = (item: any): string[] => {
+    if (Array.isArray(item.images) && item.images.length > 0) {
+      const list = item.images.map((img: any) => typeof img === 'string' ? img : img.imageUrl).filter(Boolean);
+      if (list.length > 0) return list;
+    }
+    return [item.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000'];
+  };
 
   // Fetch Products from Backend API
   const fetchProducts = async () => {
@@ -428,19 +530,23 @@ export function App() {
       if (res.ok) {
         const data = await res.json();
         if (data && Array.isArray(data.items) && data.items.length > 0) {
-          const mapped: Product[] = data.items.map((item: any) => ({
-            id: String(item.id),
-            name: item.name,
-            sku: item.sku,
-            brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'DJI'),
-            category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
-            price: Number(item.price),
-            originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
-            stock: Number(item.stockQuantity ?? 10),
-            imageUrl: item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
-            status: Number(item.stockQuantity ?? 10) <= 3 ? 'LOW_STOCK' : 'IN_STOCK',
-            specifications: item.specifications || {},
-          }));
+          const mapped: Product[] = data.items.map((item: any) => {
+            const itemImgs = parseImagesFromItem(item);
+            return {
+              id: String(item.id),
+              name: item.name,
+              sku: item.sku,
+              brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'DJI'),
+              category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
+              price: Number(item.price),
+              originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
+              stock: Number(item.stockQuantity ?? 10),
+              imageUrl: itemImgs[0],
+              images: itemImgs,
+              status: Number(item.stockQuantity ?? 10) <= 3 ? 'LOW_STOCK' : 'IN_STOCK',
+              specifications: item.specifications || {},
+            };
+          });
           setProducts(mapped);
         } else if (data && Array.isArray(data.items) && data.items.length === 0) {
           // If database on AKS is currently empty, trigger auto seed and reload!
@@ -449,19 +555,23 @@ export function App() {
           if (retryRes.ok) {
             const retryData = await retryRes.json();
             if (retryData && Array.isArray(retryData.items) && retryData.items.length > 0) {
-              const mapped: Product[] = retryData.items.map((item: any) => ({
-                id: String(item.id),
-                name: item.name,
-                sku: item.sku,
-                brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'DJI'),
-                category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
-                price: Number(item.price),
-                originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
-                stock: Number(item.stockQuantity ?? 10),
-                imageUrl: item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
-                status: Number(item.stockQuantity ?? 10) <= 3 ? 'LOW_STOCK' : 'IN_STOCK',
-                specifications: item.specifications || {},
-              }));
+              const mapped: Product[] = retryData.items.map((item: any) => {
+                const itemImgs = parseImagesFromItem(item);
+                return {
+                  id: String(item.id),
+                  name: item.name,
+                  sku: item.sku,
+                  brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'DJI'),
+                  category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
+                  price: Number(item.price),
+                  originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
+                  stock: Number(item.stockQuantity ?? 10),
+                  imageUrl: itemImgs[0],
+                  images: itemImgs,
+                  status: Number(item.stockQuantity ?? 10) <= 3 ? 'LOW_STOCK' : 'IN_STOCK',
+                  specifications: item.specifications || {},
+                };
+              });
               setProducts(mapped);
             }
           }
@@ -471,6 +581,152 @@ export function App() {
       console.warn('Backend API offline, keeping local products:', err);
     } finally {
       setIsProductsLoading(false);
+    }
+  };
+
+  // Helpers for Add Product Form Images
+  const handleAddImageUrl = () => {
+    const trimmed = inputImgUrl.trim();
+    if (!trimmed) return;
+    setNewGear((prev) => {
+      const current = prev.images || [];
+      if (current.includes(trimmed)) return prev;
+      const updated = [...current, trimmed];
+      return {
+        ...prev,
+        images: updated,
+        imageUrl: updated[0],
+      };
+    });
+    setInputImgUrl('');
+  };
+
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        if (dataUrl) {
+          setNewGear((prev) => {
+            const current = prev.images || [];
+            const updated = [...current, dataUrl];
+            return {
+              ...prev,
+              images: updated,
+              imageUrl: updated[0],
+            };
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setNewGear((prev) => {
+      const updated = (prev.images || []).filter((_, idx) => idx !== indexToRemove);
+      return {
+        ...prev,
+        images: updated,
+        imageUrl: updated[0] || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+      };
+    });
+  };
+
+  const handleSetPrimaryImage = (targetIndex: number) => {
+    setNewGear((prev) => {
+      const list = [...(prev.images || [])];
+      if (targetIndex <= 0 || targetIndex >= list.length) return prev;
+      const [item] = list.splice(targetIndex, 1);
+      list.unshift(item);
+      return {
+        ...prev,
+        images: list,
+        imageUrl: list[0],
+      };
+    });
+  };
+
+  // Helpers for Managing Images of Existing Product in Table
+  const openImageManagerModal = (prod: Product) => {
+    setImageManagerProduct(prod);
+    setManagerImages(prod.images && prod.images.length > 0 ? [...prod.images] : [prod.imageUrl]);
+    setManagerInputUrl('');
+  };
+
+  const handleAddManagerImageUrl = () => {
+    const trimmed = managerInputUrl.trim();
+    if (!trimmed) return;
+    if (managerImages.includes(trimmed)) return;
+    setManagerImages((prev) => [...prev, trimmed]);
+    setManagerInputUrl('');
+  };
+
+  const handleManagerFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        if (dataUrl) {
+          setManagerImages((prev) => [...prev, dataUrl]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const handleRemoveManagerImage = (indexToRemove: number) => {
+    setManagerImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleSetManagerPrimaryImage = (targetIndex: number) => {
+    setManagerImages((prev) => {
+      const list = [...prev];
+      if (targetIndex <= 0 || targetIndex >= list.length) return prev;
+      const [item] = list.splice(targetIndex, 1);
+      list.unshift(item);
+      return list;
+    });
+  };
+
+  const handleSaveManagerImages = async () => {
+    if (!imageManagerProduct) return;
+    setIsSavingImages(true);
+
+    const updatedImgs = managerImages.length > 0
+      ? managerImages
+      : ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800'];
+
+    // Optimistically update product list
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === imageManagerProduct.id
+          ? { ...p, images: updatedImgs, imageUrl: updatedImgs[0] }
+          : p
+      )
+    );
+
+    try {
+      await fetch(`/api/products/${imageManagerProduct.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl: updatedImgs[0],
+          images: updatedImgs,
+        }),
+      });
+      fetchProducts();
+    } catch (err) {
+      console.warn('API update images failed:', err);
+    } finally {
+      setIsSavingImages(false);
+      setImageManagerProduct(null);
     }
   };
 
@@ -618,6 +874,10 @@ export function App() {
     e.preventDefault();
     if (!newGear.name || !newGear.price) return;
 
+    const productImages = newGear.images && newGear.images.length > 0
+      ? newGear.images
+      : [newGear.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800'];
+
     const payload = {
       name: newGear.name,
       sku: newGear.sku || `PRO-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -631,7 +891,8 @@ export function App() {
         video: newGear.video,
         stabilization: newGear.stabilization,
       },
-      imageUrl: newGear.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+      imageUrl: productImages[0],
+      images: productImages,
     };
 
     // Optimistic update
@@ -644,7 +905,8 @@ export function App() {
       price: payload.price,
       originalPrice: payload.originalPrice,
       stock: payload.stockQuantity,
-      imageUrl: payload.imageUrl,
+      imageUrl: productImages[0],
+      images: productImages,
       status: 'IN_STOCK',
       specifications: payload.specifications,
     };
@@ -675,8 +937,10 @@ export function App() {
       sensor: 'Hasselblad 4/3 CMOS',
       video: '4K 120p / 5.1K ProRes',
       stabilization: 'Gimbal cơ học 3 trục',
-      imageUrl: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800',
+      imageUrl: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+      images: [],
     });
+    setInputImgUrl('');
   };
 
   // Delete Product
@@ -1134,6 +1398,156 @@ export function App() {
                   />
                 </div>
 
+                {/* Bộ Sưu Tập Hình Ảnh Thiết Bị */}
+                <div className="md:col-span-3 lg:col-span-4 p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-bold text-white flex items-center space-x-2">
+                        <Camera className="w-4 h-4 text-red-500" />
+                        <span>Bộ Sưu Tập Hình Ảnh Thiết Bị (Storefront Gallery)</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-red-950/80 text-red-400 border border-red-800/40 font-mono">
+                          {newGear.images?.length || 0} góc ảnh
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Thêm nhiều góc ảnh (chính diện, cảm biến/ngàm, màn hình lật, thực tế tác nghiệp). Khách hàng xem trên web bán hàng có thể lật xem toàn bộ bộ ảnh.
+                      </p>
+                    </div>
+
+                    {/* Quick Presets */}
+                    <div className="flex items-center space-x-1.5 text-[11px]">
+                      <span className="text-slate-500">Mẫu sẵn:</span>
+                      <button
+                        type="button"
+                        onClick={() => setNewGear(prev => ({
+                          ...prev,
+                          images: [
+                            'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+                            'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
+                            'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+                          ],
+                          imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000'
+                        }))}
+                        className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition"
+                      >
+                        📷 Alpha Camera
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewGear(prev => ({
+                          ...prev,
+                          images: [
+                            'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
+                            'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
+                            'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+                          ],
+                          imageUrl: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000'
+                        }))}
+                        className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition"
+                      >
+                        🚁 Flycam DJI
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Input controls: URL & File Upload */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                    <div className="sm:col-span-8 flex space-x-2">
+                      <input
+                        type="url"
+                        placeholder="Nhập link hình ảnh (HTTPS URL)..."
+                        value={inputImgUrl}
+                        onChange={(e) => setInputImgUrl(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddImageUrl();
+                          }
+                        }}
+                        className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddImageUrl}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition shrink-0"
+                      >
+                        + Thêm URL
+                      </button>
+                    </div>
+
+                    <div className="sm:col-span-4 flex items-center">
+                      <label className="w-full cursor-pointer flex items-center justify-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 hover:text-sky-300 rounded-lg text-xs font-semibold transition">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Tải ảnh từ máy</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageFileUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Thumbnail Previews Grid */}
+                  {newGear.images && newGear.images.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 pt-1">
+                      {newGear.images.map((imgUrl, idx) => (
+                        <div
+                          key={idx}
+                          className={`relative group rounded-xl overflow-hidden border ${
+                            idx === 0
+                              ? 'border-red-500 ring-2 ring-red-500/30'
+                              : 'border-slate-800 hover:border-slate-700'
+                          } bg-black aspect-video flex items-center justify-center`}
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`Preview ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute top-1 left-1 flex items-center space-x-1">
+                            {idx === 0 ? (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-600 text-white shadow">
+                                ★ Ảnh chính
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-black/70 text-slate-300 backdrop-blur-sm">
+                                #{idx + 1}
+                              </span>
+                            )}
+                          </div>
+                          <div className="absolute inset-0 bg-slate-950/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-1 p-1">
+                            {idx > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => handleSetPrimaryImage(idx)}
+                                title="Đặt làm ảnh chính"
+                                className="px-1.5 py-1 rounded bg-slate-800 hover:bg-emerald-600 text-[10px] text-white font-medium transition"
+                              >
+                                Đặt chính
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(idx)}
+                              title="Xóa ảnh này"
+                              className="p-1 rounded bg-red-600/80 hover:bg-red-600 text-white transition"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-lg bg-slate-900/50 border border-dashed border-slate-800 text-center text-xs text-slate-500">
+                      Chưa có hình ảnh nào được chọn. Nhập link hoặc tải tệp ảnh từ máy để tạo bộ sưu tập cho thiết bị.
+                    </div>
+                  )}
+                </div>
+
                 <div className="md:col-span-3 lg:col-span-4 pt-1">
                   <button
                     type="submit"
@@ -1166,11 +1580,22 @@ export function App() {
                       <tr key={p.id} className="hover:bg-slate-800/40 transition">
                         <td className="py-3 px-4">
                           <div className="flex items-center space-x-3">
-                            <img
-                              src={p.imageUrl}
-                              alt={p.name}
-                              className="w-10 h-10 object-cover rounded-lg bg-black shrink-0"
-                            />
+                            <div className="relative shrink-0 group">
+                              <img
+                                src={p.imageUrl}
+                                alt={p.name}
+                                className="w-11 h-11 object-cover rounded-lg bg-black border border-slate-800"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => openImageManagerModal(p)}
+                                title="Xem & chỉnh sửa bộ ảnh"
+                                className="absolute -bottom-1 -right-1 px-1 py-0.5 rounded bg-slate-950/90 border border-slate-700 text-[9px] text-slate-300 font-mono flex items-center space-x-0.5 hover:bg-red-600 hover:text-white transition shadow"
+                              >
+                                <span>📸</span>
+                                <span>{(p.images && p.images.length) || 1}</span>
+                              </button>
+                            </div>
                             <div>
                               <div className="font-bold text-white max-w-sm truncate">{p.name}</div>
                               <div className="text-[11px] text-slate-500 font-mono">{p.sku}</div>
@@ -1193,13 +1618,25 @@ export function App() {
                           </span>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <button
-                            onClick={() => handleDeleteProduct(p.id)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 transition"
-                            title="Xóa thiết bị"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center justify-end space-x-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openImageManagerModal(p)}
+                              className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 transition flex items-center space-x-1 text-xs border border-slate-700"
+                              title="Quản lý bộ sưu tập ảnh góc máy"
+                            >
+                              <Camera className="w-3.5 h-3.5" />
+                              <span className="font-semibold text-[11px]">Ảnh ({(p.images && p.images.length) || 1})</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProduct(p.id)}
+                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 transition"
+                              title="Xóa thiết bị"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1617,6 +2054,192 @@ export function App() {
           </div>
         )}
       </main>
+
+      {/* ================= MODAL QUẢN LÝ BỘ SƯU TẬP ẢNH CỦA THIẾT BỊ ================= */}
+      {imageManagerProduct && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-5 animate-in fade-in duration-200">
+            {/* Header */}
+            <div className="flex justify-between items-start border-b border-slate-800 pb-4">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="p-1.5 rounded-lg bg-red-600/20 text-red-500 border border-red-500/30">
+                    <Camera className="w-5 h-5" />
+                  </span>
+                  <h3 className="text-lg font-bold text-white">
+                    Quản Lý Bộ Sưu Tập Ảnh Thiết Bị
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">
+                  {imageManagerProduct.name} <span className="font-mono text-slate-500">({imageManagerProduct.sku})</span>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setImageManagerProduct(null)}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Helper / Info */}
+            <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 space-y-1">
+              <div className="font-semibold text-white flex items-center space-x-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Hiển thị trên Khách Hàng Storefront:</span>
+              </div>
+              <p className="text-slate-400">
+                Toàn bộ ảnh bạn lưu ở đây sẽ xuất hiện trong thanh lướt góc ảnh chi tiết của sản phẩm ở trang bán hàng. Ảnh đầu tiên (★ Ảnh chính) sẽ là ảnh đại diện card.
+              </p>
+            </div>
+
+            {/* Input Controls */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-slate-300 block">
+                Thêm Góc Ảnh Mới (Link HTTPS hoặc Tải Từ Thiết Bị)
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                <div className="sm:col-span-8 flex space-x-2">
+                  <input
+                    type="url"
+                    placeholder="Dán link ảnh (VD: https://images.unsplash.com/...)"
+                    value={managerInputUrl}
+                    onChange={(e) => setManagerInputUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddManagerImageUrl();
+                      }
+                    }}
+                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddManagerImageUrl}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition shrink-0"
+                  >
+                    + Thêm Link
+                  </button>
+                </div>
+
+                <div className="sm:col-span-4">
+                  <label className="w-full cursor-pointer flex items-center justify-center space-x-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 hover:text-sky-300 rounded-xl text-xs font-semibold transition">
+                    <Upload className="w-4 h-4" />
+                    <span>Tải tệp từ máy tính</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleManagerFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Current Gallery */}
+            <div>
+              <div className="flex justify-between items-center mb-2.5">
+                <span className="text-xs font-bold text-slate-300">
+                  Danh Sách Góc Ảnh Hiện Có ({managerImages.length} ảnh):
+                </span>
+                <span className="text-[11px] text-slate-500">
+                  Kéo hoặc bấm "Đặt làm ảnh chính" để thay đổi ảnh bìa
+                </span>
+              </div>
+
+              {managerImages.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {managerImages.map((url, idx) => (
+                    <div
+                      key={idx}
+                      className={`relative group rounded-xl overflow-hidden border ${
+                        idx === 0
+                          ? 'border-red-500 ring-2 ring-red-500/40 bg-red-950/10'
+                          : 'border-slate-800 bg-slate-950'
+                      } aspect-video flex items-center justify-center`}
+                    >
+                      <img
+                        src={url}
+                        alt={`Ảnh góc ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-1.5 left-1.5">
+                        {idx === 0 ? (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-600 text-white shadow">
+                            ★ Ảnh Chính
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/75 text-slate-300 backdrop-blur-sm">
+                            Góc #{idx + 1}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 space-y-1.5">
+                        {idx > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleSetManagerPrimaryImage(idx)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow transition"
+                          >
+                            Đặt Làm Ảnh Chính
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveManagerImage(idx)}
+                          className="px-2.5 py-1 rounded-lg bg-red-600/80 hover:bg-red-600 text-white text-[11px] font-bold shadow transition flex items-center space-x-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Xóa ảnh</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 rounded-xl bg-slate-950/50 border border-dashed border-slate-800 text-center text-slate-500 text-xs">
+                  Chưa có hình ảnh nào. Hãy thêm ít nhất 1 ảnh để đại diện sản phẩm!
+                </div>
+              )}
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex justify-end items-center space-x-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setImageManagerProduct(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={isSavingImages}
+                onClick={handleSaveManagerImages}
+                className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-lg shadow-red-900/30"
+              >
+                {isSavingImages ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Đang Lưu & Đồng Bộ...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Lưu Bộ Sưu Tập Ảnh Lên Storefront</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

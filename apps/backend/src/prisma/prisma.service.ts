@@ -31,15 +31,19 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     this.logger.error('❌ Could not connect to PostgreSQL after multiple retries');
   }
 
-  public async autoSeed() {
+  public async autoSeed(forceUpdate = false) {
     try {
       const productCount = await this.product.count();
-      if (productCount > 0) {
-        this.logger.log(`📦 Database already has ${productCount} products.`);
-        return;
+      if (productCount > 0 && !forceUpdate) {
+        const imageCount = await this.productImage.count();
+        if (imageCount >= productCount * 2) {
+          this.logger.log(`📦 Database already has ${productCount} products with ${imageCount} gallery images.`);
+          return;
+        }
+        this.logger.log(`🔄 Upgrading existing ${productCount} products with multi-image galleries...`);
+      } else {
+        this.logger.log('🌱 Seeding / Refreshing Pro Camera, Cinema & DJI products with multi-image gallery...');
       }
-
-      this.logger.log('🌱 Database is empty. Seeding initial Pro Camera, Cinema & DJI products...');
 
       // 1. Admin user
       const passwordHash = await bcrypt.hash('admin123456', 10);
@@ -133,7 +137,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
       const [catMirrorless, catCinema, catDrone, catGimbal, catAction, catLens, catAudio] = categories;
 
-      // 4. Products
+      // 4. Products with Multi-Image Galleries (3-4 high quality angles per gear)
       const productsData = [
         {
           name: 'Sony Alpha 7 IV (A7M4) Body - Máy ảnh Full-Frame Hybrid 33MP',
@@ -157,7 +161,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             weight: '658g (Kèm pin và thẻ nhớ)',
             colorProfiles: 'S-Cinetone, S-Log3, S-Gamut3.Cine, HLG (BT.2020)',
           },
-          imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+          images: [
+            'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+            'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
+            'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
+          ],
         },
         {
           name: 'DJI Mavic 3 Pro Cine Combo - Flycam 3 Camera Hasselblad Apple ProRes',
@@ -180,7 +189,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             internalStorage: 'Bộ nhớ trong SSD 1TB tốc độ cao tích hợp',
             weight: '958g (Đầy đủ pin và cánh quạt)',
           },
-          imageUrl: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800',
+          images: [
+            'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+            'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
+            'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
+            'https://images.unsplash.com/photo-1579829366248-204fe8413f31?w=1000',
+          ],
         },
         {
           name: 'Sony Cinema Line FX3 (ILME-FX3) - Máy quay Full-Frame chuyên nghiệp',
@@ -203,7 +217,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             stabilization: 'Chống rung IBIS 5 trục + Active Mode tối ưu cho gimbal và cầm tay',
             weight: '715g (Thân máy)',
           },
-          imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800',
+          images: [
+            'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
+            'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
+            'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1000',
+            'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+          ],
         },
         {
           name: 'DJI RS 4 Pro Gimbal Combo - Tay cầm chống rung tải trọng 4.5kg',
@@ -225,7 +244,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             lidarSupport: 'Hỗ trợ DJI Focus Pro LiDAR lấy nét tự động 20m, 76.800 điểm đo',
             wireless: 'Điều khiển không dây qua Bluetooth & Bộ truyền hình ảnh Ronin Transmission',
           },
-          imageUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=800',
+          images: [
+            'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
+            'https://images.unsplash.com/photo-1533158307587-828f0a76ef46?w=1000',
+            'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
+          ],
         },
         {
           name: 'DJI Osmo Pocket 3 Creator Combo - Camera Vlogging Cảm biến 1-inch',
@@ -248,7 +271,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             battery: 'Sạc 80% chỉ trong 16 phút, thời lượng quay lên tới 166 phút',
             weight: '179g bỏ túi siêu nhẹ',
           },
-          imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=800',
+          images: [
+            'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+            'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1000',
+            'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1000',
+          ],
         },
         {
           name: 'Canon EOS R5 Mark II Body - 45MP Stacked CMOS & 8K 60p RAW',
@@ -271,7 +298,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             storage: '1 khe CFexpress Type B + 1 khe SD UHS-II',
             weight: '746g (Kèm pin LP-E6P)',
           },
-          imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=800',
+          images: [
+            'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+            'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+            'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1000',
+          ],
         },
         {
           name: 'DJI Mini 4 Pro Fly More Combo Plus (DJI RC 2) - Flycam dưới 249g',
@@ -293,7 +324,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             sensors: 'Cảm biến chướng ngại vật đa hướng APAS 5.0 toàn diện',
             controller: 'Tay cầm điều khiển DJI RC 2 tích hợp màn hình FHD siêu sáng',
           },
-          imageUrl: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=800',
+          images: [
+            'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
+            'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+            'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
+          ],
         },
         {
           name: 'Blackmagic Cinema Camera 6K (Full-Frame L-Mount)',
@@ -316,7 +351,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             colorScience: 'Blackmagic Generation 5 Color Science điện ảnh',
             dynamicRange: '13 Stops dải tần nhạy sáng, Dual Native ISO 400 & 3200',
           },
-          imageUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800',
+          images: [
+            'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
+            'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1000',
+            'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
+          ],
         },
         {
           name: 'Fujifilm X-T5 Body (Silver) - 40.2MP Cảm biến X-Trans CMOS 5 HR',
@@ -339,7 +378,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             viewfinder: 'Kính ngắm OLED 3.69 triệu điểm ảnh độ phóng đại 0.8x',
             design: 'Vỏ hợp kim magie kháng thời tiết chống bụi nước và lạnh -10°C',
           },
-          imageUrl: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=800',
+          images: [
+            'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+            'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
+            'https://images.unsplash.com/photo-1493863641943-9b68992a8d07?w=1000',
+          ],
         },
         {
           name: 'Ống kính Sony FE 24-70mm F2.8 GM II (SEL2470GM2)',
@@ -361,7 +404,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             coating: 'Lớp phủ Nano AR Coating II triệt tiêu bóng ma và lóa sáng',
             weight: 'Chỉ 695g, nhẹ nhất trong phân khúc 24-70 F2.8 toàn cầu',
           },
-          imageUrl: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=800',
+          images: [
+            'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=1000',
+            'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+            'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+          ],
         },
         {
           name: 'Bộ Micro Thu Âm Không Dây DJI Mic 2 (2 TX + 1 RX + Hộp sạc)',
@@ -382,7 +429,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             battery: 'Thời lượng hoạt động 6 tiếng cho micro, 18 tiếng kèm hộp sạc',
             compatibility: 'Tương thích máy ảnh DSLR/Mirrorless, iPhone, Android, PC',
           },
-          imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800',
+          images: [
+            'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1000',
+            'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1000',
+            'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
+          ],
         },
         {
           name: 'Nikon Z8 Body - Máy ảnh Mirrorless 45.7MP Quay 8.3K N-RAW',
@@ -404,22 +455,48 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             durability: 'Chống chịu thời tiết tương đương dòng máy chuyên nghiệp D6',
             weight: '910g (Kèm pin EN-EL15c)',
           },
-          imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800',
+          images: [
+            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
+            'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
+            'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1000',
+          ],
         },
       ];
 
       for (const item of productsData) {
-        const { imageUrl, ...pData } = item;
-        await this.product.upsert({
+        const { images: imgList, ...pData } = item;
+        const allImages = Array.isArray(imgList) && imgList.length > 0
+          ? imgList
+          : ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800'];
+
+        const prod = await this.product.upsert({
           where: { slug: item.slug },
           update: {},
           create: {
             ...pData,
             images: {
-              create: [{ imageUrl, isPrimary: true, sortOrder: 0 }],
+              create: allImages.map((url: string, idx: number) => ({
+                imageUrl: url,
+                isPrimary: idx === 0,
+                sortOrder: idx,
+              })),
             },
           },
         });
+
+        // Ensure all images are populated in product_images even if product already existed
+        const currentCount = await this.productImage.count({ where: { productId: prod.id } });
+        if (currentCount < allImages.length || forceUpdate) {
+          await this.productImage.deleteMany({ where: { productId: prod.id } });
+          await this.productImage.createMany({
+            data: allImages.map((url: string, idx: number) => ({
+              productId: prod.id,
+              imageUrl: url,
+              isPrimary: idx === 0,
+              sortOrder: idx,
+            })),
+          });
+        }
       }
 
       // 5. Seed Serial Numbers

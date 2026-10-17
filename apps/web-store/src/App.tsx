@@ -17,6 +17,8 @@ import {
   Headphones,
   SlidersHorizontal,
   ChevronRight,
+  ChevronLeft,
+  Maximize2,
   ExternalLink,
   Flame,
   Zap,
@@ -43,6 +45,7 @@ export interface ProProduct {
   reviewsCount: number;
   isFeatured: boolean;
   imageUrl: string;
+  images?: string[];
   shortDesc: string;
   description: string;
   badge?: string;
@@ -79,7 +82,13 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 42,
     isFeatured: true,
     badge: 'FLAGSHIP DRONE',
-    imageUrl: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+      'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
+      'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
+      'https://images.unsplash.com/photo-1579829366248-204fe8413f31?w=1000',
+    ],
     shortDesc: 'Hệ thống 3 camera quang học Hasselblad 4/3 CMOS 20MP, Tele 70mm & 166mm. Hỗ trợ Apple ProRes 422 HQ.',
     description: 'Đỉnh cao flycam điện ảnh dân dụng thế giới. Tích hợp bộ mã hóa Apple ProRes 422 HQ trên cả 3 camera quang học, SSD 1TB gắn trong, thời gian bay ấn tượng lên tới 43 phút và hệ thống truyền video DJI O3+ 15km.',
     specifications: {
@@ -105,7 +114,13 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 38,
     isFeatured: true,
     badge: 'CINEMA LINE',
-    imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
+      'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1000',
+      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+    ],
     shortDesc: 'Cảm biến Full-Frame 12.1MP, Dual Base ISO 800/12800, quạt tản nhiệt chủ động không giới hạn thời gian quay.',
     description: 'Máy quay điện ảnh nhỏ gọn được ưa chuộng bậc nhất Hollywood và các đoàn làm phim quảng cáo. Khả năng quay 4K 120p không giới hạn thời gian nhờ hệ thống quạt tản nhiệt chủ động, dải động 15+ stops, S-Cinetone cho tone màu da điện ảnh hoàn hảo.',
     specifications: {
@@ -131,7 +146,13 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 56,
     isFeatured: true,
     badge: 'BEST SELLER',
-    imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+      'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
+      'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
+    ],
     shortDesc: 'Cảm biến Exmor R CMOS 33MP Full-Frame, quay 4K 60p 10-bit 4:2:2, lấy nét theo mắt Real-time AF AI.',
     description: 'Sony Alpha 7 IV là chuẩn mực máy ảnh hybrid cho nhiếp ảnh gia và nhà sáng tạo video hiện đại. Trang bị chip xử lý hình ảnh BIONZ XR thế hệ mới, bộ lọc màu S-Cinetone kế thừa từ dòng Cinema cao cấp, chống rung thân máy IBIS 5.5 stops.',
     specifications: {
@@ -157,7 +178,12 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 29,
     isFeatured: true,
     badge: 'RONIN PRO',
-    imageUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
+      'https://images.unsplash.com/photo-1533158307587-828f0a76ef46?w=1000',
+      'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
+    ],
     shortDesc: 'Cần trục sợi Carbon thế hệ 2, thuật toán chống rung RS 4th Gen, hỗ trợ Focus Pro LiDAR 76.800 điểm.',
     description: 'Hệ thống gimbal flagship phục vụ quay phim điện ảnh. Trang bị cánh tay trục sợi carbon siêu cứng chịu tải 4.5kg, tương thích với hầu hết máy quay cinema FX6, RED Komodo, Canon C70 cùng ống kính nặng. Hệ thống khóa trục tự động 2nd Gen khởi động quay tức thì trong 1 giây.',
     specifications: {
@@ -182,7 +208,12 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 84,
     isFeatured: true,
     badge: 'HOT CREATOR',
-    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1000',
+      'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1000',
+    ],
     shortDesc: 'Cảm biến 1-inch CMOS, quay 4K 120fps, màn hình OLED xoay 2 inch, chống rung cơ học 3 trục, kèm Mic 2.',
     description: 'Camera sáng tạo nội dung bỏ túi bán chạy nhất thế giới. Cảm biến 1-inch cho chất lượng hình ảnh đêm xuất sắc, màu 10-bit D-Log M, lấy nét thần tốc full-pixel, theo dõi khuôn mặt ActiveTrack 6.0, combo bao gồm bộ phát không dây DJI Mic 2 và tay cầm pin phụ.',
     specifications: {
@@ -207,7 +238,12 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 19,
     isFeatured: true,
     badge: '8K CINEMA',
-    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+      'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1000',
+    ],
     shortDesc: 'Cảm biến xếp chồng 45MP BSI, chip kép DIGIC Accelerator + DIGIC X, quay 8K 60p RAW nội bộ, Eye Control AF thế hệ mới.',
     description: 'Cỗ máy đỉnh cao của Canon cho các nhiếp ảnh gia thương mại và thể thao. Khả năng chụp liên tiếp 30fps không chớp đen, lấy nét điều khiển bằng mắt người chụp Eye Control AF chuẩn xác, chống rung phối hợp thân máy và ống kính lên tới 8.5 stops.',
     specifications: {
@@ -232,7 +268,12 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 48,
     isFeatured: true,
     badge: 'UNDER 249G',
-    imageUrl: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
+      'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+      'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
+    ],
     shortDesc: 'Trọng lượng siêu nhẹ dưới 249g, cảm biến chướng ngại vật đa hướng 360°, quay 4K 60p HDR dọc chân thực.',
     description: 'Flycam mini mạnh mẽ nhất hiện nay. Không cần đăng ký giấy phép bay khắt khe tại nhiều quốc gia nhờ trọng lượng dưới 249g, trang bị cảm biến va chạm 360 độ, camera xoay dọc 90 độ vật lý hoàn hảo cho video TikTok/Reels chất lượng cao.',
     specifications: {
@@ -256,7 +297,12 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 22,
     isFeatured: true,
     badge: 'BLACKMAGIC RAW',
-    imageUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1000',
+      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
+    ],
     shortDesc: 'Cảm biến Full-Frame 6K 6048x4032, dải tương phản 13 stops, ngàm L-Mount, màn hình cảm ứng HDR 5 inch 1500 nits.',
     description: 'Máy quay điện ảnh thế hệ mới nhất từ Blackmagic Design với cảm biến Full-Frame 6K sắc nét kinh ngạc, ghi hình Blackmagic RAW 12-bit vào thẻ CFexpress B hoặc ổ cứng SSD ngoài qua cổng USB-C, kèm phần mềm DaVinci Resolve Studio bản quyền.',
     specifications: {
@@ -281,7 +327,12 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 34,
     isFeatured: true,
     badge: 'FILM SIMULATION',
-    imageUrl: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+      'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
+      'https://images.unsplash.com/photo-1493863641943-9b68992a8d07?w=1000',
+    ],
     shortDesc: 'Độ phân giải 40.2MP siêu nét, 19 chế độ giả lập màu phim Film Simulation, quay 6.2K 30p, thiết kế hoài cổ đẳng cấp.',
     description: 'Mẫu máy ảnh hoài cổ biểu tượng được giới nhiếp ảnh đường phố và du lịch mê đắm. Vòng xoay cơ học kim loại sang trọng, cảm biến APS-C 40.2MP cao nhất từ trước đến nay của Fujifilm, thuật toán lấy nét AI nhận diện chủ thể động vật, xe cộ, chim chóc.',
     specifications: {
@@ -305,7 +356,12 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 31,
     isFeatured: true,
     badge: 'G MASTER',
-    imageUrl: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=1000',
+      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+      'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+    ],
     shortDesc: 'Ống kính tiêu chuẩn G Master thế hệ II nhẹ nhất thế giới, khẩu độ F2.8 toàn dải, 4 động cơ lấy nét XD Linear.',
     description: 'Ống kính zoom đa dụng số 1 cho các nhiếp ảnh gia và nhà quay phim chuyên nghiệp. Nhẹ hơn 22% so với đời 1, độ sắc nét vượt trội từ tâm đến rìa ảnh, bokeh tròn mịn với 11 lá khẩu, vòng chỉnh khẩu độ có nấc gạt de-click mượt mà cho quay phim.',
     specifications: {
@@ -329,7 +385,12 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 65,
     isFeatured: true,
     badge: '32-BIT FLOAT',
-    imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1000',
+      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1000',
+      'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
+    ],
     shortDesc: 'Thu âm 32-bit Float nội bộ chống vỡ tiếng, chống ồn thông minh AI, phạm vi truyền 250m, hộp sạc pin 18 giờ.',
     description: 'Tiêu chuẩn vàng cho âm thanh video creator và phóng viên. Tính năng ghi âm 32-bit float giúp không bao giờ bị méo tiếng dù tiếng hét lớn hay thì thầm nhỏ, kết nối Bluetooth trực tiếp với điện thoại hoặc máy quay qua jack 3.5mm / Type-C / Lightning.',
     specifications: {
@@ -353,7 +414,12 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 27,
     isFeatured: true,
     badge: '8.3K N-RAW',
-    imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
+      'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
+      'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1000',
+    ],
     shortDesc: 'Cảm biến xếp chồng 45.7MP không màn trập cơ học, quay 8.3K 60p N-RAW nội bộ, chụp 120fps.',
     description: 'Được mệnh danh là "Baby Z9", Nikon Z8 gói gọn sức mạnh của máy ảnh flagship thể thao vào thân máy nhỏ hơn 30%. Loại bỏ hoàn toàn màn trập cơ học nhờ tốc độ đọc cảm biến cực nhanh, nhận diện 9 loại chủ thể bằng Deep Learning AI.',
     specifications: {
@@ -389,8 +455,36 @@ export function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCartDrawer, setShowCartDrawer] = useState<boolean>(false);
 
-  // Detail Modal
+  // Detail Modal & Multi-Image Gallery State
   const [selectedProduct, setSelectedProduct] = useState<ProProduct | null>(null);
+  const [activeModalImgIdx, setActiveModalImgIdx] = useState<number>(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+
+  const openProductDetail = (prod: ProProduct) => {
+    setActiveModalImgIdx(0);
+    setSelectedProduct(prod);
+  };
+
+  // Keyboard navigation for image gallery & lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedProduct) return;
+      const imgs = (selectedProduct.images && selectedProduct.images.length > 0)
+        ? selectedProduct.images
+        : [selectedProduct.imageUrl];
+
+      if (e.key === 'Escape') {
+        if (isLightboxOpen) setIsLightboxOpen(false);
+        else setSelectedProduct(null);
+      } else if (e.key === 'ArrowRight') {
+        setActiveModalImgIdx((prev) => (prev < imgs.length - 1 ? prev + 1 : 0));
+      } else if (e.key === 'ArrowLeft') {
+        setActiveModalImgIdx((prev) => (prev > 0 ? prev - 1 : imgs.length - 1));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedProduct, isLightboxOpen]);
 
   // Warranty Modal
   const [showWarrantyModal, setShowWarrantyModal] = useState<boolean>(false);
@@ -407,6 +501,15 @@ export function App() {
   const [isSubmittingOrder, setIsSubmittingOrder] = useState<boolean>(false);
   const [orderSuccess, setOrderSuccess] = useState<any>(null);
 
+  // Helper to extract multi-images array from API response
+  const parseImagesFromItem = (item: any): string[] => {
+    if (Array.isArray(item.images) && item.images.length > 0) {
+      const list = item.images.map((img: any) => typeof img === 'string' ? img : img.imageUrl).filter(Boolean);
+      if (list.length > 0) return list;
+    }
+    return [item.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000'];
+  };
+
   // Load products from Backend API
   const fetchProducts = async () => {
     try {
@@ -414,25 +517,29 @@ export function App() {
       if (res.ok) {
         const data = await res.json();
         if (data && Array.isArray(data.items) && data.items.length > 0) {
-          const mapped: ProProduct[] = data.items.map((item: any) => ({
-            id: String(item.id),
-            name: item.name,
-            slug: item.slug,
-            sku: item.sku,
-            brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'DJI'),
-            category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
-            price: Number(item.price),
-            originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
-            stockQuantity: Number(item.stockQuantity ?? 10),
-            rating: 5.0,
-            reviewsCount: 38,
-            isFeatured: item.isFeatured ?? true,
-            badge: item.brand?.name?.toUpperCase() || 'CHÍNH HÃNG',
-            imageUrl: item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
-            shortDesc: item.shortDesc || item.name,
-            description: item.description || item.shortDesc || '',
-            specifications: item.specifications || {},
-          }));
+          const mapped: ProProduct[] = data.items.map((item: any) => {
+            const itemImgs = parseImagesFromItem(item);
+            return {
+              id: String(item.id),
+              name: item.name,
+              slug: item.slug,
+              sku: item.sku,
+              brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'DJI'),
+              category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
+              price: Number(item.price),
+              originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
+              stockQuantity: Number(item.stockQuantity ?? 10),
+              rating: 5.0,
+              reviewsCount: 38,
+              isFeatured: item.isFeatured ?? true,
+              badge: item.brand?.name?.toUpperCase() || 'CHÍNH HÃNG',
+              imageUrl: itemImgs[0],
+              images: itemImgs,
+              shortDesc: item.shortDesc || item.name,
+              description: item.description || item.shortDesc || '',
+              specifications: item.specifications || {},
+            };
+          });
           setProducts(mapped);
           setIsBackendConnected(true);
           return;
@@ -442,25 +549,29 @@ export function App() {
           if (retryRes.ok) {
             const retryData = await retryRes.json();
             if (retryData && Array.isArray(retryData.items) && retryData.items.length > 0) {
-              const mapped: ProProduct[] = retryData.items.map((item: any) => ({
-                id: String(item.id),
-                name: item.name,
-                slug: item.slug,
-                sku: item.sku,
-                brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'DJI'),
-                category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
-                price: Number(item.price),
-                originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
-                stockQuantity: Number(item.stockQuantity ?? 10),
-                rating: 5.0,
-                reviewsCount: 38,
-                isFeatured: item.isFeatured ?? true,
-                badge: item.brand?.name?.toUpperCase() || 'CHÍNH HÃNG',
-                imageUrl: item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
-                shortDesc: item.shortDesc || item.name,
-                description: item.description || item.shortDesc || '',
-                specifications: item.specifications || {},
-              }));
+              const mapped: ProProduct[] = retryData.items.map((item: any) => {
+                const itemImgs = parseImagesFromItem(item);
+                return {
+                  id: String(item.id),
+                  name: item.name,
+                  slug: item.slug,
+                  sku: item.sku,
+                  brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'DJI'),
+                  category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
+                  price: Number(item.price),
+                  originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
+                  stockQuantity: Number(item.stockQuantity ?? 10),
+                  rating: 5.0,
+                  reviewsCount: 38,
+                  isFeatured: item.isFeatured ?? true,
+                  badge: item.brand?.name?.toUpperCase() || 'CHÍNH HÃNG',
+                  imageUrl: itemImgs[0],
+                  images: itemImgs,
+                  shortDesc: item.shortDesc || item.name,
+                  description: item.description || item.shortDesc || '',
+                  specifications: item.specifications || {},
+                };
+              });
               setProducts(mapped);
               setIsBackendConnected(true);
               return;
@@ -1026,7 +1137,7 @@ export function App() {
               return (
                 <div
                   key={product.id}
-                  onClick={() => setSelectedProduct(product)}
+                  onClick={() => openProductDetail(product)}
                   className="group bg-slate-900/80 hover:bg-slate-900 rounded-2xl border border-slate-800 hover:border-red-500/50 transition-all duration-300 flex flex-col overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-red-950/30 cursor-pointer"
                 >
                   {/* Image Container */}
@@ -1054,6 +1165,14 @@ export function App() {
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       <span>Sẵn hàng: {product.stockQuantity} máy</span>
                     </div>
+
+                    {/* Multi-angle Pill */}
+                    {product.images && product.images.length > 1 && (
+                      <div className="absolute bottom-2 right-2 bg-black/85 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-amber-300 font-semibold flex items-center space-x-1 border border-amber-500/30 shadow">
+                        <Camera className="w-3 h-3 text-amber-400" />
+                        <span>{product.images.length} góc ảnh</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Body Content */}
@@ -1132,48 +1251,172 @@ export function App() {
 
       {/* ----------------- DETAIL MODAL ----------------- */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 relative shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-4xl w-full p-5 sm:p-7 relative shadow-2xl text-slate-100 max-h-[92vh] overflow-y-auto">
+            {/* Close Button */}
             <button
-              onClick={() => setSelectedProduct(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800"
+              onClick={() => {
+                setSelectedProduct(null);
+                setIsLightboxOpen(false);
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800 hover:bg-red-600 transition z-20"
+              title="Đóng cửa sổ"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-              <div className="aspect-[4/3] rounded-xl overflow-hidden bg-black/50 border border-slate-800">
-                <img
-                  src={selectedProduct.imageUrl}
-                  alt={selectedProduct.name}
-                  className="w-full h-full object-cover"
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column: Multi-Image Interactive Gallery (7 cols on lg) */}
+              <div className="lg:col-span-7 space-y-3">
+                {(() => {
+                  const galleryImages = (selectedProduct.images && selectedProduct.images.length > 0)
+                    ? selectedProduct.images
+                    : [selectedProduct.imageUrl];
+                  const activeIdx = Math.min(activeModalImgIdx, galleryImages.length - 1);
+                  const currentImg = galleryImages[activeIdx] || selectedProduct.imageUrl;
+
+                  return (
+                    <div className="space-y-3">
+                      {/* Main Large Image Container */}
+                      <div
+                        className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-black/80 border border-slate-800 shadow-xl group cursor-zoom-in"
+                        onClick={() => setIsLightboxOpen(true)}
+                      >
+                        <img
+                          src={currentImg}
+                          alt={`${selectedProduct.name} - Góc ${activeIdx + 1}`}
+                          className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
+                        />
+
+                        {/* Top-Left: Angle Counter Badge */}
+                        <div className="absolute top-3 left-3 flex items-center space-x-2 pointer-events-none">
+                          <span className="bg-black/80 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-white/10 flex items-center space-x-1.5 shadow-lg">
+                            <Camera className="w-3.5 h-3.5 text-red-400" />
+                            <span>Góc chụp {activeIdx + 1} / {galleryImages.length}</span>
+                          </span>
+                        </div>
+
+                        {/* Top-Right: Lightbox Zoom Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsLightboxOpen(true);
+                          }}
+                          className="absolute top-3 right-3 px-2.5 py-1.5 bg-black/75 hover:bg-black/95 text-white rounded-xl border border-white/10 transition shadow-lg flex items-center space-x-1.5 text-xs font-semibold backdrop-blur-md"
+                          title="Phóng to ảnh toàn màn hình"
+                        >
+                          <Maximize2 className="w-3.5 h-3.5 text-red-400" />
+                          <span className="text-[11px]">Phóng to</span>
+                        </button>
+
+                        {/* Prev / Next Navigation Arrows */}
+                        {galleryImages.length > 1 && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveModalImgIdx((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1));
+                              }}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/70 hover:bg-red-600 text-white backdrop-blur-md border border-white/15 transition-all shadow-xl hover:scale-110"
+                              title="Góc chụp trước"
+                            >
+                              <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveModalImgIdx((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0));
+                              }}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/70 hover:bg-red-600 text-white backdrop-blur-md border border-white/15 transition-all shadow-xl hover:scale-110"
+                              title="Góc chụp tiếp theo"
+                            >
+                              <ChevronRight className="w-5 h-5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Thumbnail Strip (Selector) */}
+                      {galleryImages.length > 1 && (
+                        <div>
+                          <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5 px-0.5">
+                            <span className="font-semibold text-slate-300 flex items-center space-x-1">
+                              <span>Bộ sưu tập ảnh thiết bị ({galleryImages.length} góc chụp)</span>
+                            </span>
+                            <span className="text-[10px] text-slate-500">Nhấp vào ảnh để chuyển góc nhìn</span>
+                          </div>
+                          <div className="flex items-center space-x-2.5 overflow-x-auto pb-1.5 pt-0.5">
+                            {galleryImages.map((img, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setActiveModalImgIdx(idx)}
+                                className={`relative shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+                                  activeIdx === idx
+                                    ? 'border-red-500 ring-2 ring-red-500/50 scale-105 shadow-md shadow-red-500/30'
+                                    : 'border-slate-800 hover:border-slate-600 opacity-60 hover:opacity-100'
+                                }`}
+                                title={`Xem góc chụp ${idx + 1}`}
+                              >
+                                <img src={img} alt={`Góc ${idx + 1}`} className="w-full h-full object-cover" />
+                                <span className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-sm text-[10px] font-bold text-white px-1.5 py-0.2 rounded">
+                                  {idx + 1}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
-              <div className="space-y-3">
+              {/* Right Column: Product Info & Actions (5 cols on lg) */}
+              <div className="lg:col-span-5 space-y-4">
                 <div className="flex items-center space-x-2 text-xs">
-                  <span className="bg-red-600/30 text-red-400 border border-red-500/30 px-2 py-0.5 rounded font-bold">
+                  <span className="bg-red-600/30 text-red-400 border border-red-500/30 px-2.5 py-0.5 rounded-lg font-bold">
                     {selectedProduct.brand}
                   </span>
                   <span className="text-slate-400 font-mono text-[11px]">SKU: {selectedProduct.sku}</span>
+                  <span className="bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                    Sẵn hàng
+                  </span>
                 </div>
 
-                <h2 className="text-lg font-bold text-white leading-snug">
+                <h2 className="text-xl font-bold text-white leading-snug">
                   {selectedProduct.name}
                 </h2>
 
-                <div className="text-xl font-black text-amber-400">
-                  {formatVND(selectedProduct.price)}
+                <div className="flex items-baseline space-x-3">
+                  <div className="text-2xl font-black text-amber-400">
+                    {formatVND(selectedProduct.price)}
+                  </div>
                   {selectedProduct.originalPrice > selectedProduct.price && (
-                    <span className="text-xs text-slate-400 line-through ml-2 font-normal">
+                    <span className="text-xs text-slate-400 line-through font-normal">
                       {formatVND(selectedProduct.originalPrice)}
                     </span>
                   )}
                 </div>
 
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-xs text-slate-300 leading-relaxed">
                   {selectedProduct.description}
-                </p>
+                </div>
+
+                {/* Highlights */}
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex items-center space-x-2 text-slate-300">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Bảo hành chính hãng 24 tháng theo số Serial Number (SN)</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-slate-300">
+                    <Truck className="w-4 h-4 text-sky-400" />
+                    <span>Giao hàng hỏa tốc trong 2 giờ tại Hà Nội & TP.HCM</span>
+                  </div>
+                </div>
 
                 <div className="pt-2">
                   <button
@@ -1181,9 +1424,9 @@ export function App() {
                       addToCart(selectedProduct);
                       setSelectedProduct(null);
                     }}
-                    className="w-full py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-950 transition flex items-center justify-center space-x-2"
+                    className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-red-950 transition flex items-center justify-center space-x-2 hover:scale-[1.01]"
                   >
-                    <ShoppingBag className="w-4 h-4" />
+                    <ShoppingBag className="w-5 h-5" />
                     <span>Thêm Vào Giỏ Hàng Ngay</span>
                   </button>
                 </div>
@@ -1191,16 +1434,16 @@ export function App() {
             </div>
 
             {/* Specifications Detailed Table */}
-            <div className="mt-6 pt-4 border-t border-slate-800">
+            <div className="mt-8 pt-5 border-t border-slate-800">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center space-x-2">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-red-500" />
+                <SlidersHorizontal className="w-4 h-4 text-red-500" />
                 <span>Thông Số Kỹ Thuật Chi Tiết (Technical Specifications)</span>
               </h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
                 {Object.entries(selectedProduct.specifications || {}).map(([key, val]) => (
-                  <div key={key} className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
-                    <span className="text-slate-400 font-semibold capitalize block text-[11px]">
+                  <div key={key} className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                    <span className="text-slate-400 font-semibold capitalize block text-[11px] mb-0.5">
                       {key === 'sensor'
                         ? 'Cảm Biến (Sensor)'
                         : key === 'video'
@@ -1217,6 +1460,10 @@ export function App() {
                         ? 'Thẻ Nhớ / Lưu Trữ'
                         : key === 'screen'
                         ? 'Màn Hình (Screen)'
+                        : key === 'autofocus'
+                        ? 'Lấy Nét (Autofocus)'
+                        : key === 'colorProfiles'
+                        ? 'Hệ Màu Điện Ảnh'
                         : key}:
                     </span>
                     <span className="text-slate-200 font-medium">
@@ -1227,6 +1474,92 @@ export function App() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ----------------- FULLSCREEN LIGHTBOX ----------------- */}
+      {isLightboxOpen && selectedProduct && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-6"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          {/* Top Header */}
+          {(() => {
+            const galleryImages = (selectedProduct.images && selectedProduct.images.length > 0)
+              ? selectedProduct.images
+              : [selectedProduct.imageUrl];
+            const activeIdx = Math.min(activeModalImgIdx, galleryImages.length - 1);
+
+            return (
+              <>
+                <div className="flex items-center justify-between z-10" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center space-x-3 text-white">
+                    <Camera className="w-5 h-5 text-red-500" />
+                    <div>
+                      <h3 className="text-sm sm:text-base font-bold">{selectedProduct.name}</h3>
+                      <p className="text-xs text-slate-400">
+                        Góc chụp {activeIdx + 1} / {galleryImages.length} • Phím mũi tên Trái/Phải để chuyển ảnh, Esc để đóng
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsLightboxOpen(false)}
+                    className="p-2.5 rounded-xl bg-slate-800 hover:bg-red-600 text-white transition shadow-lg"
+                    title="Đóng chế độ phóng to (Esc)"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Center Image with Prev/Next Navigation */}
+                <div className="relative flex-1 flex items-center justify-center my-3 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                  <img
+                    src={galleryImages[activeIdx] || selectedProduct.imageUrl}
+                    alt={selectedProduct.name}
+                    className="max-h-[75vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl transition-all duration-300"
+                  />
+
+                  {galleryImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setActiveModalImgIdx((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1))}
+                        className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 p-3 sm:p-4 rounded-full bg-black/70 hover:bg-red-600 text-white transition shadow-2xl backdrop-blur-md border border-white/10"
+                        title="Góc chụp trước (Phím mũi tên Trái)"
+                      >
+                        <ChevronLeft className="w-6 h-6" />
+                      </button>
+                      <button
+                        onClick={() => setActiveModalImgIdx((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0))}
+                        className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 p-3 sm:p-4 rounded-full bg-black/70 hover:bg-red-600 text-white transition shadow-2xl backdrop-blur-md border border-white/10"
+                        title="Góc chụp tiếp theo (Phím mũi tên Phải)"
+                      >
+                        <ChevronRight className="w-6 h-6" />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Bottom Thumbnails */}
+                {galleryImages.length > 1 && (
+                  <div className="flex items-center justify-center space-x-3 overflow-x-auto py-2 z-10" onClick={(e) => e.stopPropagation()}>
+                    {galleryImages.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveModalImgIdx(idx)}
+                        className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 transition-all ${
+                          activeIdx === idx
+                            ? 'border-red-500 ring-4 ring-red-500/40 scale-110 shadow-xl'
+                            : 'border-slate-800 opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 

@@ -144,7 +144,20 @@ export class ProductsService {
       features: Array.isArray(data.features) ? data.features : ['Quay 4K HDR', 'Lấy nét AI'],
     };
 
-    const imageUrl = data.imageUrl || (data.images?.[0]?.imageUrl) || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800';
+    let imageList: string[] = [];
+    if (Array.isArray(data.images)) {
+      imageList = data.images.map((img: any) => typeof img === 'string' ? img.trim() : (img.imageUrl || img.url || '')).filter(Boolean);
+    } else if (Array.isArray(data.imageUrls)) {
+      imageList = data.imageUrls.map((img: any) => typeof img === 'string' ? img.trim() : (img.imageUrl || img.url || '')).filter(Boolean);
+    } else if (typeof data.images === 'string' && data.images.trim()) {
+      imageList = data.images.split('\n').map((s: string) => s.trim()).filter(Boolean);
+    } else if (data.imageUrl && typeof data.imageUrl === 'string') {
+      imageList = [data.imageUrl.trim()];
+    }
+
+    if (imageList.length === 0) {
+      imageList = ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800'];
+    }
 
     return this.prisma.product.create({
       data: {
@@ -162,19 +175,50 @@ export class ProductsService {
         categoryId,
         brandId,
         images: {
-          create: [{ imageUrl, isPrimary: true, sortOrder: 0 }],
+          create: imageList.map((url, idx) => ({
+            imageUrl: url,
+            isPrimary: idx === 0,
+            sortOrder: idx,
+          })),
         },
       },
-      include: { category: true, brand: true, images: true },
+      include: { category: true, brand: true, images: { orderBy: { sortOrder: 'asc' } } },
     });
   }
 
   async update(id: string, data: any) {
-    const { images, ...productData } = data;
+    const { images, imageUrls, imageUrl, ...productData } = data;
+
+    const hasNewImages = images !== undefined || imageUrls !== undefined || imageUrl !== undefined;
+    if (hasNewImages) {
+      let imageList: string[] = [];
+      if (Array.isArray(images)) {
+        imageList = images.map((img: any) => typeof img === 'string' ? img.trim() : (img.imageUrl || img.url || '')).filter(Boolean);
+      } else if (Array.isArray(imageUrls)) {
+        imageList = imageUrls.map((img: any) => typeof img === 'string' ? img.trim() : (img.imageUrl || img.url || '')).filter(Boolean);
+      } else if (typeof images === 'string' && images.trim()) {
+        imageList = images.split('\n').map((s: string) => s.trim()).filter(Boolean);
+      } else if (imageUrl && typeof imageUrl === 'string') {
+        imageList = [imageUrl.trim()];
+      }
+
+      if (imageList.length > 0) {
+        await this.prisma.productImage.deleteMany({ where: { productId: id } });
+        await this.prisma.productImage.createMany({
+          data: imageList.map((url, idx) => ({
+            productId: id,
+            imageUrl: url,
+            isPrimary: idx === 0,
+            sortOrder: idx,
+          })),
+        });
+      }
+    }
+
     return this.prisma.product.update({
       where: { id },
       data: productData,
-      include: { category: true, brand: true, images: true },
+      include: { category: true, brand: true, images: { orderBy: { sortOrder: 'asc' } } },
     });
   }
 
@@ -190,7 +234,7 @@ export class ProductsService {
   }
 
   async seed() {
-    await this.prisma.autoSeed();
+    await this.prisma.autoSeed(true);
     return this.findAll({ limit: 100 });
   }
 }
