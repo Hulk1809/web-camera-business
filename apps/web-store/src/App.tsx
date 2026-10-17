@@ -36,7 +36,6 @@ import {
   AlertCircle,
   PhoneCall
 } from 'lucide-react';
-import { LiveActivityTicker } from './components/LiveActivityTicker';
 import { DayNightVisionShowcase } from './components/DayNightVisionShowcase';
 import { SpotlightProductCard } from './components/SpotlightProductCard';
 import { triggerConfetti } from './utils/confetti';
@@ -122,7 +121,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     stockQuantity: 8,
     rating: 5.0,
     reviewsCount: 38,
-    isFeatured: true,
+    isFeatured: false,
     badge: 'CINEMA LINE',
     imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
     images: [
@@ -154,7 +153,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     stockQuantity: 18,
     rating: 4.9,
     reviewsCount: 56,
-    isFeatured: true,
+    isFeatured: false,
     badge: 'BEST SELLER',
     imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
     images: [
@@ -186,7 +185,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     stockQuantity: 25,
     rating: 5.0,
     reviewsCount: 29,
-    isFeatured: true,
+    isFeatured: false,
     badge: 'RONIN PRO',
     imageUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
     images: [
@@ -216,7 +215,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     stockQuantity: 30,
     rating: 5.0,
     reviewsCount: 84,
-    isFeatured: true,
+    isFeatured: false,
     badge: 'HOT CREATOR',
     imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
     images: [
@@ -246,7 +245,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     stockQuantity: 6,
     rating: 5.0,
     reviewsCount: 19,
-    isFeatured: true,
+    isFeatured: false,
     badge: '8K CINEMA',
     imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
     images: [
@@ -276,7 +275,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     stockQuantity: 20,
     rating: 4.9,
     reviewsCount: 48,
-    isFeatured: true,
+    isFeatured: false,
     badge: 'UNDER 249G',
     imageUrl: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
     images: [
@@ -305,7 +304,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     stockQuantity: 10,
     rating: 4.9,
     reviewsCount: 22,
-    isFeatured: true,
+    isFeatured: false,
     badge: 'BLACKMAGIC RAW',
     imageUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
     images: [
@@ -335,7 +334,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     stockQuantity: 15,
     rating: 4.9,
     reviewsCount: 34,
-    isFeatured: true,
+    isFeatured: false,
     badge: 'FILM SIMULATION',
     imageUrl: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
     images: [
@@ -364,7 +363,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     stockQuantity: 14,
     rating: 5.0,
     reviewsCount: 31,
-    isFeatured: true,
+    isFeatured: false,
     badge: 'G MASTER',
     imageUrl: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=1000',
     images: [
@@ -393,7 +392,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     stockQuantity: 40,
     rating: 5.0,
     reviewsCount: 65,
-    isFeatured: true,
+    isFeatured: false,
     badge: '32-BIT FLOAT',
     imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1000',
     images: [
@@ -422,7 +421,7 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     stockQuantity: 9,
     rating: 5.0,
     reviewsCount: 27,
-    isFeatured: true,
+    isFeatured: false,
     badge: '8.3K N-RAW',
     imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
     images: [
@@ -593,7 +592,7 @@ export function App() {
               stockQuantity: Number(item.stockQuantity ?? 10),
               rating: 5.0,
               reviewsCount: 38,
-              isFeatured: item.isFeatured ?? true,
+              isFeatured: item.isFeatured ?? false,
               badge: item.brand?.name?.toUpperCase() || 'CHÍNH HÃNG',
               imageUrl: itemImgs[0],
               images: itemImgs,
@@ -628,7 +627,7 @@ export function App() {
                   stockQuantity: Number(item.stockQuantity ?? 10),
                   rating: 5.0,
                   reviewsCount: 38,
-                  isFeatured: item.isFeatured ?? true,
+                  isFeatured: item.isFeatured ?? false,
                   badge: item.brand?.name?.toUpperCase() || 'CHÍNH HÃNG',
                   imageUrl: itemImgs[0],
                   images: itemImgs,
@@ -688,6 +687,9 @@ export function App() {
       p.category.toLowerCase().includes(query);
     return matchWishlist && matchCat && matchBrand && matchSearch;
   });
+
+  // Hot Featured Product for Hero Section (Configured by Admin)
+  const hotProduct = products.find((p) => p.isFeatured) || null;
 
   // Cart operations
   const addToCart = (product: ProProduct, e?: React.MouseEvent) => {
@@ -1033,9 +1035,6 @@ export function App() {
         </div>
       </div>
 
-      {/* ----------------- REAL-TIME HUMAN ACTIVITY TICKER ----------------- */}
-      <LiveActivityTicker onOpenWarranty={() => setShowWarrantyModal(true)} />
-
       {/* ----------------- MAIN HEADER ----------------- */}
       <header className="sticky top-0 z-40 bg-[#070A11]/90 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
@@ -1204,7 +1203,7 @@ export function App() {
       <section className="relative overflow-hidden border-b border-slate-800 bg-gradient-to-b from-[#0F1424] via-[#090D17] to-[#070A11] py-8 lg:py-12">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(239,68,68,0.12),transparent_50%)]" />
         <div className="max-w-7xl mx-auto px-4 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-7 space-y-4">
+          <div className={hotProduct ? "lg:col-span-7 space-y-4" : "lg:col-span-12 space-y-4 max-w-4xl"}>
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold tracking-wide uppercase">
               <Award className="w-3.5 h-3.5 text-amber-400" />
               <span>Hệ Thống Thiết Bị Nhiếp Ảnh & Điện Ảnh Chuyên Nghiệp</span>
@@ -1262,67 +1261,92 @@ export function App() {
             </div>
           </div>
 
-          {/* Flagship Hero Card */}
-          <div className="lg:col-span-5">
-            <div className="relative rounded-3xl glass-panel glass-panel-hover p-6 border border-slate-700/60 shadow-2xl overflow-hidden group">
-              <div className="absolute top-3 right-3 flex items-center space-x-1.5">
-                <button
-                  onClick={(e) => toggleWishlist(DEFAULT_PRODUCTS[0].id, e)}
-                  className={`p-2 rounded-full backdrop-blur-md border transition active:scale-75 ${
-                    wishlist.includes(DEFAULT_PRODUCTS[0].id)
-                      ? 'bg-red-600 border-red-400 text-white'
-                      : 'bg-black/60 border-white/10 text-slate-300 hover:text-red-400'
-                  }`}
-                  title="Lưu yêu thích"
-                >
-                  <Heart className={`w-3.5 h-3.5 ${wishlist.includes(DEFAULT_PRODUCTS[0].id) ? 'fill-current' : ''}`} />
-                </button>
-                <div className="bg-gradient-to-r from-red-600 to-amber-500 text-white text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full uppercase shadow">
-                  HOT PRODUCT 2026
-                </div>
-              </div>
-
-              <div className="text-xs text-red-400 font-bold tracking-wider uppercase mb-1">
-                DJI Flagship Drone
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">
-                DJI Mavic 3 Pro Cine Combo (SSD 1TB)
-              </h3>
-              <p className="text-xs text-slate-400 mb-4 line-clamp-2">
-                3 Camera Hasselblad 4/3 CMOS, Tele 70mm & 166mm, quay Apple ProRes 5.1K, bay 43 phút liên tục.
-              </p>
-
-              <div className="relative h-48 rounded-2xl overflow-hidden bg-black/40 mb-4 flex items-center justify-center">
-                <img
-                  src={DEFAULT_PRODUCTS[0].imageUrl}
-                  alt={DEFAULT_PRODUCTS[0].name}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=800';
-                  }}
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                />
-                <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md px-2 py-1 rounded text-[10px] text-amber-300 font-mono font-bold">
-                  Hasselblad 4/3 • O3+ 15km
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs text-slate-400 line-through">87.500.000₫</div>
-                  <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-300">
-                    79.990.000₫
+          {/* Flagship Hero Card - Đồng bộ động trực tiếp từ Admin khi quản trị viên chọn "Hàng HOT" */}
+          {hotProduct && (
+            <div className="lg:col-span-5">
+              <div className="relative rounded-3xl glass-panel glass-panel-hover p-6 border border-slate-700/60 shadow-2xl overflow-hidden group">
+                <div className="absolute top-3 right-3 flex items-center space-x-1.5 z-10">
+                  <button
+                    onClick={(e) => toggleWishlist(hotProduct.id, e)}
+                    className={`p-2 rounded-full backdrop-blur-md border transition active:scale-75 ${
+                      wishlist.includes(hotProduct.id)
+                        ? 'bg-red-600 border-red-400 text-white'
+                        : 'bg-black/60 border-white/10 text-slate-300 hover:text-red-400'
+                    }`}
+                    title="Lưu yêu thích"
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${wishlist.includes(hotProduct.id) ? 'fill-current' : ''}`} />
+                  </button>
+                  <div className="bg-gradient-to-r from-red-600 to-amber-500 text-white text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full uppercase shadow flex items-center gap-1">
+                    <Flame className="w-3 h-3 fill-white" />
+                    <span>HOT PRODUCT 2026</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => addToCart(DEFAULT_PRODUCTS[0])}
-                  className="px-5 py-2.5 btn-primary-genz animate-shimmer text-white text-xs font-black rounded-xl shadow-lg shadow-red-950 transition flex items-center space-x-1.5 active:scale-95"
-                >
-                  <ShoppingBag className="w-3.5 h-3.5" />
-                  <span>Mua Ngay</span>
-                </button>
+
+                <div className="text-xs text-red-400 font-bold tracking-wider uppercase mb-1">
+                  {hotProduct.brand} • {hotProduct.category}
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 line-clamp-1">
+                  {hotProduct.name}
+                </h3>
+                <p className="text-xs text-slate-400 mb-4 line-clamp-2">
+                  {hotProduct.shortDesc || hotProduct.description}
+                </p>
+
+                <div className="relative h-48 rounded-2xl overflow-hidden bg-black/40 mb-4 flex items-center justify-center">
+                  <img
+                    src={hotProduct.imageUrl}
+                    alt={hotProduct.name}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=800';
+                    }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                  />
+                  <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md px-2 py-1 rounded text-[10px] text-amber-300 font-mono font-bold">
+                    {hotProduct.specifications?.sensor || hotProduct.badge || 'Chính Hãng'}
+                  </div>
+                  {(hotProduct.stockQuantity ?? 0) <= 0 && (
+                    <div className="absolute top-2 left-2 bg-amber-500/90 text-black px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shadow">
+                      Hết Sẵn • Đặt Chờ Về
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    {hotProduct.originalPrice && hotProduct.originalPrice > hotProduct.price && (
+                      <div className="text-xs text-slate-400 line-through">
+                        {formatVND(hotProduct.originalPrice)}
+                      </div>
+                    )}
+                    <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-300">
+                      {formatVND(hotProduct.price)}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => addToCart(hotProduct)}
+                    className={`px-5 py-2.5 ${
+                      (hotProduct.stockQuantity ?? 0) <= 0
+                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-950/40'
+                        : 'btn-primary-genz shadow-red-950'
+                    } animate-shimmer text-white text-xs font-black rounded-xl shadow-lg transition flex items-center space-x-1.5 active:scale-95`}
+                  >
+                    {(hotProduct.stockQuantity ?? 0) <= 0 ? (
+                      <>
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Đặt Chờ Về</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                        <span>Mua Ngay</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 

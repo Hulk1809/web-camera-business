@@ -51,6 +51,7 @@ export interface Product {
   images?: string[];
   status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
   specifications?: any;
+  isFeatured?: boolean;
 }
 
 export interface OrderItem {
@@ -117,6 +118,7 @@ const DEFAULT_PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1579829366248-204fe8413f31?w=1000',
     ],
     status: 'IN_STOCK',
+    isFeatured: true,
     specifications: {
       sensor: 'Hasselblad 4/3 CMOS 20MP',
       video: 'Apple ProRes 5.1K 50fps',
@@ -538,6 +540,7 @@ export function App() {
     stabilization: string;
     imageUrl: string;
     images: string[];
+    isFeatured: boolean;
   }>({
     name: '',
     sku: '',
@@ -554,6 +557,7 @@ export function App() {
       'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
       'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
     ],
+    isFeatured: false,
   });
 
   const [inputImgUrl, setInputImgUrl] = useState<string>('');
@@ -1065,8 +1069,12 @@ export function App() {
       images: productImages,
       status: 'IN_STOCK',
       specifications: payload.specifications,
+      isFeatured: newGear.isFeatured,
     };
-    const updatedProdList = [newProdItem, ...products];
+    const updatedProdList = [
+      newProdItem,
+      ...products.map((p) => (newGear.isFeatured ? { ...p, isFeatured: false } : p)),
+    ];
     setProducts(updatedProdList);
     try {
       localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(updatedProdList));
@@ -1099,6 +1107,7 @@ export function App() {
       stabilization: 'Gimbal cơ học 3 trục',
       imageUrl: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
       images: [],
+      isFeatured: false,
     });
     setInputImgUrl('');
     showToast({
@@ -1106,6 +1115,33 @@ export function App() {
       type: 'success',
       title: 'Đã thêm thiết bị mới',
       message: `${newGear.name} đã được lưu vào kho thành công.`,
+    });
+  };
+
+  // Toggle Featured / Hàng HOT on Storefront
+  const handleToggleFeatured = (productId: string) => {
+    const targetProd = products.find((p) => p.id === productId);
+    const willBeFeatured = !targetProd?.isFeatured;
+
+    const updatedProdList = products.map((p) => {
+      if (p.id === productId) {
+        return { ...p, isFeatured: willBeFeatured };
+      }
+      return willBeFeatured ? { ...p, isFeatured: false } : p;
+    });
+
+    setProducts(updatedProdList);
+    try {
+      localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(updatedProdList));
+    } catch {}
+
+    showToast({
+      id: String(Date.now()),
+      type: 'success',
+      title: willBeFeatured ? 'Đã ghim làm HÀNG HOT' : 'Đã bỏ HÀNG HOT',
+      message: willBeFeatured
+        ? `"${targetProd?.name}" đã được đưa lên vị trí HÀNG HOT nổi bật nhất ở đầu Storefront!`
+        : `"${targetProd?.name}" đã bỏ khỏi vị trí HÀNG HOT.`,
     });
   };
 
@@ -1728,7 +1764,23 @@ export function App() {
                   )}
                 </div>
 
-                <div className="md:col-span-3 lg:col-span-4 pt-1">
+                <div className="md:col-span-3 lg:col-span-4 flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <label className="flex items-center space-x-2.5 cursor-pointer bg-slate-950 px-3.5 py-2.5 rounded-xl border border-slate-800 hover:border-amber-500/50 transition">
+                    <input
+                      type="checkbox"
+                      checked={newGear.isFeatured}
+                      onChange={(e) => setNewGear((prev) => ({ ...prev, isFeatured: e.target.checked }))}
+                      className="w-4 h-4 rounded text-amber-500 focus:ring-0 bg-slate-900 border-slate-700 cursor-pointer"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                        <span>Đặt làm Hàng HOT (Nổi bật trên Hero Storefront)</span>
+                      </span>
+                      <p className="text-[10px] text-slate-400">Hiển thị nổi bật ở khung lớn đầu trang chủ web bán hàng</p>
+                    </div>
+                  </label>
+
                   <button
                     type="submit"
                     className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow transition flex items-center space-x-1.5"
@@ -1796,13 +1848,14 @@ export function App() {
                       <th className="py-3 px-4">Giá Bán</th>
                       <th className="py-3 px-4">Tồn Kho</th>
                       <th className="py-3 px-4">Trạng Thái</th>
+                      <th className="py-3 px-4 text-center">Hàng HOT Hero</th>
                       <th className="py-3 px-4 text-right">Thao Tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800 text-slate-300">
                     {filteredProducts.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="text-center py-12 text-slate-500">
+                        <td colSpan={8} className="text-center py-12 text-slate-500">
                           <Package className="w-8 h-8 mx-auto mb-2 text-slate-700" />
                           <p>Không tìm thấy thiết bị nào phù hợp với từ khóa tìm kiếm.</p>
                         </td>
@@ -1829,7 +1882,14 @@ export function App() {
                               </button>
                             </div>
                             <div>
-                              <div className="font-bold text-white max-w-sm truncate">{p.name}</div>
+                              <div className="font-bold text-white max-w-sm truncate flex items-center gap-1.5">
+                                <span>{p.name}</span>
+                                {p.isFeatured && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black tracking-wider uppercase shadow">
+                                    HOT HERO
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-[11px] text-slate-500 font-mono">{p.sku}</div>
                             </div>
                           </div>
@@ -1848,6 +1908,21 @@ export function App() {
                           >
                             {p.stock <= 3 ? 'Sắp hết' : 'Đủ hàng'}
                           </span>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleFeatured(p.id)}
+                            className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition inline-flex items-center space-x-1.5 ${
+                              p.isFeatured
+                                ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white border-amber-400 shadow-md shadow-amber-950/50 ring-2 ring-amber-500/30'
+                                : 'bg-slate-800 text-slate-400 hover:text-amber-300 border-slate-700 hover:border-amber-500/50'
+                            }`}
+                            title={p.isFeatured ? 'Đang là Hàng HOT trang chủ. Bấm để tắt.' : 'Bấm để chọn thiết bị này làm Hàng HOT trang chủ'}
+                          >
+                            <Flame className={`w-3.5 h-3.5 ${p.isFeatured ? 'text-amber-200 fill-amber-200' : 'text-slate-500'}`} />
+                            <span>{p.isFeatured ? 'Hàng HOT ★' : 'Đặt HOT'}</span>
+                          </button>
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end space-x-1.5">
