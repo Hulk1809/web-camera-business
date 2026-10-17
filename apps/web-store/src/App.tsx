@@ -509,6 +509,16 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedProduct, isLightboxOpen]);
 
+  // Keep selectedProduct in sync with live products state (e.g. when restocked)
+  useEffect(() => {
+    if (selectedProduct) {
+      const fresh = products.find((p) => p.id === selectedProduct.id || p.sku === selectedProduct.sku);
+      if (fresh && (fresh.stockQuantity !== selectedProduct.stockQuantity || fresh.badge !== selectedProduct.badge)) {
+        setSelectedProduct(fresh);
+      }
+    }
+  }, [products]);
+
   // Warranty Modal
   const [showWarrantyModal, setShowWarrantyModal] = useState<boolean>(false);
   const [serialQuery, setSerialQuery] = useState<string>('');
@@ -1740,9 +1750,17 @@ export function App() {
                     {selectedProduct.brand}
                   </span>
                   <span className="text-slate-400 font-mono text-[11px]">SKU: {selectedProduct.sku}</span>
-                  <span className="bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-lg text-[10px] font-bold">
-                    Sẵn hàng
-                  </span>
+                  {(selectedProduct.stockQuantity ?? 0) > 0 ? (
+                    <span className="bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center space-x-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>Sẵn hàng ({selectedProduct.stockQuantity} máy)</span>
+                    </span>
+                  ) : (
+                    <span className="bg-amber-950/80 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center space-x-1">
+                      <Clock className="w-3 h-3 text-amber-400 animate-pulse" />
+                      <span>Tạm hết sẵn • Nhận Đặt Trước (Pre-Order)</span>
+                    </span>
+                  )}
                 </div>
 
                 <h2 className="text-xl font-bold text-white leading-snug">
@@ -1760,9 +1778,11 @@ export function App() {
                   )}
                 </div>
 
-                <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-xs text-slate-300 leading-relaxed">
-                  {selectedProduct.description}
-                </div>
+                {selectedProduct.description ? (
+                  <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-xs text-slate-300 leading-relaxed">
+                    {selectedProduct.description}
+                  </div>
+                ) : null}
 
                 {/* Highlights */}
                 <div className="space-y-1.5 text-xs">

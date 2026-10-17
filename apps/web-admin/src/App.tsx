@@ -1577,10 +1577,52 @@ export function App() {
   const handleResetSeed = async () => {
     try {
       await fetch('/api/products/seed');
+      localStorage.removeItem('PROGEAR_SHARED_PRODUCTS');
       await fetchProducts();
+      showToast({
+        id: String(Date.now()),
+        type: 'success',
+        title: 'Đã đồng bộ lại kho hàng gốc',
+        message: 'Tất cả thiết bị, ống kính và flycam đã được khôi phục tồn kho sẵn hàng ban đầu.',
+      });
     } catch (err) {
       console.error(err);
     }
+  };
+
+  // Quick Restock Product
+  const handleQuickRestock = async (product: Product, addQuantity: number) => {
+    const newStock = Math.max(0, (product.stock || 0) + addQuantity);
+    const updated = products.map((p) =>
+      p.id === product.id
+        ? {
+            ...p,
+            stock: newStock,
+            status: (newStock <= 0 ? 'OUT_OF_STOCK' : newStock <= 3 ? 'LOW_STOCK' : 'IN_STOCK') as any,
+          }
+        : p
+    );
+    setProducts(updated);
+    try {
+      localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(updated));
+    } catch {}
+
+    try {
+      await fetch(`/api/products/${product.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stockQuantity: newStock }),
+      });
+    } catch (err) {
+      console.warn('Backend stock update fallback:', err);
+    }
+
+    showToast({
+      id: String(Date.now()),
+      type: 'success',
+      title: 'Đã nhập thêm hàng vào kho',
+      message: `${product.name}: Nhập +${addQuantity} -> Tồn kho: ${newStock} chiếc (${newStock > 0 ? 'Sẵn hàng' : 'Pre-Order'})`,
+    });
   };
 
   const formatVND = (val: number) => {
@@ -2309,16 +2351,42 @@ export function App() {
                         <td className="py-3 px-4 font-semibold text-slate-200">{p.brand}</td>
                         <td className="py-3 px-4 text-slate-400">{p.category}</td>
                         <td className="py-3 px-4 font-bold text-amber-400">{formatVND(p.price)}</td>
-                        <td className="py-3 px-4 font-mono font-bold">{p.stock}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center space-x-2">
+                            <span className={`font-mono font-bold text-xs ${p.stock <= 0 ? 'text-rose-400' : p.stock <= 3 ? 'text-amber-400' : 'text-slate-200'}`}>
+                              {p.stock}
+                            </span>
+                            <div className="flex items-center space-x-1">
+                              <button
+                                type="button"
+                                onClick={() => handleQuickRestock(p, 5)}
+                                className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-emerald-600 hover:text-white text-[10px] text-slate-300 font-bold border border-slate-700 transition"
+                                title="Nhập thêm +5 chiếc vào kho"
+                              >
+                                +5
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleQuickRestock(p, 10)}
+                                className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-emerald-600 hover:text-white text-[10px] text-slate-300 font-bold border border-slate-700 transition"
+                                title="Nhập thêm +10 chiếc vào kho"
+                              >
+                                +10
+                              </button>
+                            </div>
+                          </div>
+                        </td>
                         <td className="py-3 px-4">
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              p.stock <= 3
+                              p.stock <= 0
+                                ? 'bg-rose-950/60 text-rose-400 border border-rose-500/40'
+                                : p.stock <= 3
                                 ? 'bg-amber-900/40 text-amber-400 border border-amber-500/30'
                                 : 'bg-emerald-900/40 text-emerald-400 border border-emerald-500/30'
                             }`}
                           >
-                            {p.stock <= 3 ? 'Sắp hết' : 'Đủ hàng'}
+                            {p.stock <= 0 ? 'Hết hàng (Pre-Order)' : p.stock <= 3 ? 'Sắp hết' : 'Sẵn hàng'}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-center">
