@@ -6,45 +6,76 @@
   body {
     margin: 0;
     min-height: 100vh;
-    background-color: #030712;
-    color: #f3f4f6;
+    background-color: #060911;
+    color: #f1f5f9;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 }
 
-/* Custom scrollbars */
+/* Custom Ergonomic & Sleek Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #030712;
+  background: #080c16;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1f2937;
+  background: #1e293b;
   border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #ef4444;
 }
 
-/* Gen Z & Modern Design System Utilities */
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
+/* Glassmorphism Human-Centric System */
+.glass-panel {
+  background: rgba(13, 19, 33, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.05); }
+.glass-panel-hover {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.3s ease,
+              background-color 0.3s ease;
+}
+.glass-panel-hover:hover {
+  transform: translateY(-5px);
+  background: rgba(15, 23, 42, 0.88);
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.8),
+              0 0 30px -5px rgba(239, 68, 68, 0.22);
 }
 
-@keyframes floatSlow {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
+.glass-dock {
+  background: rgba(10, 15, 26, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.7);
 }
 
+/* Camera HUD / Viewfinder Brackets */
+.viewfinder-bracket {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: 0.35;
+}
+.group:hover .viewfinder-bracket {
+  opacity: 1;
+  border-color: #ef4444 !important;
+}
+
+/* Shimmer Loading Effect */
 .animate-shimmer {
   position: relative;
   overflow: hidden;
@@ -59,57 +90,101 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.14) 50%,
     transparent 100%
   );
   transform: translateX(-100%);
-  animation: shimmer 3s infinite ease-in-out;
+  animation: shimmer 2.2s infinite ease-in-out;
 }
 
-.glass-panel {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.glass-panel-hover {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.glass-panel-hover:hover {
-  transform: translateY(-4px);
-  background: rgba(15, 23, 42, 0.9);
-  border-color: rgba(239, 68, 68, 0.35);
-  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.7), 0 0 25px -5px rgba(239, 68, 68, 0.25);
-}
-
+/* Tactile Spring Buttons */
 .btn-primary-genz {
   position: relative;
   overflow: hidden;
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #ea580c 100%);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .btn-primary-genz:hover {
-  transform: translateY(-1.5px) scale(1.02);
-  box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.5), 0 0 15px rgba(234, 88, 12, 0.3);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 25px -4px rgba(239, 68, 68, 0.5), 0 0 20px rgba(234, 88, 12, 0.25);
 }
 .btn-primary-genz:active {
-  transform: scale(0.97);
+  transform: translateY(1px) scale(0.96);
 }
 
 .btn-secondary-genz {
-  background: rgba(30, 41, 59, 0.8);
-  backdrop-filter: blur(8px);
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              border-color 0.25s ease,
+              background-color 0.25s ease;
 }
 .btn-secondary-genz:hover {
   background: rgba(51, 65, 85, 0.9);
   border-color: rgba(255, 255, 255, 0.25);
   color: #ffffff;
-  transform: translateY(-1.5px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.5);
 }
 .btn-secondary-genz:active {
-  transform: scale(0.97);
+  transform: translateY(1px) scale(0.96);
 }
 
+/* Tactile Quick Add Spring Animation */
+.btn-quick-add {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 0.2s ease,
+              box-shadow 0.25s ease;
+}
+.btn-quick-add:active {
+  transform: scale(0.9);
+}
+
+/* Day/Night Vision Slider Track */
+.vision-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  cursor: ew-resize;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  margin: 0;
+}
+.vision-slider-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 3px solid #ef4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.8), 0 4px 10px rgba(0, 0, 0, 0.6);
+  cursor: ew-resize;
+}
+.vision-slider-thumb::-moz-range-thumb {
+  width: 38px;
+  height: 38px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 3px solid #ef4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.8), 0 4px 10px rgba(0, 0, 0, 0.6);
+  cursor: ew-resize;
+}
+
+/* Reduced Motion Safety for Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

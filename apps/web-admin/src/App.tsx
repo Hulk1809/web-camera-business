@@ -31,6 +31,8 @@ import {
   Eye,
   Maximize2
 } from 'lucide-react';
+import { BentoMetricsGrid } from './components/BentoMetricsGrid';
+import { DynamicIslandToast, type ToastMessage } from './components/DynamicIslandToast';
 
 export interface Product {
   id: string;
@@ -457,6 +459,8 @@ const DEFAULT_SERIALS: SerialItem[] = [
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'warranty' | 'k8s'>('dashboard');
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const showToast = (t: ToastMessage) => setToast(t);
 
   // Products State with Persistent Sync Layer
   const [products, setProducts] = useState<Product[]>(() => {
@@ -866,6 +870,20 @@ export function App() {
       )
     );
 
+    const statusLabels: Record<string, string> = {
+      CONFIRMED: 'Đã Xác Nhận',
+      SHIPPING: 'Đang Giao Hàng',
+      COMPLETED: 'Hoàn Tất Giao Hàng',
+      CANCELLED: 'Đã Hủy Đơn',
+    };
+
+    showToast({
+      id: String(Date.now()),
+      type: 'success',
+      title: 'Cập nhật trạng thái đơn hàng',
+      message: `Đơn ${orderId} đã chuyển sang "${statusLabels[newStatus] || newStatus}"`,
+    });
+
     // 2. Call backend PATCH /api/orders/:id/status
     try {
       await fetch(`/api/orders/${orderId}/status`, {
@@ -970,11 +988,23 @@ export function App() {
       images: [],
     });
     setInputImgUrl('');
+    showToast({
+      id: String(Date.now()),
+      type: 'success',
+      title: 'Đã thêm thiết bị mới',
+      message: `${newGear.name} đã được lưu vào kho thành công.`,
+    });
   };
 
   // Delete Product
   const handleDeleteProduct = async (id: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
+    showToast({
+      id: String(Date.now()),
+      type: 'warning',
+      title: 'Đã xóa thiết bị',
+      message: 'Thiết bị đã được xóa khỏi hệ thống quản trị.',
+    });
     try {
       await fetch(`/api/products/${id}`, { method: 'DELETE' });
     } catch (err) {
@@ -1021,10 +1051,14 @@ export function App() {
   const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
   const totalOrdersCount = orders.length;
   const pendingOrdersCount = orders.filter((o) => (o.orderStatus || o.status) === 'PENDING').length;
+  const completedOrdersCount = orders.filter((o) => (o.orderStatus || o.status) === 'COMPLETED').length;
   const lowStockCount = products.filter((p) => p.stock <= 3).length;
 
   return (
     <div className="min-h-screen bg-[#090D16] text-slate-100 flex flex-col font-sans selection:bg-red-600 selection:text-white">
+      {/* ----------------- DYNAMIC ISLAND TOAST ----------------- */}
+      <DynamicIslandToast toast={toast} onClose={() => setToast(null)} />
+
       {/* ----------------- TOP NAVBAR ----------------- */}
       <header className="bg-[#070A11] border-b border-slate-800 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -1140,53 +1174,18 @@ export function App() {
         {/* ================= 1. DASHBOARD ================= */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow">
-                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-                  <span>Tổng Doanh Thu</span>
-                  <DollarSign className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div className="text-2xl font-black text-white">{formatVND(totalRevenue)}</div>
-                <div className="text-[11px] text-emerald-400 flex items-center space-x-1 mt-1 font-semibold">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span>Tăng trưởng 24% so với tuần trước</span>
-                </div>
-              </div>
-
-              <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow">
-                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-                  <span>Tổng Đơn Đặt Hàng</span>
-                  <ShoppingBag className="w-4 h-4 text-red-400" />
-                </div>
-                <div className="text-2xl font-black text-white">{totalOrdersCount} đơn</div>
-                <div className="text-[11px] text-amber-400 mt-1">
-                  {pendingOrdersCount} đơn đang chờ duyệt xuất kho
-                </div>
-              </div>
-
-              <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow">
-                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-                  <span>Thiết Bị Trong Kho</span>
-                  <Package className="w-4 h-4 text-sky-400" />
-                </div>
-                <div className="text-2xl font-black text-white">{products.length} mã sản phẩm</div>
-                <div className="text-[11px] text-slate-400 mt-1">
-                  Sony • DJI • Canon • Fujifilm • BMD
-                </div>
-              </div>
-
-              <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow">
-                <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-                  <span>Cảnh Báo Tồn Kho</span>
-                  <AlertTriangle className="w-4 h-4 text-amber-500" />
-                </div>
-                <div className="text-2xl font-black text-amber-400">{lowStockCount} model</div>
-                <div className="text-[11px] text-amber-500/80 mt-1">
-                  Cần nhập thêm Pocket 3, RS 4 Pro
-                </div>
-              </div>
-            </div>
+            {/* Bento Metrics Grid with Ambient Light & Animated Counters */}
+            <BentoMetricsGrid
+              totalRevenue={totalRevenue}
+              totalOrdersCount={totalOrdersCount}
+              pendingOrdersCount={pendingOrdersCount}
+              productsCount={products.length}
+              lowStockCount={lowStockCount}
+              completedOrdersCount={completedOrdersCount}
+              onNavigateOrders={() => setActiveTab('orders')}
+              onNavigateProducts={() => setActiveTab('products')}
+              onNavigateK8s={() => setActiveTab('k8s')}
+            />
 
             {/* Quick Action & Sync Alert */}
             <div className="bg-gradient-to-r from-red-950/40 via-slate-900 to-slate-900 border border-red-500/30 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
@@ -1204,7 +1203,16 @@ export function App() {
 
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={fetchOrders}
+                  onClick={() => {
+                    fetchOrders();
+                    fetchProducts();
+                    showToast({
+                      id: String(Date.now()),
+                      type: 'info',
+                      title: 'Đã làm mới dữ liệu',
+                      message: 'Chỉ số và đơn hàng từ web bán hàng đã được đồng bộ.',
+                    });
+                  }}
                   className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition flex items-center space-x-1.5"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
