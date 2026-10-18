@@ -3,7 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Electronic Warranty (Bảo Hành Điện Tử) Verification', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:3000/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle').catch(() => {});
   });
 
   test('TC-WARRANTY-01: Order Number lookup (PRO-20261016-8942) displays 24M Sony FX3 with Live Countdown', async ({ page }) => {

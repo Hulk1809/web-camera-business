@@ -438,13 +438,92 @@ export const DEFAULT_PRODUCTS: ProProduct[] = [
 ];
 
 export const CATEGORIES_MENU = [
-  { name: 'Máy Ảnh Mirrorless & DSLR', icon: Camera, shortTitle: 'Máy Ảnh Mirrorless' },
-  { name: 'Máy Quay Điện Ảnh & Cinema', icon: Film, shortTitle: 'Máy Quay Cinema' },
-  { name: 'Flycam & Drone DJI', icon: Video, shortTitle: 'Flycam & Drone' },
-  { name: 'Gimbal & Chống Rung DJI Ronin', icon: Layers, shortTitle: 'Gimbal Chống Rung' },
-  { name: 'Action Cam & Pocket Creator', icon: Battery, shortTitle: 'Action Cam & Vlog' },
-  { name: 'Ống Kính Chuyên Dụng (Lenses)', icon: Eye, shortTitle: 'Ống Kính Lenses' },
-  { name: 'Âm Thanh & Ánh Sáng Studio', icon: Headphones, shortTitle: 'Micro & Đèn Studio' },
+  {
+    name: 'Máy Ảnh Mirrorless & DSLR',
+    icon: Camera,
+    shortTitle: 'Máy Ảnh Mirrorless',
+    badge: 'Hot nhất',
+    highlightPromo: 'Trợ giá thu cũ đổi mới lên đời máy ảnh đến 3.000.000đ',
+    subCategories: [
+      { title: 'Sony Alpha Full-Frame', items: ['Sony A7 IV', 'Sony A7R V', 'Sony A7C II', 'Sony A1 Flagship'] },
+      { title: 'Canon EOS R System', items: ['Canon EOS R5 Mark II', 'Canon EOS R6 II', 'Canon EOS R8'] },
+      { title: 'Fujifilm X-Series', items: ['Fujifilm X-T5', 'Fujifilm X-H2S', 'Fujifilm X100VI'] },
+      { title: 'Nikon Z Mirrorless', items: ['Nikon Z8', 'Nikon Z6 III', 'Nikon Zf Retro'] },
+    ],
+  },
+  {
+    name: 'Máy Quay Điện Ảnh & Cinema',
+    icon: Film,
+    shortTitle: 'Máy Quay Cinema',
+    badge: 'Chuyên nghiệp',
+    highlightPromo: 'Tặng thẻ CFexpress Type A 160GB khi đặt mua Body FX3',
+    subCategories: [
+      { title: 'Sony Cinema Line', items: ['Sony FX3 Full-Frame', 'Sony FX6 Cinema 4K', 'Sony FX30 Super 35'] },
+      { title: 'Blackmagic Design', items: ['Cinema 6K Full-Frame', 'Pocket Cinema 6K G2', 'URSA Mini Pro 12K'] },
+      { title: 'Phụ kiện Cinema Pro', items: ['Khung Cage Tilta/SmallRig', 'Pin V-Mount 150Wh', 'Màn hình SmallHD'] },
+    ],
+  },
+  {
+    name: 'Flycam & Drone DJI',
+    icon: Video,
+    shortTitle: 'Flycam & Drone',
+    badge: 'Bán chạy',
+    highlightPromo: 'Bảo hiểm rơi vỡ DJI Care Refresh 1 năm miễn phí',
+    subCategories: [
+      { title: 'Dòng Flycam Cine Flagship', items: ['DJI Mavic 3 Pro Cine', 'DJI Mavic 3 Classic', 'DJI Inspire 3 8K'] },
+      { title: 'Dòng Flycam Mini Du Lịch', items: ['DJI Mini 4 Pro RC 2', 'DJI Mini 3 Fly More Combo'] },
+      { title: 'Dòng FPV Cảm Giác Mạnh', items: ['DJI Avata 2 Goggles 3', 'DJI O3 Air Unit FPV'] },
+      { title: 'Phụ kiện Flycam Chính Hãng', items: ['Hub sạc 100W 3 pin', 'Bộ cánh quạt giảm ồn', 'Kính lọc Filter ND'] },
+    ],
+  },
+  {
+    name: 'Gimbal & Chống Rung DJI Ronin',
+    icon: Layers,
+    shortTitle: 'Gimbal Chống Rung',
+    badge: 'Studio',
+    highlightPromo: 'Tặng Focus Motor LiDAR & ngàm kẹp phone khi mua RS 4 Pro',
+    subCategories: [
+      { title: 'Gimbal Máy Ảnh Chuyên Nghiệp', items: ['DJI RS 4 Pro Combo', 'DJI RS 4 Standard', 'DJI RS 3 Pro'] },
+      { title: 'Gimbal Nhỏ Gọn Du Lịch', items: ['DJI RS 3 Mini', 'Zhiyun Weebill 3S'] },
+      { title: 'Hệ thống Cine Cao Cấp', items: ['DJI Ronin 4D 8K', 'Hệ thống Focus LiDAR'] },
+    ],
+  },
+  {
+    name: 'Action Cam & Pocket Creator',
+    icon: Battery,
+    shortTitle: 'Action Cam & Vlog',
+    badge: 'Xu hướng',
+    highlightPromo: 'Bộ combo làm vlog TikTok / YouTube sẵn hàng giao ngay',
+    subCategories: [
+      { title: 'Camera Bỏ Túi Creator', items: ['DJI Osmo Pocket 3 Creator Combo', 'DJI Osmo Pocket 3 Standard'] },
+      { title: 'Action Cam Hành Trình', items: ['DJI Osmo Action 4 Adventure', 'GoPro Hero 12 Black'] },
+      { title: 'Phụ kiện Vlogger', items: ['Gậy selfie kéo dài 1.5m', 'Hộp sạc pin thông minh', 'Case lặn 60m'] },
+    ],
+  },
+  {
+    name: 'Ống Kính Chuyên Dụng (Lenses)',
+    icon: Eye,
+    shortTitle: 'Ống Kính Lenses',
+    badge: 'Quang học',
+    highlightPromo: 'Miễn phí vệ sinh thấu kính & cân chỉnh sensor trọn đời',
+    subCategories: [
+      { title: 'Sony FE G Master', items: ['FE 24-70mm F2.8 GM II', 'FE 70-200mm F2.8 GM OSS II', 'FE 16-35mm F2.8 GM II'] },
+      { title: 'Canon RF L-Series', items: ['RF 24-70mm F2.8L IS USM', 'RF 28-70mm F2L USM', 'RF 70-200mm F2.8L'] },
+      { title: 'Ống Kính Anamorphic', items: ['Sirui Venus 1.6x Full Frame', 'Blazar Remus 1.5x'] },
+    ],
+  },
+  {
+    name: 'Âm Thanh & Ánh Sáng Studio',
+    icon: Headphones,
+    shortTitle: 'Micro & Đèn Studio',
+    badge: 'Âm thanh',
+    highlightPromo: 'Tư vấn setup phòng livestream / podcast chuyên nghiệp 1-1',
+    subCategories: [
+      { title: 'Micro Thu Âm Không Dây', items: ['DJI Mic 2 (2 TX + 1 RX)', 'Rode Wireless PRO', 'Hollyland Lark Max'] },
+      { title: 'Đèn Led Quay Phim', items: ['Aputure Amaran 200d S', 'Nanlite Forza 300B II', 'Colbor CL220'] },
+      { title: 'Phụ kiện Phòng Quay', items: ['Softbox Cầu Lantern', 'Chân C-Stand Inox', 'Bảng tản sáng 5 in 1'] },
+    ],
+  },
 ];
 
 export const BRANDS = ['Tất Cả', 'Sony', 'DJI', 'Canon', 'Fujifilm', 'Nikon', 'Blackmagic Design'];
@@ -567,6 +646,7 @@ export function App() {
   const [isInstallmentOpen, setIsInstallmentOpen] = useState<boolean>(false);
   const [isTradeInOpen, setIsTradeInOpen] = useState<boolean>(false);
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState<boolean>(false);
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [activeAdvisorName, setActiveAdvisorName] = useState<string>('');
 
   // Customer Account States
@@ -1357,9 +1437,13 @@ export function App() {
 
       {/* ----------------- HERO AREA: 3-COLUMN RETAIL LAYOUT ----------------- */}
       <section className="max-w-7xl mx-auto px-4 pt-3 pb-2 w-full">
-        <div className="grid grid-cols-12 gap-3">
+        <div className="grid grid-cols-12 gap-3 relative">
           {/* LEFT COLUMN: Vertical Categories Menu (22% - cols 1-3) */}
-          <div className="hidden lg:flex lg:col-span-3 flex-col bg-white rounded-lg border border-gray-200 shadow-sm p-2 justify-between">
+          <div
+            data-testid="hero-category-sidebar"
+            onMouseLeave={() => setHoveredCategory(null)}
+            className="hidden lg:flex lg:col-span-3 flex-col bg-white rounded-lg border border-gray-200 shadow-sm p-2 justify-between relative z-20"
+          >
             <div className="space-y-0.5">
               <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-2.5 py-1 mb-1 border-b border-gray-100 flex items-center justify-between">
                 <span>DANH MỤC SẢN PHẨM</span>
@@ -1369,30 +1453,48 @@ export function App() {
               {CATEGORIES_MENU.map((cat, idx) => {
                 const IconComponent = cat.icon;
                 const isSelected = selectedCategory === cat.name;
+                const isHovered = hoveredCategory === cat.name;
                 return (
                   <button
                     key={idx}
+                    data-testid={`btn-sidebar-category-${cat.shortTitle}`}
+                    onMouseEnter={() => setHoveredCategory(cat.name)}
                     onClick={() => {
-                      setSelectedCategory(isSelected ? 'Tất Cả' : cat.name);
+                      setSelectedCategory(cat.name);
+                      setHoveredCategory(null);
+                      showToast(`Đang lọc danh mục: ${cat.shortTitle}`);
+                      setTimeout(() => {
+                        document.getElementById('product-catalog')?.scrollIntoView({ behavior: 'smooth' });
+                      }, 50);
                     }}
-                    className={`w-full text-left px-2.5 py-2 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
-                      isSelected
-                        ? 'bg-red-50 text-[#E30019] font-bold border-l-2 border-[#E30019]'
+                    className={`w-full text-left px-2.5 py-2 rounded-md text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
+                      isSelected || isHovered
+                        ? 'bg-red-50 text-[#E30019] font-bold border-l-2 border-[#E30019] shadow-xs'
                         : 'text-gray-700 hover:bg-gray-50 hover:text-[#E30019]'
                     }`}
                   >
                     <div className="flex items-center space-x-2.5 truncate">
-                      <IconComponent className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#E30019]' : 'text-gray-500'}`} />
+                      <IconComponent className={`w-4 h-4 shrink-0 ${isSelected || isHovered ? 'text-[#E30019]' : 'text-gray-500'}`} />
                       <span className="truncate">{cat.shortTitle}</span>
                     </div>
-                    <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
+                    <div className="flex items-center gap-1 shrink-0">
+                      {cat.badge && (
+                        <span className="text-[9px] bg-red-100 text-[#E30019] px-1.5 py-0.2 rounded-full font-semibold hidden xl:inline-block">
+                          {cat.badge}
+                        </span>
+                      )}
+                      <ChevronRight className={`w-3 h-3 transition-transform ${isHovered ? 'translate-x-0.5 text-[#E30019]' : 'text-gray-400'}`} />
+                    </div>
                   </button>
                 );
               })}
             </div>
 
             {/* Bottom mini promo banner */}
-            <div className="mt-2 pt-2 border-t border-gray-100 bg-red-50/50 p-2 rounded-md text-center">
+            <div
+              onClick={() => setIsInstallmentOpen(true)}
+              className="mt-2 pt-2 border-t border-gray-100 bg-red-50/50 hover:bg-red-50 p-2 rounded-md text-center cursor-pointer transition"
+            >
               <div className="text-[11px] font-bold text-[#E30019] flex items-center justify-center gap-1">
                 <Percent className="w-3.5 h-3.5" />
                 <span>Trả Góp 0% Lãi Suất</span>
@@ -1400,6 +1502,99 @@ export function App() {
               <div className="text-[10px] text-gray-600 mt-0.5">Thủ tục xét duyệt online 5 phút</div>
             </div>
           </div>
+
+          {/* FLYOUT SUBMENU MEGA PANEL (Pops out to the right when hovered) */}
+          {(() => {
+            const hoveredCatData = CATEGORIES_MENU.find((c) => c.name === hoveredCategory);
+            if (!hoveredCatData) return null;
+            const countInCat = products.filter((p) => p.category === hoveredCatData.name).length;
+            return (
+              <div
+                data-testid="sidebar-category-flyout"
+                onMouseEnter={() => setHoveredCategory(hoveredCatData.name)}
+                onMouseLeave={() => setHoveredCategory(null)}
+                className="absolute left-[25.5%] top-0 bottom-0 z-40 w-[600px] bg-white rounded-r-xl border border-gray-200 shadow-2xl p-5 hidden lg:flex flex-col justify-between animate-in fade-in slide-in-from-left-2 duration-150"
+              >
+                <div>
+                  {/* Top bar of Flyout */}
+                  <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#E30019]"></span>
+                      <span className="font-bold text-sm text-gray-900 uppercase">
+                        {hoveredCatData.name}
+                      </span>
+                      {hoveredCatData.badge && (
+                        <span className="bg-red-100 text-[#E30019] text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          {hoveredCatData.badge}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">
+                      {countInCat} sản phẩm sẵn hàng
+                    </span>
+                  </div>
+
+                  {/* Promo highlight banner inside flyout */}
+                  {hoveredCatData.highlightPromo && (
+                    <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200/60 rounded-md p-2.5 mb-3.5 text-xs text-red-900 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-[#E30019] shrink-0" />
+                      <span className="font-semibold text-[11px]">{hoveredCatData.highlightPromo}</span>
+                    </div>
+                  )}
+
+                  {/* Subcategories Grid */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {hoveredCatData.subCategories.map((sub, sIdx) => (
+                      <div key={sIdx} className="space-y-1">
+                        <div className="text-[11.5px] font-bold text-gray-950 flex items-center gap-1 border-b border-gray-100 pb-0.5">
+                          <span className="text-[#E30019]">›</span>
+                          <span>{sub.title}</span>
+                        </div>
+                        <div className="space-y-0.5 pt-0.5">
+                          {sub.items.map((item, iIdx) => (
+                            <button
+                              key={iIdx}
+                              onClick={() => {
+                                setSelectedCategory(hoveredCatData.name);
+                                setSearchQuery(item.split(' ')[0] === 'DJI' ? item.split(' ').slice(0, 3).join(' ') : item.split(' ')[0]);
+                                setHoveredCategory(null);
+                                showToast(`Đang lọc: ${item}`);
+                                setTimeout(() => {
+                                  document.getElementById('product-catalog')?.scrollIntoView({ behavior: 'smooth' });
+                                }, 50);
+                              }}
+                              className="block w-full text-left text-[11px] text-gray-600 hover:text-[#E30019] hover:font-semibold transition py-0.5 truncate cursor-pointer"
+                            >
+                              {item}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bottom Direct Navigation Action */}
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between mt-2">
+                  <button
+                    onClick={() => {
+                      setSelectedCategory(hoveredCatData.name);
+                      setHoveredCategory(null);
+                      showToast(`Đang xem danh mục: ${hoveredCatData.name}`);
+                      setTimeout(() => {
+                        document.getElementById('product-catalog')?.scrollIntoView({ behavior: 'smooth' });
+                      }, 50);
+                    }}
+                    className="bg-[#E30019] hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-md shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Xem Toàn Bộ Sản Phẩm {hoveredCatData.shortTitle}</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-[10px] text-gray-500">Chính hãng 100% • Bảo hành 24T</span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* CENTER COLUMN: Main Banner Carousel (53% - cols 4-9 on lg, cols 1-8 on md) */}
           <div className="col-span-12 md:col-span-8 lg:col-span-6 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden relative min-h-[280px] sm:min-h-[340px] flex flex-col justify-between group">
@@ -1708,31 +1903,67 @@ export function App() {
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-gray-200">
             <div className="flex items-center space-x-2">
               <div className="w-1.5 h-5 bg-[#E30019] rounded-sm"></div>
-              <h2 className="text-base sm:text-lg font-black text-gray-900 uppercase tracking-tight">
-                MÁY ẢNH MIRRORLESS & MÁY QUAY CINEMA CHÍNH HÃNG
+              <h2
+                data-testid="catalog-header-title"
+                className="text-base sm:text-lg font-black text-gray-900 uppercase tracking-tight flex items-center gap-2"
+              >
+                <span>
+                  {selectedCategory === 'Tất Cả'
+                    ? 'KHO MÁY ẢNH, FLYCAM, GIMBAL & PHỤ KIỆN CHÍNH HÃNG'
+                    : `DANH MỤC: ${selectedCategory.toUpperCase()} (${filteredProducts.length} SẢN PHẨM)`}
+                </span>
+                {selectedCategory !== 'Tất Cả' && (
+                  <button
+                    data-testid="btn-clear-category-filter"
+                    onClick={() => {
+                      setSelectedCategory('Tất Cả');
+                      showToast('Đã hiển thị toàn bộ sản phẩm');
+                    }}
+                    className="text-xs bg-red-100 text-[#E30019] hover:bg-red-200 px-2.5 py-0.5 rounded-full font-bold transition flex items-center gap-1 normal-case cursor-pointer"
+                  >
+                    <span>✕ Xóa lọc</span>
+                  </button>
+                )}
               </h2>
             </div>
             <div className="flex items-center space-x-2 text-xs">
               <button
-                onClick={() => setSelectedCategory('Máy Ảnh Mirrorless & DSLR')}
-                className="text-gray-600 hover:text-[#E30019] font-medium"
+                onClick={() => {
+                  setSelectedCategory('Máy Ảnh Mirrorless & DSLR');
+                  showToast('Đang lọc: Máy Ảnh Mirrorless');
+                }}
+                className="text-gray-600 hover:text-[#E30019] font-medium cursor-pointer"
               >
                 Máy Ảnh Mirrorless
               </button>
               <span className="text-gray-300">|</span>
               <button
-                onClick={() => setSelectedCategory('Máy Quay Điện Ảnh & Cinema')}
-                className="text-gray-600 hover:text-[#E30019] font-medium"
+                onClick={() => {
+                  setSelectedCategory('Máy Quay Điện Ảnh & Cinema');
+                  showToast('Đang lọc: Máy Quay Cinema');
+                }}
+                className="text-gray-600 hover:text-[#E30019] font-medium cursor-pointer"
               >
                 Máy Quay Cinema
               </button>
               <span className="text-gray-300">|</span>
               <button
                 onClick={() => {
+                  setSelectedCategory('Flycam & Drone DJI');
+                  showToast('Đang lọc: Flycam & Drone');
+                }}
+                className="text-gray-600 hover:text-[#E30019] font-medium cursor-pointer"
+              >
+                Flycam & Drone
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={() => {
                   setSelectedCategory('Tất Cả');
                   setSelectedBrand('Tất Cả');
+                  setPriceFilter('ALL');
                 }}
-                className="text-[#E30019] font-bold flex items-center gap-0.5"
+                className="text-[#E30019] font-bold flex items-center gap-0.5 cursor-pointer"
               >
                 <span>Xem tất cả ({filteredProducts.length})</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -1741,58 +1972,25 @@ export function App() {
           </div>
 
           {/* High Density Grid (5 cols on Desktop) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {filteredProducts.slice(0, 10).map((prod) => (
-              <RetailProductCard
-                key={prod.id}
-                product={prod}
-                onAddToCart={addToCart}
-                onQuickView={openProductDetail}
-                onToggleWishlist={toggleWishlist}
-                isWishlisted={wishlist.includes(prod.id)}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* ----------------- CLUSTER 2: FLYCAM & THIẾT BỊ CHỐNG RUNG DJI ----------------- */}
-        <section className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-gray-200">
-            <div className="flex items-center space-x-2">
-              <div className="w-1.5 h-5 bg-sky-600 rounded-sm"></div>
-              <h2 className="text-base sm:text-lg font-black text-gray-900 uppercase tracking-tight">
-                FLYCAM, DRONE & GIMBAL CHỐNG RUNG CHUYÊN NGHIỆP
-              </h2>
-            </div>
-            <div className="flex items-center space-x-2 text-xs">
+          {filteredProducts.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+              <Camera className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+              <div className="font-bold text-gray-700 text-sm">Chưa có sản phẩm nào thuộc bộ lọc này</div>
+              <p className="text-xs text-gray-500 mt-1">Vui lòng chọn danh mục khác hoặc xóa bộ lọc để duyệt toàn bộ kho máy ảnh & flycam.</p>
               <button
-                onClick={() => setSelectedBrand('DJI')}
-                className="text-gray-600 hover:text-[#E30019] font-medium"
+                onClick={() => {
+                  setSelectedCategory('Tất Cả');
+                  setSelectedBrand('Tất Cả');
+                  setPriceFilter('ALL');
+                }}
+                className="mt-3 px-4 py-2 bg-[#E30019] hover:bg-red-700 text-white font-bold text-xs rounded-md shadow-sm transition cursor-pointer"
               >
-                Thiết Bị DJI
-              </button>
-              <span className="text-gray-300">|</span>
-              <button
-                onClick={() => setSelectedCategory('Flycam & Drone DJI')}
-                className="text-gray-600 hover:text-[#E30019] font-medium"
-              >
-                Flycam
-              </button>
-              <span className="text-gray-300">|</span>
-              <button
-                onClick={() => setSelectedCategory('Gimbal & Chống Rung DJI Ronin')}
-                className="text-gray-600 hover:text-[#E30019] font-medium"
-              >
-                Gimbal Ronin
+                Xem Toàn Bộ Sản Phẩm
               </button>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {products
-              .filter((p) => p.category.includes('Flycam') || p.category.includes('Gimbal') || p.category.includes('Pocket') || p.brand === 'DJI')
-              .slice(0, 5)
-              .map((prod) => (
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {filteredProducts.map((prod) => (
                 <RetailProductCard
                   key={prod.id}
                   product={prod}
@@ -1802,8 +2000,70 @@ export function App() {
                   isWishlisted={wishlist.includes(prod.id)}
                 />
               ))}
-          </div>
+            </div>
+          )}
         </section>
+
+        {/* ----------------- CLUSTER 2: FLYCAM & THIẾT BỊ CHỐNG RUNG DJI (CHỈ HIỆN KHI CHƯA LỌC DANH MỤC RIÊNG) ----------------- */}
+        {selectedCategory === 'Tất Cả' && (
+          <section className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-gray-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-1.5 h-5 bg-sky-600 rounded-sm"></div>
+                <h2 className="text-base sm:text-lg font-black text-gray-900 uppercase tracking-tight">
+                  FLYCAM, DRONE & GIMBAL CHỐNG RUNG CHUYÊN NGHIỆP
+                </h2>
+              </div>
+              <div className="flex items-center space-x-2 text-xs">
+                <button
+                  onClick={() => {
+                    setSelectedBrand('DJI');
+                    document.getElementById('product-catalog')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-gray-600 hover:text-[#E30019] font-medium cursor-pointer"
+                >
+                  Thiết Bị DJI
+                </button>
+                <span className="text-gray-300">|</span>
+                <button
+                  onClick={() => {
+                    setSelectedCategory('Flycam & Drone');
+                    document.getElementById('product-catalog')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-gray-600 hover:text-[#E30019] font-medium cursor-pointer"
+                >
+                  Flycam
+                </button>
+                <span className="text-gray-300">|</span>
+                <button
+                  onClick={() => {
+                    setSelectedCategory('Gimbal Chống Rung');
+                    document.getElementById('product-catalog')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-gray-600 hover:text-[#E30019] font-medium cursor-pointer"
+                >
+                  Gimbal Ronin
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {products
+                .filter((p) => p.category.includes('Flycam') || p.category.includes('Gimbal') || p.category.includes('Pocket') || p.brand === 'DJI')
+                .slice(0, 5)
+                .map((prod) => (
+                  <RetailProductCard
+                    key={prod.id}
+                    product={prod}
+                    onAddToCart={addToCart}
+                    onQuickView={openProductDetail}
+                    onToggleWishlist={toggleWishlist}
+                    isWishlisted={wishlist.includes(prod.id)}
+                  />
+                ))}
+            </div>
+          </section>
+        )}
 
         {/* ----------------- RETAIL VALUE PROPOSITIONS ----------------- */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
