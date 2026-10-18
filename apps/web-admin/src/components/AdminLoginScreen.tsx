@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Lock, Mail, Eye, EyeOff, Camera, ArrowRight, AlertCircle, KeyRound, Check } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, Eye, EyeOff, Camera, ArrowRight, AlertCircle } from 'lucide-react';
 import { AdvisorStaff, PRESET_STAFF_ACCOUNTS } from '../types/chat';
 
 interface AdminLoginScreenProps {
@@ -56,13 +56,6 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onLoginSucce
       setIsLoading(false);
       setErrorMessage('Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại thông tin đăng nhập!');
     }, 400);
-  };
-
-  // Quick fill helper for testers
-  const handleQuickFill = (presetEmail: string, presetPass: string) => {
-    setEmail(presetEmail);
-    setPassword(presetPass);
-    setErrorMessage('');
   };
 
   return (
@@ -125,7 +118,9 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onLoginSucce
                   type="email"
                   data-testid="input-admin-email"
                   required
-                  placeholder="admin@progear.vn"
+                  placeholder="nhanvien@progear.vn"
+                  autoComplete="username"
+                  spellCheck={false}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition text-xs"
@@ -146,7 +141,8 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onLoginSucce
                   type={showPassword ? 'text' : 'password'}
                   data-testid="input-admin-password"
                   required
-                  placeholder="••••••••"
+                  placeholder="Nhập mật khẩu nội bộ..."
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-9 pr-10 py-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition text-xs"
@@ -178,60 +174,6 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onLoginSucce
               )}
             </button>
           </form>
-
-          {/* Quick Preset Accounts Box for Internal Testing */}
-          <div className="pt-3 border-t border-slate-800">
-            <div className="text-[11px] font-bold text-slate-400 mb-2 flex items-center gap-1">
-              <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Tài khoản nhân viên được cấp (Bấm để điền nhanh):</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin@progear.vn', 'admin123456')}
-                className="p-1.5 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition flex items-center justify-between text-slate-300 cursor-pointer"
-              >
-                <div>
-                  <div className="font-bold text-indigo-400">Quản Trị Trưởng</div>
-                  <div className="text-slate-500">admin@progear.vn</div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('tuvan1@progear.vn', 'progear123')}
-                className="p-1.5 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition flex items-center justify-between text-slate-300 cursor-pointer"
-              >
-                <div>
-                  <div className="font-bold text-emerald-400">Tư Vấn 1 (Hoàng Nam)</div>
-                  <div className="text-slate-500">tuvan1@progear.vn</div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('tuvan2@progear.vn', 'progear123')}
-                className="p-1.5 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition flex items-center justify-between text-slate-300 cursor-pointer"
-              >
-                <div>
-                  <div className="font-bold text-sky-400">Tư Vấn 2 (Minh Thư)</div>
-                  <div className="text-slate-500">tuvan2@progear.vn</div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('tuvan3@progear.vn', 'progear123')}
-                className="p-1.5 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition flex items-center justify-between text-slate-300 cursor-pointer"
-              >
-                <div>
-                  <div className="font-bold text-purple-400">Tư Vấn 3 (Quốc Anh)</div>
-                  <div className="text-slate-500">tuvan3@progear.vn</div>
-                </div>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Footer Warning */}
