@@ -52,6 +52,7 @@ import {
   Boxes,
   HelpCircle,
   Menu,
+  LogOut,
 } from 'lucide-react';
 import { EnterpriseKpiRow, formatVND } from './components/EnterpriseKpiRow';
 import { EnterpriseToast, type ToastMessage } from './components/EnterpriseToast';
@@ -59,6 +60,7 @@ import { AdminAdvisorChatView } from './components/AdminAdvisorChatView';
 import { StaffAccountSwitcher } from './components/StaffAccountSwitcher';
 import { VietQrPaymentBox } from './components/VietQrPaymentBox';
 import { AdminRevenueStatementView } from './components/AdminRevenueStatementView';
+import { AdminLoginScreen } from './components/AdminLoginScreen';
 import { chatSyncService } from './services/chatSyncService';
 
 export interface Product {
@@ -430,6 +432,15 @@ export function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'finance' | 'products' | 'categories' | 'warranty' | 'k8s' | 'chat'>('dashboard');
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const showToast = (t: ToastMessage) => setToast(t);
+
+  // Enterprise Authentication Guard State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('PROGEAR_ADMIN_LOGGED_IN') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   // Unassigned chat sessions counter
   const [waitingChatCount, setWaitingChatCount] = useState<number>(() => {
@@ -1167,6 +1178,21 @@ export function App() {
     .filter((o) => o.orderStatus === 'COMPLETED' || o.orderStatus === 'DELIVERED' || o.paymentStatus === 'PAID')
     .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
+  // If not authenticated, require Admin Login
+  if (!isAuthenticated) {
+    return (
+      <AdminLoginScreen
+        onLoginSuccess={(staff) => {
+          try {
+            sessionStorage.setItem('PROGEAR_ADMIN_LOGGED_IN', 'true');
+          } catch {}
+          chatSyncService.setActiveStaff(staff);
+          setIsAuthenticated(true);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans">
       {/* ----------------- FIXED LEFT SIDEBAR (SAPO / HARAVAN STYLE) ----------------- */}
@@ -1384,9 +1410,25 @@ export function App() {
             </p>
           </div>
 
-          <div className="flex items-center space-x-3 text-xs">
+          <div className="flex items-center space-x-2.5 text-xs">
             {/* Multi-Staff Account Switcher */}
             <StaffAccountSwitcher />
+
+            {/* Admin Logout Button */}
+            <button
+              data-testid="btn-admin-logout"
+              onClick={() => {
+                try {
+                  sessionStorage.removeItem('PROGEAR_ADMIN_LOGGED_IN');
+                } catch {}
+                setIsAuthenticated(false);
+              }}
+              title="Đăng xuất khỏi cổng quản trị"
+              className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-600 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+            >
+              <LogOut className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-600" />
+              <span className="hidden sm:inline">Đăng Xuất</span>
+            </button>
             {/* Quick POS Sale button */}
             <button
               onClick={() => {

@@ -23,6 +23,10 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
   const [emailAddress, setEmailAddress] = useState<string>('');
   const [emailPhone, setEmailPhone] = useState<string>('');
 
+  // Facebook name prompt state
+  const [showFbNamePrompt, setShowFbNamePrompt] = useState<boolean>(false);
+  const [fbNameInput, setFbNameInput] = useState<string>('');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Sync sessions
@@ -50,17 +54,25 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
 
   if (!isOpen) return null;
 
-  // Handle Facebook 1-click login
-  const handleFacebookLogin = () => {
+  // Handle Facebook login with user's real name
+  const handleFacebookLogin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!showFbNamePrompt) {
+      setShowFbNamePrompt(true);
+      return;
+    }
+
+    const finalName = fbNameInput.trim() || 'Khách Hàng Facebook';
     const fbUser: CustomerUser = {
       id: `fb_${Date.now()}`,
-      name: 'Nguyễn Anh Tuấn (Facebook)',
-      email: 'anhtuan.cinematography@gmail.com',
+      name: finalName,
+      email: `${finalName.toLowerCase().replace(/[^a-z0-9]/g, '')}.fb@gmail.com`,
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
       authProvider: 'FACEBOOK',
     };
     chatSyncService.saveCustomerSession(fbUser);
     setCurrentUser(fbUser);
+    setShowFbNamePrompt(false);
   };
 
   // Handle Email login
@@ -194,17 +206,49 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
               </p>
             </div>
 
-            {/* Facebook 1-click button */}
-            <button
-              onClick={handleFacebookLogin}
-              data-testid="btn-chat-login-facebook"
-              className="w-full py-2.5 px-4 bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs rounded-md shadow flex items-center justify-center space-x-2 transition active:scale-98"
-            >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-              </svg>
-              <span>Tiếp Tục Với Facebook (1 Chạm)</span>
-            </button>
+            {/* Facebook login area */}
+            {!showFbNamePrompt ? (
+              <button
+                type="button"
+                onClick={() => setShowFbNamePrompt(true)}
+                data-testid="btn-chat-login-facebook"
+                className="w-full py-2.5 px-4 bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs rounded-md shadow flex items-center justify-center space-x-2 transition active:scale-98 cursor-pointer"
+              >
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                </svg>
+                <span>Đăng Nhập Qua Facebook</span>
+              </button>
+            ) : (
+              <form onSubmit={handleFacebookLogin} className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2.5 text-xs animate-in fade-in">
+                <div className="flex items-center justify-between text-blue-900 font-bold">
+                  <span>Nhập Họ & Tên Facebook Của Bạn:</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowFbNamePrompt(false)}
+                    className="text-gray-400 hover:text-gray-600 text-[10px]"
+                  >
+                    Hủy
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  data-testid="input-chat-fb-name"
+                  placeholder="Ví dụ: Lê Minh Trí"
+                  value={fbNameInput}
+                  onChange={(e) => setFbNameInput(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-white border border-blue-300 rounded focus:outline-none focus:border-blue-600 text-xs"
+                />
+                <button
+                  type="submit"
+                  data-testid="btn-confirm-chat-fb"
+                  className="w-full py-1.5 bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold rounded shadow transition text-xs"
+                >
+                  Xác Nhận Kết Nối Facebook
+                </button>
+              </form>
+            )}
 
             <div className="flex items-center space-x-2 my-2 text-xs text-gray-400">
               <div className="flex-1 h-px bg-gray-200"></div>

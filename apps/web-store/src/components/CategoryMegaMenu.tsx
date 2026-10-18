@@ -22,28 +22,28 @@ const CATEGORIES = [
     badge: 'Chuyên nghiệp',
   },
   {
-    name: 'Flycam & Drone Quay Phim',
+    name: 'Flycam & Drone DJI',
     icon: Navigation,
     desc: 'DJI Mavic 3 Pro, Mini 4 Pro, Avata 2 FPV',
     badge: 'Bán chạy',
   },
   {
-    name: 'Gimbal Chống Rung',
+    name: 'Gimbal & Chống Rung DJI Ronin',
     icon: Disc,
-    desc: 'DJI RS4 Pro, RS3 Mini, Zhiyun Crane 4',
+    desc: 'DJI RS 4 Pro, RS 3 Mini, Ronin 4D',
   },
   {
-    name: 'Action Cam & Vlog',
+    name: 'Action Cam & Pocket Creator',
     icon: Camera,
     desc: 'DJI Osmo Pocket 3, Action 4, GoPro Hero 12',
   },
   {
-    name: 'Ống Kính Lenses',
+    name: 'Ống Kính Chuyên Dụng (Lenses)',
     icon: Aperture,
     desc: 'Sony G Master, Canon RF L-series, Sigma Art',
   },
   {
-    name: 'Micro & Đèn Studio',
+    name: 'Âm Thanh & Ánh Sáng Studio',
     icon: Mic,
     desc: 'DJI Mic 2, Rode Wireless PRO, Aputure Amaran',
   },
@@ -74,7 +74,7 @@ export const CategoryMegaMenu: React.FC<CategoryMegaMenuProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-700 p-1 rounded transition text-xs flex items-center gap-1"
+            className="text-gray-400 hover:text-gray-700 p-1 rounded transition text-xs flex items-center gap-1 cursor-pointer"
           >
             <span>Đóng</span>
             <X className="w-4 h-4" />
@@ -89,11 +89,12 @@ export const CategoryMegaMenu: React.FC<CategoryMegaMenuProps> = ({
               return (
                 <button
                   key={cat.name}
+                  data-testid={`btn-category-${cat.name}`}
                   onClick={() => {
                     onSelectCategory(cat.name);
                     onClose();
                   }}
-                  className="flex items-start space-x-3 p-3 rounded-lg border border-gray-100 hover:border-red-200 hover:bg-red-50/50 transition text-left group"
+                  className="flex items-start space-x-3 p-3 rounded-lg border border-gray-100 hover:border-red-200 hover:bg-red-50/50 transition text-left group cursor-pointer"
                 >
                   <div className="w-9 h-9 rounded-md bg-red-100 text-[#E30019] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                     <Icon className="w-5 h-5" />

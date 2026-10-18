@@ -30,10 +30,15 @@ test.describe('Live Advisor Chat, Multi-Staff Collision Locking & VietQR Payment
     const drawer = page.getByTestId('customer-chat-drawer');
     await expect(drawer).toBeVisible();
 
-    // Perform Facebook 1-Click login if not logged in
+    // Perform Facebook login if not logged in
     const fbLoginBtn = page.getByTestId('btn-chat-login-facebook');
     if (await fbLoginBtn.isVisible()) {
       await fbLoginBtn.click();
+      const fbNameInput = page.getByTestId('input-chat-fb-name');
+      if (await fbNameInput.isVisible()) {
+        await fbNameInput.fill('Đoàn Văn Hậu (Facebook)');
+        await page.getByTestId('btn-confirm-chat-fb').click();
+      }
     }
 
     // Input message and send
@@ -51,6 +56,13 @@ test.describe('Live Advisor Chat, Multi-Staff Collision Locking & VietQR Payment
   test('TC-CHAT-03: Admin Support Desk receives session, claims chat, and locks out other advisors', async ({ page }) => {
     await page.goto('http://localhost:3001/admin/');
     await page.waitForLoadState('networkidle');
+    const loginScreen = page.getByTestId('admin-login-screen');
+    if (await loginScreen.isVisible()) {
+      await page.getByTestId('input-admin-email').fill('admin@progear.vn');
+      await page.getByTestId('input-admin-password').fill('admin123456');
+      await page.getByTestId('btn-admin-login-submit').click();
+      await expect(loginScreen).toBeHidden({ timeout: 5000 });
+    }
 
     // Navigate to Chat Tab
     await page.getByTestId('nav-chat').click();

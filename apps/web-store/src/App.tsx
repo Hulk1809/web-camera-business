@@ -43,7 +43,8 @@ import {
   Sparkles,
   Percent,
   Sliders,
-  ChevronDown
+  ChevronDown,
+  User
 } from 'lucide-react';
 import { RetailProductCard, formatVND } from './components/RetailProductCard';
 import { LiveActivityTicker } from './components/LiveActivityTicker';
@@ -54,6 +55,8 @@ import { CustomerChatDrawer } from './components/CustomerChatDrawer';
 import { InstallmentModal } from './components/InstallmentModal';
 import { TradeInModal } from './components/TradeInModal';
 import { CategoryMegaMenu } from './components/CategoryMegaMenu';
+import { CustomerAuthModal } from './components/CustomerAuthModal';
+import { CustomerUser } from './types/chat';
 import { chatSyncService } from './services/chatSyncService';
 
 export interface ProProduct {
@@ -566,10 +569,15 @@ export function App() {
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState<boolean>(false);
   const [activeAdvisorName, setActiveAdvisorName] = useState<string>('');
 
-  // Sync advisor assignment status for floating widget
+  // Customer Account States
+  const [customerUser, setCustomerUser] = useState<CustomerUser | null>(() => chatSyncService.getCustomerSession());
+  const [showCustomerAuthModal, setShowCustomerAuthModal] = useState<boolean>(false);
+
+  // Sync advisor assignment status & customer session
   useEffect(() => {
     const unsub = chatSyncService.subscribe((sessions) => {
       const cust = chatSyncService.getCustomerSession();
+      setCustomerUser(cust);
       if (cust) {
         const mySess = sessions.find((s) => s.customer.id === cust.id || s.customer.email === cust.email);
         if (mySess?.assignedStaff) {
@@ -579,7 +587,18 @@ export function App() {
         }
       }
     });
-    return () => unsub();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'PROGEAR_CUSTOMER_SESSION') {
+        setCustomerUser(chatSyncService.getCustomerSession());
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      unsub();
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   // Wishlist & Live Toast
@@ -600,6 +619,7 @@ export function App() {
       setToast(null);
     }, 2800);
   };
+  const showNotification = showToast;
 
   const toggleWishlist = (productId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -1132,16 +1152,44 @@ export function App() {
               <FileText className="w-3 h-3 text-amber-400" />
               <span>Tra cứu đơn hàng</span>
             </button>
-            <span className="text-gray-700">|</span>
-            <a
-              href="/admin/"
-              target="_blank"
-              rel="noreferrer"
-              className="text-red-400 hover:text-red-300 font-semibold transition flex items-center gap-1"
-            >
-              <Store className="w-3 h-3" />
-              <span>Trang Admin</span>
-            </a>
+            {customerUser ? (
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-1.5 text-white">
+                  <img
+                    src={customerUser.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'}
+                    alt={customerUser.name}
+                    className="w-4 h-4 rounded-full object-cover border border-amber-300"
+                  />
+                  <span
+                    data-testid="customer-name-display"
+                    className="font-bold text-amber-300 max-w-[130px] truncate"
+                    title={customerUser.name}
+                  >
+                    {customerUser.name}
+                  </span>
+                </div>
+                <button
+                  data-testid="btn-customer-logout"
+                  onClick={() => {
+                    chatSyncService.clearCustomerSession();
+                    setCustomerUser(null);
+                  }}
+                  title="Đăng xuất tài khoản"
+                  className="text-gray-400 hover:text-white transition text-[10px] underline cursor-pointer"
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            ) : (
+              <button
+                data-testid="btn-customer-login-header"
+                onClick={() => setShowCustomerAuthModal(true)}
+                className="text-white hover:text-red-300 font-semibold transition flex items-center gap-1.5 bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded cursor-pointer"
+              >
+                <User className="w-3 h-3 text-red-400" />
+                <span>Đăng nhập / Đăng ký</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1150,7 +1198,7 @@ export function App() {
       <LiveActivityTicker onOpenWarranty={() => setShowWarrantyModal(true)} />
 
       {/* ----------------- STICKY MAIN HEADER ----------------- */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm relative">
         <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3 md:gap-6">
           {/* Logo Left */}
           <a href="#" className="flex items-center space-x-2 shrink-0 group">
@@ -1287,6 +1335,24 @@ export function App() {
             </button>
           </div>
         </div>
+
+        {/* Category Mega Menu anchored directly beneath sticky header */}
+        <CategoryMegaMenu
+          isOpen={isMegaMenuOpen}
+          onClose={() => setIsMegaMenuOpen(false)}
+          onSelectCategory={(cat) => {
+            setSelectedCategory(cat);
+            setIsMegaMenuOpen(false);
+            const catalogEl = document.getElementById('product-catalog');
+            if (catalogEl) catalogEl.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onSelectBrand={(b) => {
+            setSelectedBrand(b);
+            setIsMegaMenuOpen(false);
+            const catalogEl = document.getElementById('product-catalog');
+            if (catalogEl) catalogEl.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
       </header>
 
       {/* ----------------- HERO AREA: 3-COLUMN RETAIL LAYOUT ----------------- */}
@@ -1637,7 +1703,7 @@ export function App() {
         </div>
 
         {/* ----------------- CLUSTER 1: MÁY ẢNH & MÁY QUAY CINEMA ----------------- */}
-        <section className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <section id="product-catalog" className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm scroll-mt-24">
           {/* Header Bar */}
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-gray-200">
             <div className="flex items-center space-x-2">
@@ -2481,12 +2547,14 @@ export function App() {
         onClose={() => setIsTradeInOpen(false)}
       />
 
-      {/* Category Mega Menu */}
-      <CategoryMegaMenu
-        isOpen={isMegaMenuOpen}
-        onClose={() => setIsMegaMenuOpen(false)}
-        onSelectCategory={(cat) => setSelectedCategory(cat)}
-        onSelectBrand={(b) => setSelectedBrand(b)}
+      {/* Customer Authentication Modal */}
+      <CustomerAuthModal
+        isOpen={showCustomerAuthModal}
+        onClose={() => setShowCustomerAuthModal(false)}
+        onSuccess={(user) => {
+          setCustomerUser(user);
+          showNotification(`Đăng nhập thành công! Chào mừng ${user.name}`);
+        }}
       />
     </div>
   );
