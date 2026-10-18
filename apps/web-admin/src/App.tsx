@@ -53,6 +53,7 @@ import {
   HelpCircle,
   Menu,
   LogOut,
+  PackageCheck,
 } from 'lucide-react';
 import { EnterpriseKpiRow, formatVND } from './components/EnterpriseKpiRow';
 import { EnterpriseToast, type ToastMessage } from './components/EnterpriseToast';
@@ -519,12 +520,48 @@ export function App() {
 
   // POS Showroom Checkout State
   const [showPosModal, setShowPosModal] = useState<boolean>(false);
+  const [posSelectedProductId, setPosSelectedProductId] = useState<string>('');
+  const [posCustomPrice, setPosCustomPrice] = useState<number>(0);
+  const [posQuantity, setPosQuantity] = useState<number>(1);
+  const [posSelectedSerialSn, setPosSelectedSerialSn] = useState<string>('');
+  const [posCustomSerialInput, setPosCustomSerialInput] = useState<string>('');
   const [selectedPosSerial, setSelectedPosSerial] = useState<SerialItem | null>(null);
   const [posCustomerName, setPosCustomerName] = useState<string>('');
   const [posCustomerPhone, setPosCustomerPhone] = useState<string>('');
   const [posPaymentMethod, setPosPaymentMethod] = useState<'QR_TRANSFER' | 'CASH' | 'CARD_POS'>('QR_TRANSFER');
   const [posStaffNote, setPosStaffNote] = useState<string>('Khách mua trực tiếp tại quầy Showroom');
   const [isPosSubmitting, setIsPosSubmitting] = useState<boolean>(false);
+
+  // Helper to open POS with selected product and preloaded unit price
+  const openPosModal = (preSelectedProduct?: Product, preSelectedSerial?: SerialItem) => {
+    const prod = preSelectedProduct || products[0];
+    if (prod) {
+      setPosSelectedProductId(prod.id);
+      setPosCustomPrice(prod.price || 0);
+      setPosQuantity(1);
+      if (preSelectedSerial) {
+        setSelectedPosSerial(preSelectedSerial);
+        setPosSelectedSerialSn(preSelectedSerial.serialNumber);
+      } else {
+        const avail = serials.filter(
+          (s) => (s.productSku === prod.sku || s.productName === prod.name) && s.status === 'IN_STOCK'
+        );
+        if (avail.length > 0) {
+          setSelectedPosSerial(avail[0]);
+          setPosSelectedSerialSn(avail[0].serialNumber);
+        } else {
+          setSelectedPosSerial(null);
+          setPosSelectedSerialSn('');
+        }
+      }
+    }
+    setPosCustomerName('');
+    setPosCustomerPhone('');
+    setPosCustomSerialInput('');
+    setPosPaymentMethod('QR_TRANSFER');
+    setPosStaffNote('Khách mua trực tiếp tại quầy Showroom');
+    setShowPosModal(true);
+  };
 
   // POS Printable Invoice Modal
   const [showInvoiceModal, setShowInvoiceModal] = useState<boolean>(false);
@@ -940,7 +977,17 @@ export function App() {
   // POS Sale Checkout
   const handleSellAtCounter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPosSerial) return;
+    const activeProduct = products.find((p) => p.id === posSelectedProductId) || products[0];
+    if (!activeProduct) {
+      showToast({
+        id: String(Date.now()),
+        type: 'warning',
+        title: 'Chưa chọn thiết bị',
+        message: 'Vui lòng chọn thiết bị trong kho cần xuất bán tại quầy.',
+      });
+      return;
+    }
+
     if (!posCustomerName.trim() || !posCustomerPhone.trim()) {
       showToast({
         id: String(Date.now()),
@@ -959,42 +1006,58 @@ export function App() {
     const orderNumber = `POS-${dateStr}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const expDate = new Date(now);
-    expDate.setMonth(expDate.getMonth() + (selectedPosSerial.warrantyMonths || 24));
+    expDate.setMonth(expDate.getMonth() + 24);
     const expDateFormatted = `${pad(expDate.getDate())}/${pad(expDate.getMonth() + 1)}/${expDate.getFullYear()}`;
 
-    let soldPrice = selectedPosSerial.price || 0;
-    const matchingProd = products.find(
-      (p) => (selectedPosSerial.productSku && p.sku === selectedPosSerial.productSku) || p.name === selectedPosSerial.productName
-    );
-    if (matchingProd && (!soldPrice || soldPrice === 0)) {
-      soldPrice = matchingProd.price;
+    const unitPrice = posCustomPrice > 0 ? posCustomPrice : activeProduct.price;
+    const qty = Math.max(1, posQuantity || 1);
+    const totalAmount = unitPrice * qty;
+
+    // Resolve or generate Serial Item
+    let serialSn = posSelectedSerialSn.trim() || posCustomSerialInput.trim();
+    if (!serialSn) {
+      serialSn = `${activeProduct.sku}-${Date.now().toString().slice(-4)}`;
     }
 
-    const updatedSerial: SerialItem = {
-      ...selectedPosSerial,
-      status: 'SOLD',
-      soldDate: dateFormatted,
-      warrantyExpires: expDateFormatted,
-      orderNumber: orderNumber,
-      customerName: posCustomerName.trim(),
-      customerPhone: posCustomerPhone.trim(),
-      soldChannel: 'POS_STORE',
-      price: soldPrice,
-    };
+    const existingSerial = serials.find((s) => s.serialNumber === serialSn);
+    const updatedSerial: SerialItem = existingSerial
+      ? {
+          ...existingSerial,
+          status: 'SOLD',
+          soldDate: dateFormatted,
+          warrantyExpires: expDateFormatted,
+          orderNumber: orderNumber,
+          customerName: posCustomerName.trim(),
+          customerPhone: posCustomerPhone.trim(),
+          soldChannel: 'POS_STORE',
+          price: unitPrice,
+        }
+      : {
+          serialNumber: serialSn,
+          productName: activeProduct.name,
+          productSku: activeProduct.sku,
+          brand: activeProduct.brand,
+          status: 'SOLD',
+          warrantyMonths: 24,
+          soldDate: dateFormatted,
+          warrantyExpires: expDateFormatted,
+          orderNumber: orderNumber,
+          customerName: posCustomerName.trim(),
+          customerPhone: posCustomerPhone.trim(),
+          soldChannel: 'POS_STORE',
+          price: unitPrice,
+        };
 
-    const updatedSerials = serials.map((s) =>
-      s.serialNumber === selectedPosSerial.serialNumber ? updatedSerial : s
-    );
+    const updatedSerials = existingSerial
+      ? serials.map((s) => (s.serialNumber === serialSn ? updatedSerial : s))
+      : [updatedSerial, ...serials];
     setSerials(updatedSerials);
     localStorage.setItem('PROGEAR_SHARED_SERIALS', JSON.stringify(updatedSerials));
 
     // Decrement Product Stock
     const updatedProducts = products.map((p) => {
-      if (
-        (selectedPosSerial.productSku && p.sku === selectedPosSerial.productSku) ||
-        p.name === selectedPosSerial.productName
-      ) {
-        const newStock = Math.max(0, p.stock - 1);
+      if (p.id === activeProduct.id || p.sku === activeProduct.sku) {
+        const newStock = Math.max(0, p.stock - qty);
         return {
           ...p,
           stock: newStock,
@@ -1013,23 +1076,28 @@ export function App() {
       customerName: posCustomerName.trim(),
       customerPhone: posCustomerPhone.trim(),
       shippingAddress: 'Showroom Quầy Trực Tiếp (125 Điện Biên Phủ, P. Đa Kao, Q.1, TP.HCM)',
-      totalAmount: soldPrice,
-      itemsCount: 1,
-      paymentMethod: posPaymentMethod === 'CASH' ? 'Tiền mặt tại quầy' : posPaymentMethod === 'QR_TRANSFER' ? 'Chuyển khoản VietQR' : 'Quẹt thẻ máy POS',
+      totalAmount: totalAmount,
+      itemsCount: qty,
+      paymentMethod:
+        posPaymentMethod === 'CASH'
+          ? 'Tiền mặt tại quầy'
+          : posPaymentMethod === 'QR_TRANSFER'
+          ? 'Chuyển khoản VietQR'
+          : 'Quẹt thẻ máy POS',
       paymentStatus: 'PAID',
       orderStatus: 'DELIVERED',
       status: 'DELIVERED',
       orderType: 'POS_QUAY',
       staffCallStatus: 'STOCK_READY',
       createdAt: 'Vừa xong',
-      note: `[BÁN TẠI QUẦY POS] ${posStaffNote}. Số Serial: ${selectedPosSerial.serialNumber}`,
+      note: `[BÁN TẠI QUẦY POS] ${posStaffNote}. Số Serial: ${serialSn}`,
       items: [
         {
-          productName: selectedPosSerial.productName,
-          productSku: selectedPosSerial.productSku,
-          price: soldPrice,
-          quantity: 1,
-          subtotal: soldPrice,
+          productName: activeProduct.name,
+          productSku: activeProduct.sku,
+          price: unitPrice,
+          quantity: qty,
+          subtotal: totalAmount,
         },
       ],
     };
@@ -1048,7 +1116,7 @@ export function App() {
     showToast({
       id: String(Date.now()),
       title: 'Xuất Bán Tại Quầy Thành Công! ⚡',
-      message: `Đã kích hoạt BH cho Serial ${selectedPosSerial.serialNumber} (Hạn: ${expDateFormatted}). Đã trừ 1 tồn kho.`,
+      message: `Đã xuất hóa đơn ${orderNumber} (${formatVND(totalAmount)}) & kích hoạt BH cho Serial ${serialSn}. Đã trừ ${qty} tồn kho.`,
       type: 'success',
     });
   };
@@ -1130,8 +1198,13 @@ export function App() {
     return matchQuery && matchStatus;
   });
 
-  const preOrdersCount = orders.filter(isOrderPreOrder).length;
-  const pendingOrdersCount = orders.filter((o) => (o.orderStatus || o.status) === 'PENDING' || isOrderPreOrder(o)).length;
+  const preOrdersCount = orders.filter(
+    (o) => isOrderPreOrder(o) && (o.orderStatus || o.status) !== 'COMPLETED' && (o.orderStatus || o.status) !== 'CANCELLED'
+  ).length;
+  const pendingOrdersCount = orders.filter((o) => {
+    const st = o.orderStatus || o.status || 'PENDING';
+    return (st === 'PENDING' || isOrderPreOrder(o)) && st !== 'COMPLETED' && st !== 'CANCELLED';
+  }).length;
 
   // Filtered Products
   const filteredProducts = products.filter((p) => {
@@ -1431,21 +1504,9 @@ export function App() {
             </button>
             {/* Quick POS Sale button */}
             <button
-              onClick={() => {
-                const firstAvailable = serials.find((s) => s.status === 'IN_STOCK');
-                if (firstAvailable) {
-                  setSelectedPosSerial(firstAvailable);
-                  setShowPosModal(true);
-                } else {
-                  showToast({
-                    id: String(Date.now()),
-                    type: 'warning',
-                    title: 'Hết hàng trên kệ',
-                    message: 'Hiện không có mã Serial nào sẵn sàng trên kệ để bán POS.',
-                  });
-                }
-              }}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-md flex items-center gap-1.5 shadow-sm transition active:scale-95"
+              data-testid="btn-open-pos-header"
+              onClick={() => openPosModal()}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-md flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
             >
               <Receipt className="w-3.5 h-3.5" />
               <span>Bán Tại Quầy (POS)</span>
@@ -1556,13 +1617,14 @@ export function App() {
                               </span>
                             </td>
                             <td className="py-2.5 px-4">
-                              {isPre ? (
+                              {order.orderStatus === 'COMPLETED' || order.status === 'COMPLETED' ? (
+                                <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold text-[10px] px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  <span>Đã Hoàn Tất</span>
+                                </span>
+                              ) : isPre ? (
                                 <span className="bg-amber-50 text-amber-800 border border-amber-200 font-semibold text-[10px] px-2 py-0.5 rounded">
                                   Đặt Chờ Về
-                                </span>
-                              ) : order.orderStatus === 'COMPLETED' || order.status === 'COMPLETED' ? (
-                                <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold text-[10px] px-2 py-0.5 rounded">
-                                  Đã Hoàn Tất
                                 </span>
                               ) : (
                                 <span className="bg-blue-50 text-blue-800 border border-blue-200 font-semibold text-[10px] px-2 py-0.5 rounded">
@@ -1712,7 +1774,19 @@ export function App() {
                               </span>
                             </td>
                             <td className="py-3 px-4">
-                              {isPre ? (
+                              {order.orderStatus === 'COMPLETED' || order.status === 'COMPLETED' ? (
+                                <div>
+                                  <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold text-[10px] px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    <span>Đã Hoàn Tất</span>
+                                  </span>
+                                  {isPre && (
+                                    <div className="text-[10px] text-emerald-700 mt-0.5 font-medium">
+                                      Hàng về & Đã giao khách
+                                    </div>
+                                  )}
+                                </div>
+                              ) : isPre ? (
                                 <div>
                                   <span className="bg-amber-50 text-amber-800 border border-amber-200 font-semibold text-[10px] px-2 py-0.5 rounded">
                                     Đặt Chờ Về
@@ -1723,10 +1797,6 @@ export function App() {
                                       : 'Cần gọi khách'}
                                   </div>
                                 </div>
-                              ) : order.orderStatus === 'COMPLETED' || order.status === 'COMPLETED' ? (
-                                <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold text-[10px] px-2 py-0.5 rounded">
-                                  Đã Hoàn Tất
-                                </span>
                               ) : order.orderStatus === 'CONFIRMED' ? (
                                 <span className="bg-blue-50 text-blue-800 border border-blue-200 font-semibold text-[10px] px-2 py-0.5 rounded">
                                   Đã Xác Nhận
@@ -1746,19 +1816,24 @@ export function App() {
                                 <button
                                   data-testid="btn-view-order"
                                   onClick={() => setSelectedOrderDetails(order)}
-                                  className="px-2.5 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-[11px] transition"
+                                  className="px-2.5 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-[11px] transition cursor-pointer"
                                 >
                                   Xem
                                 </button>
 
                                 {order.orderStatus !== 'COMPLETED' && order.orderStatus !== 'CANCELLED' && (
                                   <button
-                                    data-testid="btn-complete-order"
+                                    data-testid={isPre ? "btn-fulfill-preorder" : "btn-complete-order"}
                                     onClick={() => handleUpdateOrderStatus(order.id, 'COMPLETED')}
-                                    className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] transition shadow-sm"
-                                    title="Xác nhận hoàn tất và kích hoạt bảo hành điện tử"
+                                    className={`px-2.5 py-1 rounded text-white font-semibold text-[11px] transition shadow-sm flex items-center gap-1 cursor-pointer ${
+                                      isPre
+                                        ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold'
+                                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                    }`}
+                                    title={isPre ? "Hàng đã về kho - Bàn giao khách và kích hoạt bảo hành" : "Xác nhận hoàn tất và kích hoạt bảo hành điện tử"}
                                   >
-                                    Hoàn Tất
+                                    <PackageCheck className="w-3.5 h-3.5" />
+                                    <span>{isPre ? 'Hàng Về - Giao Khách' : 'Hoàn Tất'}</span>
                                   </button>
                                 )}
                               </div>
@@ -2113,10 +2188,10 @@ export function App() {
                             <button
                               data-testid="btn-pos-sell"
                               onClick={() => {
-                                setSelectedPosSerial(s);
-                                setShowPosModal(true);
+                                const matchProd = products.find((p) => (s.productSku && p.sku === s.productSku) || p.name === s.productName);
+                                openPosModal(matchProd, s);
                               }}
-                              className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-[11px] transition shadow-sm"
+                              className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-[11px] transition shadow-sm cursor-pointer"
                             >
                               Bán POS
                             </button>
@@ -2176,69 +2251,146 @@ export function App() {
       </div>
 
       {/* ----------------- ORDER DETAILS & PRINT INVOICE MODAL ----------------- */}
-      {selectedOrderDetails && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg border border-slate-200 max-w-xl w-full p-5 relative shadow-2xl text-slate-900 max-h-[92vh] overflow-y-auto animate-in fade-in duration-150">
-            <button
-              onClick={() => setSelectedOrderDetails(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1 rounded transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
+      {selectedOrderDetails && (() => {
+        const isDetailPre = isOrderPreOrder(selectedOrderDetails);
+        const isDetailCompleted = selectedOrderDetails.orderStatus === 'COMPLETED' || selectedOrderDetails.status === 'COMPLETED';
 
-            <div className="flex items-center space-x-2 text-indigo-600 mb-2">
-              <ShoppingBag className="w-5 h-5" />
-              <h3 className="font-bold text-base text-slate-900">Chi Tiết Đơn Hàng {selectedOrderDetails.orderNumber}</h3>
-            </div>
-
-            <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 grid grid-cols-2 gap-2 text-xs mb-3">
-              <div>Khách hàng: <strong className="text-slate-900">{selectedOrderDetails.customerName}</strong></div>
-              <div>SĐT: <strong className="font-mono tabular-nums">{selectedOrderDetails.customerPhone}</strong></div>
-              <div>Thanh toán: <strong className="font-mono text-indigo-700">{selectedOrderDetails.paymentMethod}</strong></div>
-              <div>Trạng thái: <strong className="text-emerald-700">{selectedOrderDetails.orderStatus}</strong></div>
-              <div className="col-span-2 text-slate-600">Địa chỉ: <span>{selectedOrderDetails.shippingAddress}</span></div>
-            </div>
-
-            <div className="space-y-2 mb-4">
-              <div className="font-bold text-xs text-slate-900">Danh Sách Thiết Bị Trong Đơn:</div>
-              {(selectedOrderDetails.items || []).map((itm, idx) => (
-                <div key={idx} className="p-2.5 rounded border border-slate-200 flex justify-between items-center text-xs bg-white">
-                  <div>
-                    <div className="font-semibold text-slate-900">{itm.productName}</div>
-                    <div className="text-[11px] text-amber-700 font-mono font-bold">Mã Hàng (SKU): {itm.productSku || 'ILME-FX3-BODY'}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-mono font-bold text-slate-900 tabular-nums">{formatVND(itm.price)}</div>
-                    <div className="text-[11px] text-slate-500">SL: {itm.quantity}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between p-3 border-t border-slate-200 font-bold text-sm">
-              <span>Tổng Tiền Đơn Hàng:</span>
-              <span className="text-indigo-600 font-mono tabular-nums text-base">{formatVND(selectedOrderDetails.totalAmount)}</span>
-            </div>
-
-            <div className="mt-4 flex items-center justify-end space-x-2">
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg border border-slate-200 max-w-xl w-full p-5 relative shadow-2xl text-slate-900 max-h-[92vh] overflow-y-auto animate-in fade-in duration-150">
               <button
                 onClick={() => setSelectedOrderDetails(null)}
-                className="px-4 py-2 rounded border border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-xs"
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1 rounded transition cursor-pointer"
               >
-                Đóng
+                <X className="w-5 h-5" />
               </button>
+
+              <div className="flex items-center space-x-2 text-indigo-600 mb-2">
+                <ShoppingBag className="w-5 h-5" />
+                <h3 className="font-bold text-base text-slate-900">Chi Tiết Đơn Hàng {selectedOrderDetails.orderNumber}</h3>
+              </div>
+
+              {/* Pre-Order Pending Alert Banner with Quick Fulfillment Button */}
+              {isDetailPre && !isDetailCompleted && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex flex-wrap items-center justify-between gap-2 mb-3 text-xs">
+                  <div>
+                    <div className="font-bold text-amber-900 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-amber-600" />
+                      <span>Đơn Đặt Hàng Chờ Về (Pre-Order)</span>
+                    </div>
+                    <div className="text-[11px] text-amber-700 mt-0.5">
+                      Khách hàng đang chờ lô thiết bị chính hãng cập cảng / nhập kho Showroom.
+                    </div>
+                  </div>
+                  <button
+                    data-testid="btn-modal-fulfill-preorder"
+                    onClick={() => {
+                      handleUpdateOrderStatus(selectedOrderDetails.id, 'COMPLETED');
+                      setSelectedOrderDetails((prev) =>
+                        prev ? { ...prev, orderStatus: 'COMPLETED', status: 'COMPLETED', paymentStatus: 'PAID' } : null
+                      );
+                    }}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md shadow-sm transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    <PackageCheck className="w-4 h-4" />
+                    <span>Xác Nhận Hàng Về & Giao Khách</span>
+                  </button>
+                </div>
+              )}
+
+              <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 grid grid-cols-2 gap-2 text-xs mb-3">
+                <div>Khách hàng: <strong className="text-slate-900">{selectedOrderDetails.customerName}</strong></div>
+                <div>SĐT: <strong className="font-mono tabular-nums">{selectedOrderDetails.customerPhone}</strong></div>
+                <div>Thanh toán: <strong className="font-mono text-indigo-700">{selectedOrderDetails.paymentMethod}</strong></div>
+                <div>Trạng thái: <strong className={isDetailCompleted ? "text-emerald-700 font-bold" : "text-amber-700 font-bold"}>
+                  {isDetailCompleted ? 'Đã Hoàn Tất (Đã giao khách)' : isDetailPre ? 'Đặt Chờ Về (Chờ Hàng)' : selectedOrderDetails.orderStatus}
+                </strong></div>
+                <div className="col-span-2 text-slate-600">Địa chỉ: <span>{selectedOrderDetails.shippingAddress}</span></div>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                <div className="font-bold text-xs text-slate-900">Danh Sách Thiết Bị Trong Đơn:</div>
+                {(selectedOrderDetails.items || []).map((itm, idx) => (
+                  <div key={idx} className="p-2.5 rounded border border-slate-200 flex justify-between items-center text-xs bg-white">
+                    <div>
+                      <div className="font-semibold text-slate-900">{itm.productName}</div>
+                      <div className="text-[11px] text-amber-700 font-mono font-bold">Mã Hàng (SKU): {itm.productSku || 'ILME-FX3-BODY'}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono font-bold text-slate-900 tabular-nums">{formatVND(itm.price)}</div>
+                      <div className="text-[11px] text-slate-500">SL: {itm.quantity}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between p-3 border-t border-slate-200 font-bold text-sm">
+                <span>Tổng Tiền Đơn Hàng:</span>
+                <span className="text-indigo-600 font-mono tabular-nums text-base">{formatVND(selectedOrderDetails.totalAmount)}</span>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+                <button
+                  onClick={() => setSelectedOrderDetails(null)}
+                  className="px-4 py-2 rounded border border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-xs cursor-pointer"
+                >
+                  Đóng
+                </button>
+
+                {!isDetailCompleted && (
+                  <button
+                    data-testid="btn-modal-complete-order"
+                    onClick={() => {
+                      handleUpdateOrderStatus(selectedOrderDetails.id, 'COMPLETED');
+                      setSelectedOrderDetails((prev) =>
+                        prev ? { ...prev, orderStatus: 'COMPLETED', status: 'COMPLETED', paymentStatus: 'PAID' } : null
+                      );
+                    }}
+                    className="px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <PackageCheck className="w-3.5 h-3.5" />
+                    <span>Hoàn Tất & Kích Hoạt BH</span>
+                  </button>
+                )}
+
+                <button
+                  data-testid="btn-modal-print-order"
+                  onClick={() => {
+                    const matchingSerial = serials.find((s) => s.orderNumber === selectedOrderDetails.orderNumber) || {
+                      serialNumber: `SN-${selectedOrderDetails.orderNumber}`,
+                      productName: selectedOrderDetails.items?.[0]?.productName || 'Thiết bị Pro Gear',
+                      brand: 'Sony / DJI / Canon',
+                      status: 'SOLD',
+                      warrantyMonths: 24,
+                      soldDate: selectedOrderDetails.createdAt,
+                      warrantyExpires: '24 Tháng Kích Hoạt',
+                      orderNumber: selectedOrderDetails.orderNumber,
+                      customerName: selectedOrderDetails.customerName,
+                      customerPhone: selectedOrderDetails.customerPhone,
+                      price: selectedOrderDetails.totalAmount,
+                    };
+                    setInvoiceSerial(matchingSerial);
+                    setInvoiceOrder(selectedOrderDetails);
+                    setShowInvoiceModal(true);
+                  }}
+                  className="px-3 py-2 rounded bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>In Hóa Đơn & Biên Bản Bàn Giao</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
-      {/* ----------------- POS MODAL: COUNTER SALE ----------------- */}
-      {showPosModal && selectedPosSerial && (
+      {/* ----------------- POS MODAL: COUNTER SALE (CÓ GIÁ SẴN, CHỌN SẢN PHẨM & IN BILL) ----------------- */}
+      {showPosModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg border border-slate-200 max-w-md w-full p-5 relative shadow-2xl text-slate-900">
+          <div className="bg-white rounded-lg border border-slate-200 max-w-lg w-full p-5 relative shadow-2xl text-slate-900 animate-in fade-in">
             <button
               onClick={() => setShowPosModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1 rounded transition"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1 rounded transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -2247,48 +2399,156 @@ export function App() {
               <Store className="w-5 h-5" />
               <h3 className="font-bold text-base text-slate-900">Xuất Bán Tại Quầy Showroom (POS)</h3>
             </div>
+            <p className="text-[11px] text-slate-500 mb-3">
+              Chọn thiết bị trong kho, kiểm tra giá niêm yết, chọn mã Serial và xuất hóa đơn bán lẻ trực tiếp cho khách.
+            </p>
 
-            <form onSubmit={handleSellAtCounter} className="space-y-3 text-xs mt-3">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <div className="font-bold text-slate-900">{selectedPosSerial.productName}</div>
-                <div className="text-[11px] text-indigo-700 font-mono font-bold mt-0.5">
-                  Serial SN: {selectedPosSerial.serialNumber} (SKU: {selectedPosSerial.productSku})
+            <form onSubmit={handleSellAtCounter} className="space-y-3 text-xs">
+              {/* Product Selector */}
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  Chọn Thiết Bị Xuất Bán <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  data-testid="select-pos-product"
+                  value={posSelectedProductId}
+                  onChange={(e) => {
+                    const pId = e.target.value;
+                    setPosSelectedProductId(pId);
+                    const targetP = products.find((p) => p.id === pId);
+                    if (targetP) {
+                      setPosCustomPrice(targetP.price || 0);
+                      const avail = serials.filter(
+                        (s) => (s.productSku === targetP.sku || s.productName === targetP.name) && s.status === 'IN_STOCK'
+                      );
+                      if (avail.length > 0) {
+                        setPosSelectedSerialSn(avail[0].serialNumber);
+                        setSelectedPosSerial(avail[0]);
+                      } else {
+                        setPosSelectedSerialSn('');
+                        setSelectedPosSerial(null);
+                      }
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 bg-white font-medium text-xs text-slate-900"
+                >
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} — {formatVND(p.price)} (Tồn: {p.stock} chiếc)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Price & Quantity Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">
+                    Đơn Giá Bán (VND) <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    data-testid="input-pos-price"
+                    type="number"
+                    required
+                    value={posCustomPrice}
+                    onChange={(e) => setPosCustomPrice(Number(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 font-mono font-bold text-slate-900 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">
+                    Số Lượng <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    data-testid="input-pos-quantity"
+                    type="number"
+                    min="1"
+                    required
+                    value={posQuantity}
+                    onChange={(e) => setPosQuantity(Math.max(1, Number(e.target.value) || 1))}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 font-mono font-bold text-slate-900 text-xs"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Họ tên khách hàng *</label>
-                <input
-                  data-testid="input-pos-customer-name"
-                  type="text"
-                  required
-                  placeholder="Họ và tên..."
-                  value={posCustomerName}
-                  onChange={(e) => setPosCustomerName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600"
-                />
+              {/* Serial Selector or Custom Input */}
+              {(() => {
+                const activeProd = products.find((p) => p.id === posSelectedProductId) || products[0];
+                const availSerials = serials.filter(
+                  (s) => activeProd && (s.productSku === activeProd.sku || s.productName === activeProd.name) && s.status === 'IN_STOCK'
+                );
+                return (
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      Mã Serial Thiết Bị (SN trên hộp máy)
+                    </label>
+                    {availSerials.length > 0 ? (
+                      <select
+                        data-testid="select-pos-serial"
+                        value={posSelectedSerialSn}
+                        onChange={(e) => {
+                          setPosSelectedSerialSn(e.target.value);
+                          const found = serials.find((s) => s.serialNumber === e.target.value);
+                          if (found) setSelectedPosSerial(found);
+                        }}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 bg-white font-mono font-bold text-indigo-700 text-xs"
+                      >
+                        {availSerials.map((s) => (
+                          <option key={s.serialNumber} value={s.serialNumber}>
+                            Serial SN: {s.serialNumber} ({s.warrantyMonths || 24} Tháng BH)
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        data-testid="input-pos-custom-serial"
+                        type="text"
+                        placeholder="Nhập mã Serial SN trên thân máy..."
+                        value={posCustomSerialInput}
+                        onChange={(e) => setPosCustomSerialInput(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 font-mono font-bold text-indigo-700 text-xs"
+                      />
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Customer Info */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Họ tên khách hàng *</label>
+                  <input
+                    data-testid="input-pos-customer-name"
+                    type="text"
+                    required
+                    placeholder="Nguyễn Văn A..."
+                    value={posCustomerName}
+                    onChange={(e) => setPosCustomerName(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Số điện thoại *</label>
+                  <input
+                    data-testid="input-pos-customer-phone"
+                    type="tel"
+                    required
+                    placeholder="09..."
+                    value={posCustomerPhone}
+                    onChange={(e) => setPosCustomerPhone(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs font-mono"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Số điện thoại *</label>
-                <input
-                  data-testid="input-pos-customer-phone"
-                  type="tel"
-                  required
-                  placeholder="09..."
-                  value={posCustomerPhone}
-                  onChange={(e) => setPosCustomerPhone(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600"
-                />
-              </div>
-
+              {/* Payment Method */}
               <div>
                 <label className="block text-slate-700 font-semibold mb-1">Hình thức thanh toán</label>
                 <select
                   data-testid="select-pos-payment-method"
                   value={posPaymentMethod}
                   onChange={(e) => setPosPaymentMethod(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
                 >
                   <option value="QR_TRANSFER">Chuyển khoản VietQR</option>
                   <option value="CASH">Tiền mặt tại quầy</option>
@@ -2296,13 +2556,27 @@ export function App() {
                 </select>
               </div>
 
+              {/* Total Summary */}
+              <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] text-slate-600 font-medium">Tổng Tiền Hóa Đơn:</div>
+                  <div className="text-[10px] text-indigo-600 font-semibold">Tự động kích hoạt BH điện tử 24 tháng</div>
+                </div>
+                <div className="text-right">
+                  <div data-testid="pos-total-amount" className="font-mono font-black text-indigo-700 text-base tabular-nums">
+                    {formatVND(posCustomPrice * posQuantity)}
+                  </div>
+                </div>
+              </div>
+
               <button
                 data-testid="btn-pos-submit"
                 type="submit"
                 disabled={isPosSubmitting}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-md shadow mt-2"
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-md shadow mt-2 flex items-center justify-center gap-2 cursor-pointer transition active:scale-98 text-xs"
               >
-                {isPosSubmitting ? 'Đang hoàn tất...' : 'Xác Nhận Xuất Bán & Kích Hoạt Bảo Hành'}
+                <Printer className="w-4 h-4" />
+                <span>{isPosSubmitting ? 'Đang hoàn tất...' : 'Xác Nhận Xuất Bán & In Bill'}</span>
               </button>
             </form>
           </div>
@@ -2311,28 +2585,28 @@ export function App() {
 
       {/* ----------------- INVOICE & WARRANTY CERTIFICATE MODAL ----------------- */}
       {showInvoiceModal && invoiceSerial && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div data-testid="invoice-modal" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-lg border border-slate-200 max-w-lg w-full p-6 relative shadow-2xl text-slate-900">
             <button
               onClick={() => setShowInvoiceModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1 rounded transition"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1 rounded transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="border-b border-slate-200 pb-3 text-center mb-4">
               <div className="font-black text-lg text-slate-900 tracking-tight">HÓA ĐƠN & PHIẾU BẢO HÀNH ĐIỆN TỬ</div>
-              <div className="text-xs text-slate-500">PRO GEAR Vietnam — Chuẩn Tin Học Ngôi Sao</div>
+              <div className="text-xs text-slate-500">PRO GEAR Vietnam — Flagship Camera & Cinema</div>
             </div>
 
             <div className="space-y-2 text-xs mb-4">
               <div className="flex justify-between border-b border-slate-100 pb-1">
                 <span className="text-slate-500">Mã Đơn / Hóa Đơn:</span>
-                <strong className="font-mono text-indigo-700">{invoiceSerial.orderNumber}</strong>
+                <strong data-testid="invoice-order-number" className="font-mono text-indigo-700">{invoiceSerial.orderNumber}</strong>
               </div>
               <div className="flex justify-between border-b border-slate-100 pb-1">
                 <span className="text-slate-500">Khách Hàng:</span>
-                <strong>{invoiceSerial.customerName}</strong>
+                <strong data-testid="invoice-customer-name">{invoiceSerial.customerName}</strong>
               </div>
               <div className="flex justify-between border-b border-slate-100 pb-1">
                 <span className="text-slate-500">Số Điện Thoại:</span>
@@ -2340,31 +2614,38 @@ export function App() {
               </div>
               <div className="flex justify-between border-b border-slate-100 pb-1">
                 <span className="text-slate-500">Thiết Bị:</span>
-                <strong>{invoiceSerial.productName}</strong>
+                <strong data-testid="invoice-product-name">{invoiceSerial.productName}</strong>
               </div>
               <div className="flex justify-between border-b border-slate-100 pb-1">
                 <span className="text-slate-500">Mã Serial (SN):</span>
-                <strong className="font-mono text-indigo-700 font-bold">{invoiceSerial.serialNumber}</strong>
+                <strong data-testid="invoice-serial-sn" className="font-mono text-indigo-700 font-bold">{invoiceSerial.serialNumber}</strong>
               </div>
               <div className="flex justify-between border-b border-slate-100 pb-1">
                 <span className="text-slate-500">Hạn Bảo Hành:</span>
-                <strong className="font-mono text-emerald-700">{invoiceSerial.warrantyExpires} ({invoiceSerial.warrantyMonths}T)</strong>
+                <strong className="font-mono text-emerald-700">{invoiceSerial.warrantyExpires} ({invoiceSerial.warrantyMonths || 24}T)</strong>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-1">
+                <span className="text-slate-500">Tổng Thanh Toán:</span>
+                <strong data-testid="invoice-total-amount" className="font-mono text-indigo-700 text-sm">
+                  {formatVND(invoiceOrder?.totalAmount || invoiceSerial.price || 0)}
+                </strong>
               </div>
             </div>
 
             {/* VietQR Payment & Warranty Verification Block */}
             <div className="mb-4">
               <VietQrPaymentBox
-                orderNumber={invoiceSerial.orderNumber}
-                amount={invoiceOrder?.totalAmount || 84900000}
-                customerName={invoiceSerial.customerName}
+                orderNumber={invoiceSerial.orderNumber || 'POS-DEFAULT'}
+                amount={invoiceOrder?.totalAmount || invoiceSerial.price || 84900000}
+                customerName={invoiceSerial.customerName || 'Khách Mua Tại Quầy'}
                 isCompact={true}
               />
             </div>
 
             <button
+              data-testid="btn-print-invoice"
               onClick={() => window.print()}
-              className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-md shadow flex items-center justify-center gap-1.5"
+              className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-md shadow flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span>In Hóa Đơn & Phiếu Bảo Hành</span>
