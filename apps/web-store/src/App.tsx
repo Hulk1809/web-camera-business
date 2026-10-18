@@ -48,6 +48,13 @@ import {
 import { RetailProductCard, formatVND } from './components/RetailProductCard';
 import { LiveActivityTicker } from './components/LiveActivityTicker';
 import { triggerConfetti } from './utils/confetti';
+import { VietQrPaymentBox } from './components/VietQrPaymentBox';
+import { FloatingContactWidget } from './components/FloatingContactWidget';
+import { CustomerChatDrawer } from './components/CustomerChatDrawer';
+import { InstallmentModal } from './components/InstallmentModal';
+import { TradeInModal } from './components/TradeInModal';
+import { CategoryMegaMenu } from './components/CategoryMegaMenu';
+import { chatSyncService } from './services/chatSyncService';
 
 export interface ProProduct {
   id: string;
@@ -551,6 +558,29 @@ export function App() {
   const [isSearchingOrder, setIsSearchingOrder] = useState<boolean>(false);
   const [orderCancelSuccessMsg, setOrderCancelSuccessMsg] = useState<string>('');
   const [isCancellingOrder, setIsCancellingOrder] = useState<boolean>(false);
+
+  // Retail Interactive Modals & Live Chat States
+  const [isLiveChatOpen, setIsLiveChatOpen] = useState<boolean>(false);
+  const [isInstallmentOpen, setIsInstallmentOpen] = useState<boolean>(false);
+  const [isTradeInOpen, setIsTradeInOpen] = useState<boolean>(false);
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState<boolean>(false);
+  const [activeAdvisorName, setActiveAdvisorName] = useState<string>('');
+
+  // Sync advisor assignment status for floating widget
+  useEffect(() => {
+    const unsub = chatSyncService.subscribe((sessions) => {
+      const cust = chatSyncService.getCustomerSession();
+      if (cust) {
+        const mySess = sessions.find((s) => s.customer.id === cust.id || s.customer.email === cust.email);
+        if (mySess?.assignedStaff) {
+          setActiveAdvisorName(`${mySess.assignedStaff.name} (${mySess.assignedStaff.role})`);
+        } else {
+          setActiveAdvisorName('');
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Wishlist & Live Toast
   const [wishlist, setWishlist] = useState<string[]>(() => {
@@ -1139,12 +1169,10 @@ export function App() {
           </a>
 
           {/* Category Dropdown Button */}
-          <div className="hidden lg:block shrink-0">
+          <div className="hidden lg:block shrink-0 relative">
             <button
-              onClick={() => {
-                setSelectedCategory('Tất Cả');
-                setSelectedBrand('Tất Cả');
-              }}
+              data-testid="btn-toggle-mega-menu"
+              onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
               className="bg-[#E30019] hover:bg-red-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-md flex items-center gap-2 shadow-sm transition active:scale-95"
             >
               <Menu className="w-4 h-4" />
@@ -1206,7 +1234,12 @@ export function App() {
           {/* Right Section: Hotline, Warranty & Cart */}
           <div className="flex items-center space-x-2 md:space-x-3 shrink-0">
             {/* Hotline */}
-            <div className="hidden xl:flex items-center space-x-2 text-left">
+            <a
+              href="tel:19008899"
+              data-testid="btn-hotline"
+              onClick={() => showNotification('Tổng đài tư vấn Pro Gear: 1900 8899 (Miễn cước kết nối 24/7)')}
+              className="hidden xl:flex items-center space-x-2 text-left hover:opacity-85 transition cursor-pointer"
+            >
               <div className="w-8 h-8 rounded-full bg-red-50 text-[#E30019] flex items-center justify-center border border-red-200">
                 <PhoneCall className="w-4 h-4" />
               </div>
@@ -1214,7 +1247,7 @@ export function App() {
                 <div className="font-bold text-[#E30019] leading-tight">1900 8899</div>
                 <div className="text-[10px] text-gray-500">Tư vấn miễn phí</div>
               </div>
-            </div>
+            </a>
 
             {/* Tra Cứu Bảo Hành Button */}
             <button
@@ -1379,9 +1412,8 @@ export function App() {
                   </p>
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => {
-                        setSelectedCategory('Máy Ảnh Mirrorless & DSLR');
-                      }}
+                      onClick={() => setIsInstallmentOpen(true)}
+                      data-testid="btn-hero-installment"
                       className="bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold text-xs px-4 py-2.5 rounded-md shadow transition flex items-center gap-1.5"
                     >
                       <span>Mua Ngay Trả Góp 0%</span>
@@ -1423,7 +1455,11 @@ export function App() {
           {/* RIGHT COLUMN: 2 Stacked Retail Banners (25% - cols 10-12) */}
           <div className="col-span-12 md:col-span-4 lg:col-span-3 flex flex-col gap-3">
             {/* Promo Card 1: Thu cũ đổi mới */}
-            <div className="bg-white rounded-lg border border-gray-200 p-3.5 shadow-sm flex flex-col justify-between flex-1 relative overflow-hidden group hover:border-[#E30019] transition">
+            <div
+              onClick={() => setIsTradeInOpen(true)}
+              data-testid="btn-promo-tradein"
+              className="bg-white rounded-lg border border-gray-200 p-3.5 shadow-sm flex flex-col justify-between flex-1 relative overflow-hidden group hover:border-[#E30019] transition cursor-pointer"
+            >
               <div className="relative z-10">
                 <span className="bg-red-50 text-[#E30019] text-[10px] font-bold px-2 py-0.5 rounded uppercase border border-red-200">
                   THU CŨ LÊN ĐỜI
@@ -1442,7 +1478,14 @@ export function App() {
             </div>
 
             {/* Promo Card 2: Flash sale phụ kiện */}
-            <div className="bg-white rounded-lg border border-gray-200 p-3.5 shadow-sm flex flex-col justify-between flex-1 relative overflow-hidden group hover:border-[#E30019] transition">
+            <div
+              onClick={() => {
+                setSelectedCategory('Ống Kính Lenses');
+                document.querySelector('main')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              data-testid="btn-promo-accessories"
+              className="bg-white rounded-lg border border-gray-200 p-3.5 shadow-sm flex flex-col justify-between flex-1 relative overflow-hidden group hover:border-[#E30019] transition cursor-pointer"
+            >
               <div className="relative z-10">
                 <span className="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase border border-amber-200">
                   PHỤ KIỆN CINEMA
@@ -1996,7 +2039,7 @@ export function App() {
       {/* ----------------- ORDER SUCCESS & VIETQR SCAN MODAL ----------------- */}
       {orderSuccess && (
         <div data-testid="order-success-modal" className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg border border-gray-200 max-w-md w-full p-6 text-gray-900 shadow-2xl animate-in fade-in duration-200">
+          <div className="bg-white rounded-lg border border-gray-200 max-w-md w-full p-6 text-gray-900 shadow-2xl animate-in fade-in duration-200 max-h-[90vh] overflow-y-auto">
             <div className="text-center mb-4">
               <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2">
                 <Check className="w-6 h-6 stroke-[3]" />
@@ -2008,24 +2051,13 @@ export function App() {
             </div>
 
             {orderSuccess.paymentMethod === 'VIETQR' && (
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center mb-4">
-                <div className="text-xs font-bold text-[#E30019] mb-2 flex items-center justify-center gap-1">
-                  <QrCode className="w-4 h-4" />
-                  <span>Quét Mã VietQR Thanh Toán Nhanh</span>
-                </div>
-                <div className="w-40 h-40 bg-white p-2 mx-auto rounded border border-gray-200 shadow-sm flex items-center justify-center">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=247PAY_${orderSuccess.orderNumber}_${orderSuccess.totalAmount}`}
-                    alt="VietQR Code"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                <div className="text-[11px] text-gray-600 mt-2">
-                  Ngân hàng: <strong>MBBank (Quân Đội)</strong> • STK: <strong>8888 9999 6688</strong>
-                </div>
-                <div className="text-[11px] text-gray-600">
-                  Nội dung chuyển khoản: <strong className="text-[#E30019] font-mono">{orderSuccess.orderNumber}</strong>
-                </div>
+              <div className="mb-4">
+                <VietQrPaymentBox
+                  orderNumber={orderSuccess.orderNumber}
+                  amount={orderSuccess.totalAmount}
+                  customerName={orderSuccess.customerName}
+                  isCompact={true}
+                />
               </div>
             )}
 
@@ -2423,6 +2455,39 @@ export function App() {
           <span>{toast.message}</span>
         </div>
       )}
+
+      {/* Floating Contact Bubbles (Zalo + Live Advisor Chat) */}
+      <FloatingContactWidget
+        onOpenLiveChat={() => setIsLiveChatOpen(true)}
+        activeAdvisorName={activeAdvisorName}
+      />
+
+      {/* Customer Live Chat Drawer with Email/FB Login */}
+      <CustomerChatDrawer
+        isOpen={isLiveChatOpen}
+        onClose={() => setIsLiveChatOpen(false)}
+        currentProductName="Sony FX3 Cinema Line Body"
+      />
+
+      {/* Installment 0% Modal */}
+      <InstallmentModal
+        isOpen={isInstallmentOpen}
+        onClose={() => setIsInstallmentOpen(false)}
+      />
+
+      {/* Trade-in Upgrade Modal */}
+      <TradeInModal
+        isOpen={isTradeInOpen}
+        onClose={() => setIsTradeInOpen(false)}
+      />
+
+      {/* Category Mega Menu */}
+      <CategoryMegaMenu
+        isOpen={isMegaMenuOpen}
+        onClose={() => setIsMegaMenuOpen(false)}
+        onSelectCategory={(cat) => setSelectedCategory(cat)}
+        onSelectBrand={(b) => setSelectedBrand(b)}
+      />
     </div>
   );
 }

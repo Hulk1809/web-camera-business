@@ -100,10 +100,15 @@ Hệ thống đã tích hợp sẵn bộ kiểm thử tự động End-to-End v�
    - `TC-WARRANTY-01`: Tra cứu theo Mã đơn hàng (`PRO-20261016-8942`) hiển thị chứng nhận bảo hành Sony FX3 24 tháng kèm đồng hồ đếm ngược ngày hiệu lực.
    - `TC-WARRANTY-02`: Tra cứu theo Serial (`SONY-FX3-VN-9901`) hiển thị trạng thái đang hiệu lực.
    - `TC-WARRANTY-03`: Kiểm tra xử lý cảnh báo khi tra cứu mã không tồn tại.
+4. **`tests/e2e/04-advisor-chat-and-vietqr.spec.ts`**:
+   - `TC-CHAT-01`: Cụm bong bóng liên hệ nổi Zalo Chat 24/7 & Tư Vấn Viên trực tuyến.
+   - `TC-CHAT-02`: Khách hàng đăng nhập Facebook (1-chạm) hoặc Email, gửi câu hỏi tư vấn máy ảnh.
+   - `TC-CHAT-03`: Bàn điều phối CSKH Admin nhận phiên, nhân viên tiếp nhận và hệ thống tự động khóa phiên để tránh các tư vấn viên khác trả lời trùng lặp.
+   - `TC-INTERACTIVE-04`: Kích hoạt toàn bộ nút ấn (Trả Góp 0%, Thu Cũ Đổi Mới, Mega-menu Danh Mục, Hộp VietQR thanh toán ngân hàng).
 
 ### 💻 Các Lệnh Chạy Kiểm Thử:
 ```bash
-# Chạy toàn bộ 9 ca kiểm thử tự động (headless mode)
+# Chạy toàn bộ 13 ca kiểm thử tự động (headless mode)
 npm run test:e2e
 
 # Chạy kiểm thử có giao diện trực quan (headed mode - mở trình duyệt Edge)

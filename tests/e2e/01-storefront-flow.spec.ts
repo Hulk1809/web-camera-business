@@ -73,10 +73,12 @@ test.describe('Storefront E-Commerce User Flows', () => {
     expect(orderNumber).toMatch(/^PRO-\d{8}-\d{4}$/);
 
     // Verify VietQR section is present
-    await expect(page.locator('text=Quét Mã VietQR Thanh Toán Nhanh')).toBeVisible();
+    await expect(page.getByTestId('vietqr-payment-box')).toBeVisible();
 
     // Close success modal
-    await page.getByTestId('btn-close-success-modal').click();
+    const closeBtn = page.getByTestId('btn-close-success-modal');
+    await closeBtn.scrollIntoViewIfNeeded();
+    await closeBtn.click();
     await expect(page.getByTestId('order-success-modal')).toBeHidden();
   });
 });

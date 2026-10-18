@@ -51,10 +51,14 @@ import {
   User,
   Boxes,
   HelpCircle,
-  Menu
+  Menu,
 } from 'lucide-react';
 import { EnterpriseKpiRow, formatVND } from './components/EnterpriseKpiRow';
 import { EnterpriseToast, type ToastMessage } from './components/EnterpriseToast';
+import { AdminAdvisorChatView } from './components/AdminAdvisorChatView';
+import { StaffAccountSwitcher } from './components/StaffAccountSwitcher';
+import { VietQrPaymentBox } from './components/VietQrPaymentBox';
+import { chatSyncService } from './services/chatSyncService';
 
 export interface Product {
   id: string;
@@ -384,9 +388,21 @@ export const CATEGORIES_LIST = [
 ];
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'categories' | 'warranty' | 'k8s'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'categories' | 'warranty' | 'k8s' | 'chat'>('dashboard');
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const showToast = (t: ToastMessage) => setToast(t);
+
+  // Unassigned chat sessions counter
+  const [waitingChatCount, setWaitingChatCount] = useState<number>(() => {
+    return chatSyncService.getSessions().filter((s) => s.status === 'WAITING').length;
+  });
+
+  useEffect(() => {
+    const unsub = chatSyncService.subscribe((list) => {
+      setWaitingChatCount(list.filter((s) => s.status === 'WAITING').length);
+    });
+    return () => unsub();
+  }, []);
 
   // Products State
   const [products, setProducts] = useState<Product[]>(() => {
@@ -1222,6 +1238,28 @@ export function App() {
             </button>
 
             <button
+              data-testid="nav-chat"
+              onClick={() => setActiveTab('chat')}
+              className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold flex items-center justify-between transition-colors ${
+                activeTab === 'chat'
+                  ? 'bg-indigo-50 text-indigo-700 font-bold'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center space-x-2.5">
+                <PhoneCall className={`w-4 h-4 ${activeTab === 'chat' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                <span>Tư Vấn CSKH (Chat)</span>
+              </div>
+              {waitingChatCount > 0 ? (
+                <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                  {waitingChatCount} chờ
+                </span>
+              ) : (
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              )}
+            </button>
+
+            <button
               data-testid="nav-k8s"
               onClick={() => setActiveTab('k8s')}
               className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold flex items-center justify-between transition-colors ${
@@ -1280,6 +1318,7 @@ export function App() {
               {activeTab === 'products' && 'Quản Lý Thiết Bị, Máy Ảnh & Tồn Kho'}
               {activeTab === 'categories' && 'Danh Mục & Phân Loại Sản Phẩm'}
               {activeTab === 'warranty' && 'Quản Lý Serial & Bảo Hành Điện Tử'}
+              {activeTab === 'chat' && 'Trung Tâm Tư Vấn CSKH & Hỗ Trợ Trực Tuyến'}
               {activeTab === 'k8s' && 'Giám Sát Hạ Tầng & Cụm Máy Chủ Kubernetes'}
             </h1>
             <p className="text-xs text-slate-500">
@@ -1288,6 +1327,8 @@ export function App() {
           </div>
 
           <div className="flex items-center space-x-3 text-xs">
+            {/* Multi-Staff Account Switcher */}
+            <StaffAccountSwitcher />
             {/* Quick POS Sale button */}
             <button
               onClick={() => {
@@ -1992,6 +2033,9 @@ export function App() {
             </div>
           )}
 
+          {/* ----------------- TAB: LIVE ADVISOR CHAT (CSKH TRỰC TUYẾN) ----------------- */}
+          {activeTab === 'chat' && <AdminAdvisorChatView />}
+
           {/* ----------------- TAB: SERVER / K8S ----------------- */}
           {activeTab === 'k8s' && (
             <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm space-y-4">
@@ -2196,6 +2240,16 @@ export function App() {
                 <span className="text-slate-500">Hạn Bảo Hành:</span>
                 <strong className="font-mono text-emerald-700">{invoiceSerial.warrantyExpires} ({invoiceSerial.warrantyMonths}T)</strong>
               </div>
+            </div>
+
+            {/* VietQR Payment & Warranty Verification Block */}
+            <div className="mb-4">
+              <VietQrPaymentBox
+                orderNumber={invoiceSerial.orderNumber}
+                amount={invoiceOrder?.totalAmount || 84900000}
+                customerName={invoiceSerial.customerName}
+                isCompact={true}
+              />
             </div>
 
             <button
