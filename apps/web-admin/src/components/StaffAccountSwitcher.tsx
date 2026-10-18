@@ -17,8 +17,22 @@ export const StaffAccountSwitcher: React.FC<StaffAccountSwitcherProps> = ({ onSt
         setCurrentStaff(e.detail);
       }
     };
+
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (e.key === 'PROGEAR_ACTIVE_STAFF' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setCurrentStaff(parsed);
+        } catch {}
+      }
+    };
+
     window.addEventListener('PROGEAR_STAFF_CHANGED', handleStaffEvent);
-    return () => window.removeEventListener('PROGEAR_STAFF_CHANGED', handleStaffEvent);
+    window.addEventListener('storage', handleStorageEvent);
+    return () => {
+      window.removeEventListener('PROGEAR_STAFF_CHANGED', handleStaffEvent);
+      window.removeEventListener('storage', handleStorageEvent);
+    };
   }, []);
 
   const selectStaff = (staff: AdvisorStaff) => {
