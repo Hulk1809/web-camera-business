@@ -75,4 +75,44 @@ test.describe('Admin Enterprise Operations & POS Counter Sales', () => {
     await expect(page.locator(`text=${testCustomer}`).first()).toBeVisible();
     await expect(page.locator('text=Đã Bán • Đang Bảo Hành').first()).toBeVisible();
   });
+
+  test('TC-ADMIN-04: Revenue Statement (Doanh Số & Sao Kê), Category Breakdown and Audit Receipts', async ({ page }) => {
+    // 1. Navigate to Doanh Số & Sao Kê via sidebar
+    await page.getByTestId('nav-finance').click();
+    await expect(page.locator('text=Báo Cáo Doanh Số & Sao Kê Tài Chính')).toBeVisible();
+    await expect(page.locator('text=Sổ Cái Đối Soát Doanh Số & Dòng Tiền')).toBeVisible();
+
+    // 2. Check top financial cards (MBBank VietQR and Realized Revenue)
+    await expect(page.locator('text=Chuyển Khoản MBBank VietQR')).toBeVisible();
+    await expect(page.locator('text=STK: 888899996688').first()).toBeVisible();
+
+    // 3. Check Category breakdown cards
+    await expect(page.locator('text=Bảng Phân Bổ Doanh Số Theo Danh Mục Hàng Hóa')).toBeVisible();
+    await expect(page.getByTestId('card-category-stat-Máy Ảnh Mirrorless & DSLR')).toBeVisible();
+    await expect(page.getByTestId('card-category-stat-Flycam & Drone DJI')).toBeVisible();
+
+    // 4. Verify statement audit ledger rows
+    const statementRows = page.locator('tr[data-testid^="row-statement-order-"]');
+    await expect(statementRows.first()).toBeVisible();
+
+    // 5. Inspect a transaction receipt
+    const firstReceiptBtn = page.locator('button[data-testid^="btn-view-receipt-"]').first();
+    await firstReceiptBtn.click();
+
+    // Verify modal content
+    await expect(page.getByTestId('modal-receipt-inspection')).toBeVisible();
+    await expect(page.locator('text=PHIẾU THU & CHỨNG TỪ SAO KÊ')).toBeVisible();
+    await expect(page.locator('text=CÔNG TY TNHH THƯƠNG MẠI & DỊCH VỤ PRO GEAR VIỆT NAM')).toBeVisible();
+
+    // Close modal
+    await page.locator('button:has(svg.lucide-x)').first().click();
+    await expect(page.getByTestId('modal-receipt-inspection')).toBeHidden();
+
+    // 6. Navigate back to dashboard and verify clicking Total Revenue KPI card opens finance tab
+    await page.getByTestId('nav-dashboard').click();
+    await expect(page.locator('text=Tổng Quan Tình Hình Kinh Doanh')).toBeVisible();
+    await page.getByTestId('kpi-card-total-revenue').click();
+    await expect(page.locator('text=Báo Cáo Doanh Số & Sao Kê Tài Chính')).toBeVisible();
+  });
 });
+

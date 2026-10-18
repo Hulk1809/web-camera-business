@@ -7,7 +7,7 @@ interface EnterpriseKpiRowProps {
   preOrdersCount: number;
   lowStockCount: number;
   activeWarrantyCount: number;
-  onNavigateTab: (tab: 'orders' | 'products' | 'warranty') => void;
+  onNavigateTab: (tab: 'orders' | 'products' | 'warranty' | 'finance') => void;
 }
 
 export function formatVND(amount: number): string {
@@ -29,12 +29,17 @@ export function EnterpriseKpiRow({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5">
       {/* KPI 1: Doanh Thu */}
-      <div className="bg-white rounded-lg border border-slate-200 p-3.5 shadow-sm hover:border-slate-300 transition-colors flex flex-col justify-between">
+      <div
+        data-testid="kpi-card-total-revenue"
+        onClick={() => onNavigateTab('finance')}
+        className="bg-white rounded-lg border border-slate-200 p-3.5 shadow-sm hover:border-indigo-400 transition-colors cursor-pointer flex flex-col justify-between group"
+      >
         <div className="flex items-center justify-between text-slate-500 mb-2">
-          <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
-            Tổng Doanh Thu
+          <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider group-hover:text-indigo-600 transition-colors flex items-center gap-1">
+            <span>Tổng Doanh Thu</span>
+            <span className="text-[10px] text-indigo-500 font-normal">(Xem sao kê)</span>
           </span>
-          <div className="w-8 h-8 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+          <div className="w-8 h-8 rounded-md bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors flex items-center justify-center border border-indigo-100">
             <DollarSign className="w-4 h-4" />
           </div>
         </div>
@@ -42,9 +47,12 @@ export function EnterpriseKpiRow({
           <div className="text-xl sm:text-2xl font-bold text-slate-900 tabular-nums">
             {formatVND(totalRevenue)}
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium mt-1">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>+18.5% so với tuần trước</span>
+          <div className="flex items-center justify-between text-[11px] text-emerald-600 font-medium mt-1">
+            <span className="flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5" />
+              +18.5% so với tuần trước
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
           </div>
         </div>
       </div>

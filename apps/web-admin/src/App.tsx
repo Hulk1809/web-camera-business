@@ -58,6 +58,7 @@ import { EnterpriseToast, type ToastMessage } from './components/EnterpriseToast
 import { AdminAdvisorChatView } from './components/AdminAdvisorChatView';
 import { StaffAccountSwitcher } from './components/StaffAccountSwitcher';
 import { VietQrPaymentBox } from './components/VietQrPaymentBox';
+import { AdminRevenueStatementView } from './components/AdminRevenueStatementView';
 import { chatSyncService } from './services/chatSyncService';
 
 export interface Product {
@@ -106,6 +107,7 @@ export interface Order {
   scheduledDate?: string;
   staffCallStatus?: 'NOT_CALLED' | 'CALLED_SCHEDULED' | 'STOCK_READY' | 'CANCELLED';
   staffNotes?: string;
+  bankRef?: string;
 }
 
 export interface SerialItem {
@@ -315,6 +317,43 @@ export const DEFAULT_ORDERS: Order[] = [
     itemsCount: 1,
     orderType: 'STANDARD',
   },
+  {
+    id: 'ord-105',
+    orderNumber: 'PRO-20261017-8831',
+    customerName: 'Studio Nhiếp Ảnh Sài Gòn (Chị Lan)',
+    customerPhone: '0977 123 456',
+    shippingAddress: '124 Điện Biên Phủ, Phường Đa Kao, Quận 1, TP.HCM',
+    totalAmount: 53990000,
+    paymentMethod: 'INSTALLMENT_0PCT',
+    paymentStatus: 'PAID',
+    orderStatus: 'COMPLETED',
+    createdAt: '17/10/2026 17:30',
+    items: [
+      { productName: 'Sony Alpha 7 IV (A7M4) Body', productSku: 'ILCE-7M4-BODY', price: 53990000, quantity: 1, subtotal: 53990000 },
+    ],
+    itemsCount: 1,
+    orderType: 'STANDARD',
+    bankRef: 'MPOS-INST-202610-8831',
+  },
+  {
+    id: 'ord-106',
+    orderNumber: 'PRO-20261018-1122',
+    customerName: 'Nguyễn Thành Nam (YouTuber Travel)',
+    customerPhone: '0934 889 900',
+    shippingAddress: 'Chung cư Masteri Thảo Điền, TP. Thủ Đức, TP.HCM',
+    totalAmount: 58890000,
+    paymentMethod: 'VIETQR',
+    paymentStatus: 'PAID',
+    orderStatus: 'COMPLETED',
+    createdAt: '18/10/2026 09:15',
+    items: [
+      { productName: 'Sony FE 24-70mm F2.8 GM II Lens', productSku: 'SEL2470GM2', price: 49990000, quantity: 1, subtotal: 49990000 },
+      { productName: 'DJI Mic 2 Wireless Microphone', productSku: 'DJI-MIC2-COMBO', price: 8900000, quantity: 1, subtotal: 8900000 },
+    ],
+    itemsCount: 2,
+    orderType: 'STANDARD',
+    bankRef: 'MBB-FT-202610-1122',
+  },
 ];
 
 export const DEFAULT_SERIALS: SerialItem[] = [
@@ -388,7 +427,7 @@ export const CATEGORIES_LIST = [
 ];
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'categories' | 'warranty' | 'k8s' | 'chat'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'finance' | 'products' | 'categories' | 'warranty' | 'k8s' | 'chat'>('dashboard');
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const showToast = (t: ToastMessage) => setToast(t);
 
@@ -1186,6 +1225,24 @@ export function App() {
             </button>
 
             <button
+              data-testid="nav-finance"
+              onClick={() => setActiveTab('finance')}
+              className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold flex items-center justify-between transition-colors ${
+                activeTab === 'finance'
+                  ? 'bg-indigo-50 text-indigo-700 font-bold'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center space-x-2.5">
+                <Receipt className={`w-4 h-4 ${activeTab === 'finance' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                <span>Doanh Số & Sao Kê</span>
+              </div>
+              <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-1.5 py-0.2 rounded">
+                Đối Soát
+              </span>
+            </button>
+
+            <button
               data-testid="nav-products"
               onClick={() => setActiveTab('products')}
               className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold flex items-center justify-between transition-colors ${
@@ -1315,6 +1372,7 @@ export function App() {
             <h1 className="text-base font-bold text-slate-900 leading-tight">
               {activeTab === 'dashboard' && 'Tổng Quan Tình Hình Kinh Doanh'}
               {activeTab === 'orders' && 'Quản Lý Đơn Đặt Hàng & Dự Án'}
+              {activeTab === 'finance' && 'Báo Cáo Doanh Số & Sao Kê Dòng Tiền (Financial Audit)'}
               {activeTab === 'products' && 'Quản Lý Thiết Bị, Máy Ảnh & Tồn Kho'}
               {activeTab === 'categories' && 'Danh Mục & Phân Loại Sản Phẩm'}
               {activeTab === 'warranty' && 'Quản Lý Serial & Bảo Hành Điện Tử'}
@@ -1671,6 +1729,16 @@ export function App() {
                 </table>
               </div>
             </div>
+          )}
+
+          {/* ----------------- TAB: FINANCE & REVENUE STATEMENT (DOANH SỐ & SAO KÊ) ----------------- */}
+          {activeTab === 'finance' && (
+            <AdminRevenueStatementView
+              orders={orders}
+              products={products}
+              onViewOrder={(ord) => setSelectedOrderDetails(ord)}
+              showToast={showToast}
+            />
           )}
 
           {/* ----------------- TAB: PRODUCTS (QUẢN LÝ SẢN PHẨM & TỒN KHO) ----------------- */}
