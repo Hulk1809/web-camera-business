@@ -54,6 +54,8 @@ import {
   Menu,
   LogOut,
   PackageCheck,
+  Edit,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { EnterpriseKpiRow, formatVND } from './components/EnterpriseKpiRow';
 import { EnterpriseToast, type ToastMessage } from './components/EnterpriseToast';
@@ -77,6 +79,8 @@ export interface Product {
   images?: string[];
   status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
   specifications?: any;
+  shortDesc?: string;
+  description?: string;
   isFeatured?: boolean;
 }
 
@@ -429,6 +433,57 @@ export const CATEGORIES_LIST = [
   { name: 'Âm Thanh & Ánh Sáng Studio', desc: 'DJI Mic 2, Đèn Nanlite, Godox, Aputure', icon: Sparkles },
 ];
 
+export const PRESET_GEAR_IMAGES = [
+  {
+    name: 'Sony FX3 Cinema Line',
+    url: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+    category: 'Máy Quay Điện Ảnh & Cinema',
+    brand: 'Sony',
+  },
+  {
+    name: 'Sony Alpha 7 IV (A7M4)',
+    url: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=800',
+    category: 'Máy Ảnh Mirrorless & DSLR',
+    brand: 'Sony',
+  },
+  {
+    name: 'Canon EOS R5 Mark II',
+    url: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=800',
+    category: 'Máy Ảnh Mirrorless & DSLR',
+    brand: 'Canon',
+  },
+  {
+    name: 'DJI Mavic 3 Pro Cine',
+    url: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800',
+    category: 'Flycam & Drone DJI',
+    brand: 'DJI',
+  },
+  {
+    name: 'DJI Osmo Pocket 3 Creator',
+    url: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=800',
+    category: 'Action Cam & Pocket Creator',
+    brand: 'DJI',
+  },
+  {
+    name: 'DJI RS 4 Pro Gimbal Combo',
+    url: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800',
+    category: 'Gimbal & Chống Rung DJI Ronin',
+    brand: 'DJI',
+  },
+  {
+    name: 'Fujifilm X-T5 Cổ Điển',
+    url: 'https://images.unsplash.com/photo-1519638831568-d9897f54ed69?w=800',
+    category: 'Máy Ảnh Mirrorless & DSLR',
+    brand: 'Fujifilm',
+  },
+  {
+    name: 'Ống Kính Sony FE 24-70mm GM II',
+    url: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=800',
+    category: 'Ống Kính Chuyên Dụng (Lenses)',
+    brand: 'Sony',
+  },
+];
+
 export function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'finance' | 'products' | 'categories' | 'warranty' | 'k8s' | 'chat'>('dashboard');
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -568,26 +623,52 @@ export function App() {
   const [invoiceSerial, setInvoiceSerial] = useState<SerialItem | null>(null);
   const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
 
-  // Form State for Adding Product
+  // Product Form Modal State (Add & Edit with Tech Specs & Images)
   const [showAddProductModal, setShowAddProductModal] = useState<boolean>(false);
-  const [newGear, setNewGear] = useState<{
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [productFormTab, setProductFormTab] = useState<'basic' | 'images' | 'specs' | 'desc'>('basic');
+  const [customImageUrlInput, setCustomImageUrlInput] = useState<string>('');
+
+  const [productForm, setProductForm] = useState<{
     name: string;
     sku: string;
     brand: string;
     category: string;
     price: string;
+    originalPrice: string;
     stock: string;
     imageUrl: string;
+    images: string[];
     isFeatured: boolean;
+    shortDesc: string;
+    description: string;
+    specSensor: string;
+    specVideo: string;
+    specStabilization: string;
+    specWeight: string;
+    specBattery: string;
+    specFeatures: string;
+    customSpecs: { key: string; value: string }[];
   }>({
     name: '',
     sku: '',
     brand: 'Sony',
     category: 'Máy Ảnh Mirrorless & DSLR',
     price: '',
+    originalPrice: '',
     stock: '10',
     imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+    images: ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800'],
     isFeatured: false,
+    shortDesc: '',
+    description: '',
+    specSensor: 'Full-Frame BSI CMOS 33.0 MP',
+    specVideo: '4K 60p 10-bit 4:2:2, S-Cinetone',
+    specStabilization: 'Chống rung cảm biến IBIS 5 trục 7.0 stops',
+    specWeight: '658g',
+    specBattery: 'Pin NP-FZ100 (580 ảnh)',
+    specFeatures: 'Lấy nét AI Real-time, 2 khe SD/CFexpress',
+    customSpecs: [],
   });
 
   // Fetch Products from Backend API
@@ -913,65 +994,337 @@ export function App() {
     } catch {}
   };
 
-  // Add Product Submit
-  const handleAddProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newGear.name || !newGear.price) return;
-
-    const newProdItem: Product = {
-      id: `prod-${Date.now()}`,
-      name: newGear.name,
-      sku: newGear.sku || `PRO-${Math.floor(1000 + Math.random() * 9000)}`,
-      brand: newGear.brand,
-      category: newGear.category,
-      price: Number(newGear.price),
-      originalPrice: Number(newGear.price) * 1.15,
-      stock: Number(newGear.stock) || 10,
-      imageUrl: newGear.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
-      status: 'IN_STOCK',
-      isFeatured: newGear.isFeatured,
-    };
-
-    const updatedProdList = [newProdItem, ...products];
-    setProducts(updatedProdList);
-    try {
-      localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(updatedProdList));
-    } catch {}
-
-    try {
-      await fetch('/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newProdItem.name,
-          sku: newProdItem.sku,
-          brand: newProdItem.brand,
-          category: newProdItem.category,
-          price: newProdItem.price,
-          stockQuantity: newProdItem.stock,
-          imageUrl: newProdItem.imageUrl,
-        }),
-      });
-    } catch {}
-
-    setShowAddProductModal(false);
-    setNewGear({
+  // Open Product Modal in Add Mode
+  const openAddProductModal = () => {
+    setEditingProductId(null);
+    setProductFormTab('basic');
+    setCustomImageUrlInput('');
+    setProductForm({
       name: '',
       sku: '',
       brand: 'Sony',
       category: 'Máy Ảnh Mirrorless & DSLR',
       price: '',
+      originalPrice: '',
       stock: '10',
       imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+      images: ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800'],
       isFeatured: false,
+      shortDesc: '',
+      description: '',
+      specSensor: 'Full-Frame BSI CMOS 33.0 MP',
+      specVideo: '4K 60p 10-bit 4:2:2, S-Cinetone',
+      specStabilization: 'Chống rung cảm biến IBIS 5 trục 7.0 stops',
+      specWeight: '658g',
+      specBattery: 'Pin NP-FZ100 (580 ảnh)',
+      specFeatures: 'Lấy nét AI Real-time, 2 khe SD/CFexpress',
+      customSpecs: [],
+    });
+    setShowAddProductModal(true);
+  };
+
+  // Open Product Modal in Edit Mode
+  const openEditProductModal = (prod: Product) => {
+    setEditingProductId(prod.id);
+    setProductFormTab('basic');
+    setCustomImageUrlInput('');
+    const specs = prod.specifications || {};
+
+    const standardKeys = new Set(['sensor', 'video', 'stabilization', 'weight', 'battery', 'flightTime', 'payload', 'features']);
+    const customSpecsList: { key: string; value: string }[] = [];
+    Object.entries(specs).forEach(([k, v]) => {
+      if (!standardKeys.has(k) && typeof v === 'string') {
+        customSpecsList.push({ key: k, value: v });
+      }
     });
 
-    showToast({
-      id: String(Date.now()),
-      type: 'success',
-      title: 'Đã thêm thiết bị mới',
-      message: `${newProdItem.name} đã được lưu vào kho thành công.`,
+    const batteryOrFlight = specs.battery || specs.flightTime || '';
+    const featuresStr = Array.isArray(specs.features) ? specs.features.join(', ') : (specs.features || '');
+
+    setProductForm({
+      name: prod.name,
+      sku: prod.sku,
+      brand: prod.brand,
+      category: prod.category || 'Máy Ảnh Mirrorless & DSLR',
+      price: String(prod.price),
+      originalPrice: String(prod.originalPrice || Math.round(prod.price * 1.15)),
+      stock: String(prod.stock ?? 10),
+      imageUrl: prod.imageUrl,
+      images: prod.images && prod.images.length > 0 ? prod.images : [prod.imageUrl],
+      isFeatured: !!prod.isFeatured,
+      shortDesc: prod.shortDesc || '',
+      description: prod.description || '',
+      specSensor: specs.sensor || (specs.payload ? `Tải trọng: ${specs.payload}` : ''),
+      specVideo: specs.video || '',
+      specStabilization: specs.stabilization || '',
+      specWeight: specs.weight || '',
+      specBattery: batteryOrFlight,
+      specFeatures: featuresStr,
+      customSpecs: customSpecsList,
     });
+    setShowAddProductModal(true);
+  };
+
+  // Auto-fill standard specs according to category
+  const applyCategorySpecPreset = (catName: string) => {
+    if (catName.includes('Flycam') || catName.includes('Drone')) {
+      setProductForm((prev) => ({
+        ...prev,
+        category: catName,
+        specSensor: 'Hasselblad 4/3 CMOS 20MP + Tele 70mm & 166mm',
+        specVideo: 'Apple ProRes 5.1K/50fps, 4K/120fps D-Log M 10-bit',
+        specStabilization: 'Gimbal cơ học chống rung 3 trục siêu ổn định',
+        specWeight: '958g (Đầy đủ pin và cánh quạt)',
+        specBattery: 'Thời gian bay tối đa 43 phút liên tục',
+        specFeatures: 'Cảm biến đa hướng APAS 5.0, Truyền sóng O3+ 15km',
+      }));
+    } else if (catName.includes('Gimbal') || catName.includes('Chống Rung')) {
+      setProductForm((prev) => ({
+        ...prev,
+        category: catName,
+        specSensor: 'Tải trọng chịu lực 4.5kg (Khung sợi Carbon)',
+        specVideo: 'Hỗ trợ điều khiển lấy nét LiDAR & động cơ Focus Pro',
+        specStabilization: 'Thuật toán chống rung thế hệ 4 RS Stabilization',
+        specWeight: '1.6kg (Bao gồm trục tháo lắp nhanh)',
+        specBattery: 'Pin tích hợp thời lượng 12 giờ, sạc nhanh 18W',
+        specFeatures: 'Khóa trục tự động thế hệ 2, Màn hình cảm ứng OLED màu',
+      }));
+    } else if (catName.includes('Cinema') || catName.includes('Máy Quay')) {
+      setProductForm((prev) => ({
+        ...prev,
+        category: catName,
+        specSensor: 'Full-Frame BSI CMOS 12.1MP (Dual Base ISO 800/12800)',
+        specVideo: '4K 120p 10-bit 4:2:2, 16-bit RAW output qua HDMI',
+        specStabilization: 'Chống rung cảm biến Active Mode + IBIS 5 trục',
+        specWeight: '715g (Tích hợp quạt tản nhiệt làm mát chủ động)',
+        specBattery: 'Pin NP-FZ100 (Khoảng 135 phút quay liên tục)',
+        specFeatures: 'Tay cầm XLR âm thanh 4 kênh, Profile màu điện ảnh S-Cinetone',
+      }));
+    } else if (catName.includes('Pocket') || catName.includes('Action')) {
+      setProductForm((prev) => ({
+        ...prev,
+        category: catName,
+        specSensor: 'Cảm biến CMOS 1-inch ghi hình sắc nét thiếu sáng',
+        specVideo: '4K/120fps, D-Log M 10-bit & HLG màu sắc sống động',
+        specStabilization: 'Chống rung cơ học 3 trục gimbal thu nhỏ',
+        specWeight: '179g (Thiết kế bỏ túi siêu gọn nhẹ)',
+        specBattery: 'Pin 1300 mAh, sạc nhanh 80% trong 16 phút',
+        specFeatures: 'Màn hình xoay cảm biến 2-inch OLED, ActiveTrack 6.0',
+      }));
+    } else {
+      // Default Camera
+      setProductForm((prev) => ({
+        ...prev,
+        category: catName,
+        specSensor: 'Full-Frame BSI CMOS 33.0 MP (Exmor R)',
+        specVideo: '4K 60p 10-bit 4:2:2, 4K Super 35, S-Log3/S-Cinetone',
+        specStabilization: 'Chống rung cảm biến IBIS 5 trục hiệu quả 7.0 stops',
+        specWeight: '658g (Đã bao gồm pin NP-FZ100 và thẻ nhớ)',
+        specBattery: 'Pin NP-FZ100 (Chụp khoảng 580 tấm / lần sạc)',
+        specFeatures: 'Lấy nét AI Real-time nhận diện người/mắt/động cơ, 2 khe SD/CFexpress',
+      }));
+    }
+  };
+
+  // Image Upload via File Reader
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        if (result) {
+          setProductForm((prev) => ({
+            ...prev,
+            imageUrl: result,
+            images: [result, ...prev.images.filter((img) => img !== result)],
+          }));
+          showToast({
+            id: String(Date.now()),
+            type: 'success',
+            title: 'Tải ảnh thành công! 🖼️',
+            message: `Đã nạp ảnh ${file.name} làm ảnh đại diện chính của thiết bị.`,
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddImageUrl = () => {
+    const trimmed = customImageUrlInput.trim();
+    if (!trimmed) return;
+    setProductForm((prev) => ({
+      ...prev,
+      imageUrl: trimmed,
+      images: [trimmed, ...prev.images.filter((img) => img !== trimmed)],
+    }));
+    setCustomImageUrlInput('');
+  };
+
+  const handleSelectPresetImage = (url: string) => {
+    setProductForm((prev) => ({
+      ...prev,
+      imageUrl: url,
+      images: [url, ...prev.images.filter((img) => img !== url)],
+    }));
+  };
+
+  const handleRemoveImage = (imgUrl: string) => {
+    setProductForm((prev) => {
+      const nextImages = prev.images.filter((img) => img !== imgUrl);
+      const nextPrimary = prev.imageUrl === imgUrl ? (nextImages[0] || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800') : prev.imageUrl;
+      return {
+        ...prev,
+        imageUrl: nextPrimary,
+        images: nextImages.length > 0 ? nextImages : [nextPrimary],
+      };
+    });
+  };
+
+  // Save Product (Create or Edit)
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!productForm.name || !productForm.price) return;
+
+    // Build specifications object
+    const specsObj: Record<string, any> = {};
+    if (productForm.specSensor.trim()) specsObj.sensor = productForm.specSensor.trim();
+    if (productForm.specVideo.trim()) specsObj.video = productForm.specVideo.trim();
+    if (productForm.specStabilization.trim()) specsObj.stabilization = productForm.specStabilization.trim();
+    if (productForm.specWeight.trim()) specsObj.weight = productForm.specWeight.trim();
+    if (productForm.specBattery.trim()) specsObj.battery = productForm.specBattery.trim();
+    if (productForm.specFeatures.trim()) specsObj.features = productForm.specFeatures.trim();
+
+    for (const cs of productForm.customSpecs) {
+      if (cs.key.trim() && cs.value.trim()) {
+        specsObj[cs.key.trim()] = cs.value.trim();
+      }
+    }
+
+    const priceNum = Number(productForm.price) || 0;
+    const origPriceNum = Number(productForm.originalPrice) || Math.round(priceNum * 1.15);
+    const stockNum = Number(productForm.stock) || 0;
+    const finalImg = productForm.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800';
+    const finalImages = productForm.images.length > 0 ? productForm.images : [finalImg];
+
+    if (editingProductId) {
+      // EDIT EXISTING PRODUCT
+      const updatedProdList = products.map((p) => {
+        if (p.id === editingProductId) {
+          return {
+            ...p,
+            name: productForm.name,
+            sku: productForm.sku || p.sku,
+            brand: productForm.brand,
+            category: productForm.category,
+            price: priceNum,
+            originalPrice: origPriceNum,
+            stock: stockNum,
+            imageUrl: finalImg,
+            images: finalImages,
+            status: (stockNum > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK') as any,
+            isFeatured: productForm.isFeatured,
+            shortDesc: productForm.shortDesc || productForm.name,
+            description: productForm.description || productForm.shortDesc || '',
+            specifications: specsObj,
+          };
+        }
+        return p;
+      });
+
+      setProducts(updatedProdList);
+      try {
+        localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(updatedProdList));
+        window.dispatchEvent(new CustomEvent('PROGEAR_PRODUCTS_UPDATED', { detail: updatedProdList }));
+      } catch {}
+
+      try {
+        await fetch(`/api/products/${editingProductId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: productForm.name,
+            sku: productForm.sku,
+            brand: productForm.brand,
+            category: productForm.category,
+            price: priceNum,
+            originalPrice: origPriceNum,
+            stockQuantity: stockNum,
+            imageUrl: finalImg,
+            images: finalImages,
+            shortDesc: productForm.shortDesc,
+            description: productForm.description,
+            specifications: specsObj,
+          }),
+        });
+      } catch {}
+
+      setShowAddProductModal(false);
+      setEditingProductId(null);
+      showToast({
+        id: String(Date.now()),
+        type: 'success',
+        title: 'Cập Nhật Thiết Bị Thành Công! ⚡',
+        message: `${productForm.name} đã được cập nhật thông số và đồng bộ sang Web Bán Hàng.`,
+      });
+    } else {
+      // CREATE NEW PRODUCT
+      const newProdItem: Product = {
+        id: `prod-${Date.now()}`,
+        name: productForm.name,
+        sku: productForm.sku || `PRO-${Math.floor(1000 + Math.random() * 9000)}`,
+        brand: productForm.brand,
+        category: productForm.category,
+        price: priceNum,
+        originalPrice: origPriceNum,
+        stock: stockNum,
+        imageUrl: finalImg,
+        images: finalImages,
+        status: (stockNum > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK') as any,
+        isFeatured: productForm.isFeatured,
+        shortDesc: productForm.shortDesc || productForm.name,
+        description: productForm.description || productForm.shortDesc || '',
+        specifications: specsObj,
+      };
+
+      const updatedProdList = [newProdItem, ...products];
+      setProducts(updatedProdList);
+      try {
+        localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(updatedProdList));
+        window.dispatchEvent(new CustomEvent('PROGEAR_PRODUCTS_UPDATED', { detail: updatedProdList }));
+      } catch {}
+
+      try {
+        await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newProdItem.name,
+            sku: newProdItem.sku,
+            brand: newProdItem.brand,
+            category: newProdItem.category,
+            price: newProdItem.price,
+            originalPrice: newProdItem.originalPrice,
+            stockQuantity: newProdItem.stock,
+            imageUrl: newProdItem.imageUrl,
+            images: newProdItem.images,
+            shortDesc: newProdItem.shortDesc,
+            description: newProdItem.description,
+            specifications: specsObj,
+          }),
+        });
+      } catch {}
+
+      setShowAddProductModal(false);
+      setEditingProductId(null);
+      showToast({
+        id: String(Date.now()),
+        type: 'success',
+        title: 'Thêm Thiết Bị Mới Thành Công! ⚡',
+        message: `${newProdItem.name} đã lưu vào kho với đầy đủ thông số kỹ thuật & hình ảnh.`,
+      });
+    }
   };
 
   // POS Sale Checkout
@@ -1514,8 +1867,9 @@ export function App() {
 
             {activeTab === 'products' && (
               <button
-                onClick={() => setShowAddProductModal(true)}
-                className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-md flex items-center gap-1.5 shadow-sm transition active:scale-95"
+                data-testid="btn-open-add-product"
+                onClick={openAddProductModal}
+                className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-md flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Thêm Thiết Bị</span>
@@ -2003,6 +2357,15 @@ export function App() {
                         </td>
                         <td className="py-2.5 px-4 text-right">
                           <div className="flex items-center justify-end space-x-1.5">
+                            <button
+                              data-testid={`btn-edit-product-${prod.id}`}
+                              onClick={() => openEditProductModal(prod)}
+                              className="px-2 py-1 rounded border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] transition flex items-center gap-1 cursor-pointer"
+                              title="Chỉnh sửa thông số kỹ thuật, hình ảnh & giá bán"
+                            >
+                              <Edit className="w-3 h-3" />
+                              <span>Sửa</span>
+                            </button>
                             <button
                               onClick={() => handleQuickRestock(prod, 5)}
                               className="px-2 py-1 rounded border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold text-[10px] transition"
@@ -2654,102 +3017,638 @@ export function App() {
         </div>
       )}
 
-      {/* ----------------- ADD PRODUCT MODAL ----------------- */}
+      {/* ----------------- PRODUCT FORM MODAL (THÊM MỚI & SỬA THIẾT BỊ) ----------------- */}
       {showAddProductModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg border border-slate-200 max-w-md w-full p-5 relative shadow-2xl text-slate-900">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-2xl w-full p-6 relative shadow-2xl text-slate-900 my-8 animate-in fade-in">
             <button
-              onClick={() => setShowAddProductModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1 rounded transition"
+              onClick={() => {
+                setShowAddProductModal(false);
+                setEditingProductId(null);
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center space-x-2 text-indigo-600 mb-2">
-              <Package className="w-5 h-5" />
-              <h3 className="font-bold text-base text-slate-900">Thêm Thiết Bị Vào Kho</h3>
+            {/* Modal Header */}
+            <div className="flex items-center space-x-2.5 text-indigo-600 mb-1">
+              <Package className="w-6 h-6" />
+              <h3 className="font-bold text-lg text-slate-900">
+                {editingProductId ? 'Chỉnh Sửa Thiết Bị & Thông Số Kỹ Thuật' : 'Thêm Thiết Bị Mới Vào Kho Hàng'}
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">
+              Cập nhật thông tin niêm yết, thông số kỹ thuật điện ảnh & bộ sưu tập hình ảnh hiển thị đồng bộ lên Web Bán Hàng.
+            </p>
+
+            {/* Tabs Navigation */}
+            <div className="flex items-center border-b border-slate-200 mb-4 gap-1 text-xs font-semibold">
+              <button
+                type="button"
+                data-testid="tab-prod-basic"
+                onClick={() => setProductFormTab('basic')}
+                className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-1.5 cursor-pointer ${
+                  productFormTab === 'basic'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Package className="w-4 h-4" />
+                <span>Thông Tin Cơ Bản</span>
+              </button>
+              <button
+                type="button"
+                data-testid="tab-prod-images"
+                onClick={() => setProductFormTab('images')}
+                className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-1.5 cursor-pointer ${
+                  productFormTab === 'images'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <ImageIcon className="w-4 h-4" />
+                <span>Hình Ảnh & Album ({productForm.images.length})</span>
+              </button>
+              <button
+                type="button"
+                data-testid="tab-prod-specs"
+                onClick={() => setProductFormTab('specs')}
+                className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-1.5 cursor-pointer ${
+                  productFormTab === 'specs'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>Thông Số Kỹ Thuật (Specs)</span>
+              </button>
+              <button
+                type="button"
+                data-testid="tab-prod-desc"
+                onClick={() => setProductFormTab('desc')}
+                className={`pb-2.5 px-3 border-b-2 transition flex items-center gap-1.5 cursor-pointer ${
+                  productFormTab === 'desc'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>Mô Tả & Ghi Chú</span>
+              </button>
             </div>
 
-            <form onSubmit={handleAddProduct} className="space-y-3 text-xs mt-3">
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Tên sản phẩm *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="VD: Sony FX3 Body..."
-                  value={newGear.name}
-                  onChange={(e) => setNewGear({ ...newGear, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600"
-                />
-              </div>
+            <form onSubmit={handleSaveProduct} className="space-y-4 text-xs">
+              {/* TAB 1: BASIC INFO */}
+              {productFormTab === 'basic' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      Tên thiết bị / Sản phẩm <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      data-testid="input-product-name"
+                      placeholder="VD: Sony Alpha 7 IV (A7M4) Body..."
+                      value={productForm.name}
+                      onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 font-medium"
+                    />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Mã SKU</label>
-                  <input
-                    type="text"
-                    placeholder="ILME-FX3..."
-                    value={newGear.sku}
-                    onChange={(e) => setNewGear({ ...newGear, sku: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Giá bán (VNĐ) *</label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="94990000"
-                    value={newGear.price}
-                    onChange={(e) => setNewGear({ ...newGear, price: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 font-mono"
-                  />
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">Mã SKU</label>
+                      <input
+                        type="text"
+                        data-testid="input-product-sku"
+                        placeholder="ILCE-7M4-BODY..."
+                        value={productForm.sku}
+                        onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">Thương hiệu</label>
+                      <select
+                        data-testid="select-product-brand"
+                        value={productForm.brand}
+                        onChange={(e) => setProductForm({ ...productForm, brand: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 bg-white"
+                      >
+                        <option value="Sony">Sony</option>
+                        <option value="DJI">DJI</option>
+                        <option value="Canon">Canon</option>
+                        <option value="Fujifilm">Fujifilm</option>
+                        <option value="Nikon">Nikon</option>
+                        <option value="Blackmagic">Blackmagic Design</option>
+                        <option value="RED">RED Digital Cinema</option>
+                        <option value="Sigma">Sigma</option>
+                        <option value="Tamron">Tamron</option>
+                      </select>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Thương hiệu</label>
-                  <select
-                    value={newGear.brand}
-                    onChange={(e) => setNewGear({ ...newGear, brand: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600"
-                  >
-                    <option value="Sony">Sony</option>
-                    <option value="DJI">DJI</option>
-                    <option value="Canon">Canon</option>
-                    <option value="Fujifilm">Fujifilm</option>
-                    <option value="Nikon">Nikon</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Số lượng tồn kho</label>
-                  <input
-                    type="number"
-                    value={newGear.stock}
-                    onChange={(e) => setNewGear({ ...newGear, stock: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 font-mono"
-                  />
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-slate-700 font-semibold">Danh mục hàng hóa <span className="text-rose-500">*</span></label>
+                        <button
+                          type="button"
+                          onClick={() => applyCategorySpecPreset(productForm.category)}
+                          className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-0.5 cursor-pointer"
+                          title="Tự động nạp mẫu thông số kỹ thuật chuẩn cho danh mục này"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          <span>Gợi ý specs</span>
+                        </button>
+                      </div>
+                      <select
+                        data-testid="select-product-category"
+                        value={productForm.category}
+                        onChange={(e) => {
+                          const newCat = e.target.value;
+                          setProductForm({ ...productForm, category: newCat });
+                        }}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 bg-white font-medium"
+                      >
+                        {CATEGORIES_LIST.map((c) => (
+                          <option key={c.name} value={c.name}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">Số lượng tồn kho (Chiếc)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        data-testid="input-product-stock"
+                        value={productForm.stock}
+                        onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 font-mono"
+                      />
+                    </div>
+                  </div>
 
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Link Ảnh Sản Phẩm</label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={newGear.imageUrl}
-                  onChange={(e) => setNewGear({ ...newGear, imageUrl: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
-                />
-              </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        Giá bán niêm yết (VNĐ) <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        data-testid="input-product-price"
+                        placeholder="53990000"
+                        value={productForm.price}
+                        onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 font-mono font-bold text-indigo-700"
+                      />
+                      {productForm.price && (
+                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          {formatVND(Number(productForm.price) || 0)}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        Giá thị trường / Giá gốc cũ (VNĐ)
+                      </label>
+                      <input
+                        type="number"
+                        data-testid="input-product-original-price"
+                        placeholder="62000000"
+                        value={productForm.originalPrice}
+                        onChange={(e) => setProductForm({ ...productForm, originalPrice: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 font-mono"
+                      />
+                      {productForm.originalPrice && (
+                        <div className="text-[11px] text-slate-400 font-mono line-through mt-0.5">
+                          {formatVND(Number(productForm.originalPrice) || 0)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-              <button
-                type="submit"
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-md shadow mt-2"
-              >
-                Lưu Vào Danh Sách Thiết Bị
-              </button>
+                  <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        data-testid="checkbox-product-featured"
+                        checked={productForm.isFeatured}
+                        onChange={(e) => setProductForm({ ...productForm, isFeatured: e.target.checked })}
+                        className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                      />
+                      <span className="font-semibold text-slate-800">
+                        Ghim Thiết Bị Nổi Bật (FLAGSHIP / HOT SALE trên Web Bán Hàng)
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setProductFormTab('images')}
+                      className="text-indigo-600 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Tiếp: Thêm Hình Ảnh</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: IMAGES & ALBUM */}
+              {productFormTab === 'images' && (
+                <div className="space-y-4">
+                  {/* Upload from PC Box */}
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      1. Tải ảnh từ máy tính lên (Computer Upload)
+                    </label>
+                    <label
+                      htmlFor="product-image-upload"
+                      className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-indigo-200 hover:border-indigo-400 rounded-lg bg-indigo-50/40 hover:bg-indigo-50 transition cursor-pointer text-center group"
+                    >
+                      <Upload className="w-6 h-6 text-indigo-600 mb-1 group-hover:scale-110 transition-transform" />
+                      <span className="font-semibold text-slate-800 text-xs">
+                        Bấm để chọn file ảnh từ máy tính hoặc kéo thả vào đây
+                      </span>
+                      <span className="text-[10px] text-slate-500 mt-0.5">
+                        Hỗ trợ định dạng JPG, PNG, WEBP (Tự động chuyển thành Data URL độ nét cao)
+                      </span>
+                      <input
+                        id="product-image-upload"
+                        data-testid="input-upload-file"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageFileUpload}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Add URL */}
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      2. Hoặc dán đường link URL ảnh trực tiếp
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        data-testid="input-product-image-url"
+                        placeholder="https://images.unsplash.com/photo-..."
+                        value={customImageUrlInput}
+                        onChange={(e) => setCustomImageUrlInput(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
+                      />
+                      <button
+                        type="button"
+                        data-testid="btn-add-image-url"
+                        onClick={handleAddImageUrl}
+                        className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-md shadow-sm transition cursor-pointer"
+                      >
+                        Thêm Link Ảnh
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Preset Image Gallery */}
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1.5">
+                      3. Hoặc chọn nhanh từ thư viện ảnh máy ảnh & flycam mẫu Pro Gear:
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {PRESET_GEAR_IMAGES.map((preset) => (
+                        <div
+                          key={preset.name}
+                          data-testid={`preset-img-${preset.brand}`}
+                          onClick={() => handleSelectPresetImage(preset.url)}
+                          className={`border rounded-lg p-1.5 cursor-pointer transition text-center hover:shadow-md ${
+                            productForm.imageUrl === preset.url
+                              ? 'border-indigo-600 ring-2 ring-indigo-500/20 bg-indigo-50/30'
+                              : 'border-slate-200 hover:border-indigo-300 bg-white'
+                          }`}
+                        >
+                          <img
+                            src={preset.url}
+                            alt={preset.name}
+                            className="w-full h-14 object-contain rounded bg-slate-50 mb-1"
+                          />
+                          <div className="font-semibold text-slate-900 text-[10px] truncate">{preset.name}</div>
+                          <div className="text-[9px] text-slate-500 truncate">{preset.category}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Live Image Preview & Album */}
+                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="font-semibold text-slate-800 mb-2 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <ImageIcon className="w-4 h-4 text-indigo-600" />
+                        <span>Xem trước hình ảnh đại diện trên Web:</span>
+                      </span>
+                      <span className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">
+                        ⭐ Ảnh Chính Đại Diện
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div
+                        data-testid="product-image-preview"
+                        className="w-24 h-24 rounded-lg border border-slate-300 bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-sm"
+                      >
+                        <img
+                          src={productForm.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800'}
+                          alt="Preview"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-1.5 text-xs">
+                        <div className="font-medium text-slate-900 line-clamp-1">
+                          {productForm.name || 'Chưa đặt tên sản phẩm'}
+                        </div>
+                        <div className="text-slate-500 text-[11px] font-mono break-all line-clamp-2">
+                          {productForm.imageUrl}
+                        </div>
+                        <div className="text-[10px] text-emerald-600 font-semibold">
+                          ✓ Ảnh sẵn sàng hiển thị tại banner, danh mục & popup chi tiết
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Album Thumbnails */}
+                    {productForm.images.length > 1 && (
+                      <div className="mt-3 pt-3 border-t border-slate-200">
+                        <div className="text-[11px] font-semibold text-slate-700 mb-1.5">
+                          Album ảnh chi tiết ({productForm.images.length} ảnh):
+                        </div>
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                          {productForm.images.map((imgUrl, idx) => (
+                            <div
+                              key={idx}
+                              className={`relative group shrink-0 w-12 h-12 rounded border p-0.5 bg-white cursor-pointer ${
+                                productForm.imageUrl === imgUrl ? 'border-indigo-600 ring-2 ring-indigo-500/20' : 'border-slate-200'
+                              }`}
+                              onClick={() => setProductForm({ ...productForm, imageUrl: imgUrl })}
+                            >
+                              <img src={imgUrl} alt="" className="w-full h-full object-contain rounded" />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveImage(imgUrl);
+                                }}
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[9px] opacity-0 group-hover:opacity-100 transition shadow cursor-pointer"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: SPECIFICATIONS */}
+              {productFormTab === 'specs' && (
+                <div className="space-y-3.5">
+                  <div className="flex items-center justify-between bg-indigo-50/60 p-2.5 rounded-lg border border-indigo-100">
+                    <div>
+                      <div className="font-bold text-slate-900 text-xs">Bảng Thông Số Kỹ Thuật Điện Ảnh</div>
+                      <div className="text-[11px] text-slate-500">
+                        Thông số sẽ hiển thị trực tiếp trong bảng "THÔNG SỐ KỸ THUẬT NỔI BẬT" trên Web Bán Hàng.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      data-testid="btn-preset-specs"
+                      onClick={() => applyCategorySpecPreset(productForm.category)}
+                      className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-semibold text-[11px] shadow-sm flex items-center gap-1 transition cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>⚡ Tự Điền Mẫu Theo Danh Mục</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        1. Cảm biến hình ảnh (Sensor)
+                      </label>
+                      <input
+                        type="text"
+                        data-testid="input-spec-sensor"
+                        placeholder="VD: Full-Frame BSI CMOS 33.0 MP (Exmor R)..."
+                        value={productForm.specSensor}
+                        onChange={(e) => setProductForm({ ...productForm, specSensor: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        2. Quay Video & Tốc độ khung hình (Video)
+                      </label>
+                      <input
+                        type="text"
+                        data-testid="input-spec-video"
+                        placeholder="VD: 4K 60p 10-bit 4:2:2, Apple ProRes 5.1K..."
+                        value={productForm.specVideo}
+                        onChange={(e) => setProductForm({ ...productForm, specVideo: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        3. Chống rung hình ảnh (Stabilization)
+                      </label>
+                      <input
+                        type="text"
+                        data-testid="input-spec-stabilization"
+                        placeholder="VD: Chống rung IBIS 5 trục 7.0 stops, Gimbal 3 trục..."
+                        value={productForm.specStabilization}
+                        onChange={(e) => setProductForm({ ...productForm, specStabilization: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        4. Trọng lượng thiết bị (Weight)
+                      </label>
+                      <input
+                        type="text"
+                        data-testid="input-spec-weight"
+                        placeholder="VD: 658g (Đã gồm pin & thẻ nhớ)..."
+                        value={productForm.specWeight}
+                        onChange={(e) => setProductForm({ ...productForm, specWeight: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        5. Pin / Nguồn / Thời gian bay (Battery / Flight Time)
+                      </label>
+                      <input
+                        type="text"
+                        data-testid="input-spec-battery"
+                        placeholder="VD: Pin NP-FZ100 (580 ảnh), Bay tối đa 43 phút..."
+                        value={productForm.specBattery}
+                        onChange={(e) => setProductForm({ ...productForm, specBattery: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        6. Tính năng công nghệ nổi bật (Features)
+                      </label>
+                      <input
+                        type="text"
+                        data-testid="input-spec-features"
+                        placeholder="VD: Lấy nét AI Real-time, 2 khe SD/CFexpress, Kháng thời tiết..."
+                        value={productForm.specFeatures}
+                        onChange={(e) => setProductForm({ ...productForm, specFeatures: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Custom Specifications Section */}
+                  <div className="pt-2 border-t border-slate-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-slate-800">
+                        Thông số tùy biến bổ sung ({productForm.customSpecs.length})
+                      </span>
+                      <button
+                        type="button"
+                        data-testid="btn-add-custom-spec"
+                        onClick={() =>
+                          setProductForm({
+                            ...productForm,
+                            customSpecs: [...productForm.customSpecs, { key: '', value: '' }],
+                          })
+                        }
+                        className="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 text-[11px] cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Thêm thông số khác</span>
+                      </button>
+                    </div>
+
+                    {productForm.customSpecs.length === 0 ? (
+                      <p className="text-[11px] text-slate-400 italic">
+                        Chưa có thông số tùy biến. Bạn có thể nhấn "Thêm thông số khác" để bổ sung các trường như Màn hình, ISO, Ngàm ống kính...
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {productForm.customSpecs.map((cs, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              placeholder="Tên thông số (VD: Màn hình)"
+                              value={cs.key}
+                              onChange={(e) => {
+                                const copy = [...productForm.customSpecs];
+                                copy[idx].key = e.target.value;
+                                setProductForm({ ...productForm, customSpecs: copy });
+                              }}
+                              className="w-1/3 px-2.5 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs font-semibold"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Giá trị (VD: 3.0-inch xoay lật 1.44M điểm ảnh)"
+                              value={cs.value}
+                              onChange={(e) => {
+                                const copy = [...productForm.customSpecs];
+                                copy[idx].value = e.target.value;
+                                setProductForm({ ...productForm, customSpecs: copy });
+                              }}
+                              className="flex-1 px-2.5 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const filtered = productForm.customSpecs.filter((_, i) => i !== idx);
+                                setProductForm({ ...productForm, customSpecs: filtered });
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: DESCRIPTION */}
+              {productFormTab === 'desc' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      Tóm tắt ngắn (Short Description)
+                    </label>
+                    <textarea
+                      rows={2}
+                      data-testid="input-product-short-desc"
+                      placeholder="VD: Máy ảnh Full-Frame Hybrid đa năng cảm biến 33MP thế hệ mới, bộ xử lý BIONZ XR, lấy nét AI..."
+                      value={productForm.shortDesc}
+                      onChange={(e) => setProductForm({ ...productForm, shortDesc: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      Mô tả chi tiết điện ảnh (Full Description)
+                    </label>
+                    <textarea
+                      rows={5}
+                      data-testid="input-product-full-desc"
+                      placeholder="Nhập bài viết giới thiệu chi tiết, công nghệ cảm biến, tính năng quay phim và các phụ kiện đi kèm trong hộp..."
+                      value={productForm.description}
+                      onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600 text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* FOOTER ACTIONS */}
+              <div className="flex items-center justify-end space-x-2 pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddProductModal(false);
+                    setEditingProductId(null);
+                  }}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-100 rounded-md text-slate-700 font-semibold transition cursor-pointer"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  data-testid="btn-submit-product"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-md shadow-md transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>
+                    {editingProductId
+                      ? 'Lưu Thay Đổi & Cập Nhật Web Bán Hàng'
+                      : 'Lưu Thiết Bị Vào Kho & Đồng Bộ Web Bán Hàng'}
+                  </span>
+                </button>
+              </div>
             </form>
           </div>
         </div>

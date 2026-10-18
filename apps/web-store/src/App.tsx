@@ -785,8 +785,17 @@ export function App() {
         } catch {}
       }
     };
+    const handleCustomProductUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail) && e.detail.length > 0) {
+        setProducts(e.detail);
+      }
+    };
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('PROGEAR_PRODUCTS_UPDATED', handleCustomProductUpdate);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('PROGEAR_PRODUCTS_UPDATED', handleCustomProductUpdate);
+    };
   }, []);
 
   // Filter Products
@@ -2740,12 +2749,27 @@ export function App() {
                     <div className="font-bold text-gray-800 text-[11px] uppercase tracking-wider mb-1">
                       Thông Số Kỹ Thuật Nổi Bật:
                     </div>
-                    {selectedProduct.specifications && Object.entries(selectedProduct.specifications).map(([k, v]) => (
-                      <div key={k} className="flex justify-between text-gray-600 border-b border-gray-200/60 pb-1">
-                        <span className="capitalize">{k}:</span>
-                        <strong className="text-gray-900 text-right max-w-[200px] truncate">{String(v)}</strong>
-                      </div>
-                    ))}
+                    {selectedProduct.specifications && Object.entries(selectedProduct.specifications).map(([k, v]) => {
+                      const specLabelMap: Record<string, string> = {
+                        sensor: 'Cảm biến (Sensor)',
+                        video: 'Quay Video',
+                        stabilization: 'Chống rung (Stabilization)',
+                        weight: 'Trọng lượng',
+                        battery: 'Thời lượng Pin / Nguồn',
+                        flighttime: 'Thời gian bay',
+                        payload: 'Tải trọng chịu lực',
+                        features: 'Tính năng nổi bật',
+                        storage: 'Bộ nhớ / Ổ cứng',
+                        screen: 'Màn hình hiển thị',
+                      };
+                      const label = specLabelMap[k.toLowerCase()] || k;
+                      return (
+                        <div key={k} className="flex justify-between text-gray-600 border-b border-gray-200/60 pb-1">
+                          <span className="font-medium text-gray-600">{label}:</span>
+                          <strong className="text-gray-900 text-right max-w-[220px] truncate">{String(v)}</strong>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
