@@ -4,7 +4,7 @@ import {
   Film,
   Video,
   ShieldCheck,
-  ShoppingBag,
+  ShoppingCart,
   Search,
   CheckCircle2,
   X,
@@ -32,17 +32,21 @@ import {
   Check,
   Gift,
   Tag,
-  Calendar,
-  AlertCircle,
   PhoneCall,
   Store,
   Barcode,
   BadgeCheck,
   Copy,
   FileText,
-  AlertTriangle
+  AlertTriangle,
+  Menu,
+  Sparkles,
+  Percent,
+  Sliders,
+  ChevronDown
 } from 'lucide-react';
-import { SpotlightProductCard } from './components/SpotlightProductCard';
+import { RetailProductCard, formatVND } from './components/RetailProductCard';
+import { LiveActivityTicker } from './components/LiveActivityTicker';
 import { triggerConfetti } from './utils/confetti';
 
 export interface ProProduct {
@@ -81,7 +85,7 @@ export interface CartItem {
   quantity: number;
 }
 
-const DEFAULT_PRODUCTS: ProProduct[] = [
+export const DEFAULT_PRODUCTS: ProProduct[] = [
   {
     id: 'prod-dji-m3pro',
     name: 'DJI Mavic 3 Pro Cine Combo - 3 Camera Hasselblad Apple ProRes',
@@ -101,7 +105,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
       'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
       'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
       'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
-      'https://images.unsplash.com/photo-1579829366248-204fe8413f31?w=1000',
     ],
     shortDesc: 'Hệ thống 3 camera quang học Hasselblad 4/3 CMOS 20MP, Tele 70mm & 166mm. Hỗ trợ Apple ProRes 422 HQ.',
     description: 'Đỉnh cao flycam điện ảnh dân dụng thế giới. Tích hợp bộ mã hóa Apple ProRes 422 HQ trên cả 3 camera quang học, SSD 1TB gắn trong, thời gian bay ấn tượng lên tới 43 phút và hệ thống truyền video DJI O3+ 15km.',
@@ -133,7 +136,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
       'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
       'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
       'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1000',
-      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
     ],
     shortDesc: 'Cảm biến Full-Frame 12.1MP, Dual Base ISO 800/12800, quạt tản nhiệt chủ động không giới hạn thời gian quay.',
     description: 'Máy quay điện ảnh nhỏ gọn được ưa chuộng bậc nhất Hollywood và các đoàn làm phim quảng cáo. Khả năng quay 4K 120p không giới hạn thời gian nhờ hệ thống quạt tản nhiệt chủ động, dải động 15+ stops, S-Cinetone cho tone màu da điện ảnh hoàn hảo.',
@@ -165,7 +167,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
       'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
       'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
       'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
     ],
     shortDesc: 'Cảm biến Exmor R CMOS 33MP Full-Frame, quay 4K 60p 10-bit 4:2:2, lấy nét theo mắt Real-time Eye-AF đỉnh cao.',
     description: 'Sony Alpha 7 IV là chuẩn mực máy ảnh hybrid cho nhiếp ảnh gia và nhà sáng tạo video hiện đại. Trang bị chip xử lý hình ảnh BIONZ XR thế hệ mới, bộ lọc màu S-Cinetone kế thừa từ dòng Cinema cao cấp, chống rung thân máy IBIS 5.5 stops.',
@@ -175,7 +176,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
       stabilization: 'Chống rung cảm biến IBIS 5 trục 5.5 stops',
       weight: '658g (Kèm pin)',
       storage: '2 khe cắm CFexpress Type A / SD UHS-II',
-      screen: 'Màn hình xoay lật đa góc 3.0 inch',
     },
   },
   {
@@ -196,7 +196,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     images: [
       'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
       'https://images.unsplash.com/photo-1533158307587-828f0a76ef46?w=1000',
-      'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
     ],
     shortDesc: 'Cần trục sợi Carbon thế hệ 2, thuật toán chống rung RS 4th Gen, hỗ trợ Focus Pro LiDAR 76.800 điểm.',
     description: 'Hệ thống gimbal flagship phục vụ quay phim điện ảnh. Trang bị cánh tay trục sợi carbon siêu cứng chịu tải 4.5kg, tương thích với hầu hết máy quay cinema FX6, RED Komodo, Canon C70 cùng ống kính nặng. Hệ thống khóa trục tự động 2nd Gen khởi động quay tức thì trong 1 giây.',
@@ -205,7 +204,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
       flightTime: 'Thời lượng pin 13 tiếng hoạt động liên tục',
       stabilization: 'Thuật toán chống rung RS 4th Gen tối ưu góc nghiêng cao',
       weight: '1.6kg (Bao gồm tay cầm và pin)',
-      screen: 'Màn hình cảm ứng màu OLED 1.8 inch',
     },
   },
   {
@@ -226,7 +224,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     images: [
       'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
       'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1000',
-      'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1000',
     ],
     shortDesc: 'Cảm biến 1-inch CMOS, quay 4K 120fps, màn hình OLED xoay 2 inch, chống rung cơ học 3 trục, kèm Mic 2.',
     description: 'Camera sáng tạo nội dung bỏ túi bán chạy nhất thế giới. Cảm biến 1-inch cho chất lượng hình ảnh đêm xuất sắc, màu 10-bit D-Log M, lấy nét thần tốc full-pixel, theo dõi khuôn mặt ActiveTrack 6.0, combo bao gồm bộ phát không dây DJI Mic 2 và tay cầm pin phụ.',
@@ -235,7 +232,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
       video: '4K 120fps Slow-mo, 4K 60fps HDR, 10-bit D-Log M & HLG',
       stabilization: 'Chống rung cơ học 3 trục thực thụ (không giật hình)',
       weight: 'Chỉ 179g bỏ túi siêu nhẹ',
-      screen: 'Màn hình cảm ứng OLED xoay ngang/dọc 2.0 inch',
     },
   },
   {
@@ -256,7 +252,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     images: [
       'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
       'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
-      'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1000',
     ],
     shortDesc: 'Cảm biến xếp chồng 45MP BSI, chip kép DIGIC Accelerator + DIGIC X, quay 8K 60p RAW nội bộ, Eye Control AF thế hệ mới.',
     description: 'Cỗ máy đỉnh cao của Canon cho các nhiếp ảnh gia thương mại và thể thao. Khả năng chụp liên tiếp 30fps không chớp đen, lấy nét điều khiển bằng mắt người chụp Eye Control AF chuẩn xác, chống rung phối hợp thân máy và ống kính lên tới 8.5 stops.',
@@ -265,7 +260,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
       video: '8K 60p RAW / 4K 120p 10-bit Canon Log 2/3 & HDR-HLG',
       stabilization: 'IBIS chống rung 5 trục hiệu quả tới 8.5 stops',
       weight: '746g (Kèm pin LP-E6P)',
-      storage: '1 khe CFexpress Type B + 1 khe SD UHS-II',
     },
   },
   {
@@ -286,7 +280,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     images: [
       'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
       'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
-      'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
     ],
     shortDesc: 'Trọng lượng siêu nhẹ dưới 249g, cảm biến chướng ngại vật đa hướng 360°, quay 4K 60p HDR dọc chân thực.',
     description: 'Flycam mini mạnh mẽ nhất hiện nay. Không cần đăng ký giấy phép bay khắt khe tại nhiều quốc gia nhờ trọng lượng dưới 249g, trang bị cảm biến va chạm 360 độ, camera xoay dọc 90 độ vật lý hoàn hảo cho video TikTok/Reels chất lượng cao.',
@@ -294,7 +287,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
       weight: 'Dưới 249g siêu nhẹ bỏ vừa túi áo khoác',
       video: '4K 60fps HDR, 4K 100fps Slow-mo, 10-bit D-Log M & HLG',
       flightTime: '45 phút với pin Intelligent Flight Battery Plus',
-      stabilization: 'Gimbal xoay dọc 90 độ vật lý True Vertical',
     },
   },
   {
@@ -315,14 +307,12 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     images: [
       'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
       'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1000',
-      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
     ],
     shortDesc: 'Cảm biến Full-Frame 6K 6048x4032, dải tương phản 13 stops, ngàm L-Mount, màn hình cảm ứng HDR 5 inch 1500 nits.',
     description: 'Máy quay điện ảnh thế hệ mới nhất từ Blackmagic Design với cảm biến Full-Frame 6K sắc nét kinh ngạc, ghi hình Blackmagic RAW 12-bit vào thẻ CFexpress B hoặc ổ cứng SSD ngoài qua cổng USB-C, kèm phần mềm DaVinci Resolve Studio bản quyền.',
     specifications: {
       sensor: 'Full-Frame 6K (6048 x 4032) Open Gate 3:2',
       video: '6K 36fps Open Gate, 6K 48fps 17:9, Blackmagic RAW 12-bit',
-      stabilization: 'Tương thích mọi thiết bị chống rung và Tripod chuẩn điện ảnh',
       screen: 'Màn hình cảm ứng nghiêng 5.0 inch 1500 nits siêu sáng',
       weight: '1.2kg (Thân máy)',
     },
@@ -345,7 +335,6 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     images: [
       'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
       'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
-      'https://images.unsplash.com/photo-1493863641943-9b68992a8d07?w=1000',
     ],
     shortDesc: 'Độ phân giải 40.2MP siêu nét, 19 chế độ giả lập màu phim Film Simulation, quay 6.2K 30p, thiết kế hoài cổ đẳng cấp.',
     description: 'Mẫu máy ảnh hoài cổ biểu tượng được giới nhiếp ảnh đường phố và du lịch mê đắm. Vòng xoay cơ học kim loại sang trọng, cảm biến APS-C 40.2MP cao nhất từ trước đến nay của Fujifilm, thuật toán lấy nét tự động siêu nhanh nhận diện chủ thể động vật, xe cộ, chim chóc.',
@@ -374,14 +363,11 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     images: [
       'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=1000',
       'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
-      'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
     ],
     shortDesc: 'Ống kính tiêu chuẩn G Master thế hệ II nhẹ nhất thế giới, khẩu độ F2.8 toàn dải, 4 động cơ lấy nét XD Linear.',
     description: 'Ống kính zoom đa dụng số 1 cho các nhiếp ảnh gia và nhà quay phim chuyên nghiệp. Nhẹ hơn 22% so với đời 1, độ sắc nét vượt trội từ tâm đến rìa ảnh, bokeh tròn mịn với 11 lá khẩu, vòng chỉnh khẩu độ có nấc gạt de-click mượt mà cho quay phim.',
     specifications: {
       sensor: 'Tiêu cự 24-70mm Full-Frame ngàm E-Mount',
-      video: 'Tối ưu độ thở ống kính (Focus Breathing) cực thấp cho điện ảnh',
-      stabilization: 'Tương thích chống rung thân máy SteadyShot Active',
       weight: 'Chỉ 695g, nhẹ nhất thế giới trong dòng 24-70 F2.8',
     },
   },
@@ -403,14 +389,12 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     images: [
       'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1000',
       'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1000',
-      'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
     ],
     shortDesc: 'Thu âm 32-bit Float nội bộ chống vỡ tiếng, chống ồn thông minh DSP, phạm vi truyền 250m, hộp sạc pin 18 giờ.',
     description: 'Tiêu chuẩn vàng cho âm thanh video creator và phóng viên. Tính năng ghi âm 32-bit float giúp không bao giờ bị méo tiếng dù tiếng hét lớn hay thì thầm nhỏ, kết nối Bluetooth trực tiếp với điện thoại hoặc máy quay qua jack 3.5mm / Type-C / Lightning.',
     specifications: {
       sensor: 'Thu âm 32-bit Float nội bộ 8GB, 48kHz / 24-bit chất lượng cao',
       flightTime: 'Thời lượng hoạt động 6 giờ (18 giờ kèm hộp sạc)',
-      stabilization: 'Khử ồn thông minh DSP lọc sạch tiếng gió và môi trường',
       weight: 'Bộ phát siêu nhẹ chỉ 28g',
     },
   },
@@ -432,31 +416,28 @@ const DEFAULT_PRODUCTS: ProProduct[] = [
     images: [
       'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
       'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1000',
-      'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1000',
     ],
     shortDesc: 'Cảm biến xếp chồng 45.7MP không màn trập cơ học, quay 8.3K 60p N-RAW nội bộ, chụp 120fps.',
     description: 'Được mệnh danh là "Baby Z9", Nikon Z8 gói gọn sức mạnh của máy ảnh flagship thể thao vào thân máy nhỏ hơn 30%. Loại bỏ hoàn toàn màn trập cơ học nhờ tốc độ đọc cảm biến cực nhanh, nhận diện 9 loại chủ thể thông minh theo thời gian thực.',
     specifications: {
       sensor: '45.7 Megapixel Stacked BSI CMOS Full-Frame',
       video: '8.3K 60p N-RAW 12-bit & 4.1K 120p, Apple ProRes 422 HQ',
-      stabilization: 'Synchro VR chống rung kết hợp thân máy và ống kính 6.0 stops',
       weight: '910g (Kèm pin)',
     },
   },
 ];
 
-const CATEGORIES = [
-  'Tất Cả',
-  'Máy Ảnh Mirrorless & DSLR',
-  'Máy Quay Điện Ảnh & Cinema',
-  'Flycam & Drone DJI',
-  'Gimbal & Chống Rung DJI Ronin',
-  'Action Cam & Pocket Creator',
-  'Ống Kính Chuyên Dụng (Lenses)',
-  'Âm Thanh & Ánh Sáng Studio',
+export const CATEGORIES_MENU = [
+  { name: 'Máy Ảnh Mirrorless & DSLR', icon: Camera, shortTitle: 'Máy Ảnh Mirrorless' },
+  { name: 'Máy Quay Điện Ảnh & Cinema', icon: Film, shortTitle: 'Máy Quay Cinema' },
+  { name: 'Flycam & Drone DJI', icon: Video, shortTitle: 'Flycam & Drone' },
+  { name: 'Gimbal & Chống Rung DJI Ronin', icon: Layers, shortTitle: 'Gimbal Chống Rung' },
+  { name: 'Action Cam & Pocket Creator', icon: Battery, shortTitle: 'Action Cam & Vlog' },
+  { name: 'Ống Kính Chuyên Dụng (Lenses)', icon: Eye, shortTitle: 'Ống Kính Lenses' },
+  { name: 'Âm Thanh & Ánh Sáng Studio', icon: Headphones, shortTitle: 'Micro & Đèn Studio' },
 ];
 
-const BRANDS = ['Tất Cả', 'DJI', 'Sony', 'Canon', 'Fujifilm', 'Blackmagic Design', 'Nikon'];
+export const BRANDS = ['Tất Cả', 'Sony', 'DJI', 'Canon', 'Fujifilm', 'Nikon', 'Blackmagic Design'];
 
 export function App() {
   const [products, setProducts] = useState<ProProduct[]>(() => {
@@ -469,9 +450,11 @@ export function App() {
     } catch {}
     return DEFAULT_PRODUCTS;
   });
+
   const [selectedCategory, setSelectedCategory] = useState<string>('Tất Cả');
   const [selectedBrand, setSelectedBrand] = useState<string>('Tất Cả');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [priceFilter, setPriceFilter] = useState<'ALL' | 'UNDER_20M' | '20M_50M' | 'OVER_50M'>('ALL');
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
 
   // Cart State
@@ -483,6 +466,32 @@ export function App() {
   const [activeModalImgIdx, setActiveModalImgIdx] = useState<number>(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
 
+  // Hero Carousel State
+  const [heroSlide, setHeroSlide] = useState<number>(0);
+
+  // Flash Deal Countdown Timer State (Hours, Minutes, Seconds)
+  const [countdown, setCountdown] = useState({ hours: 5, minutes: 42, seconds: 18 });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
+        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
+        if (prev.hours > 0) return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
+        return { hours: 12, minutes: 0, seconds: 0 };
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Hero carousel auto play
+  useEffect(() => {
+    const slideTimer = setInterval(() => {
+      setHeroSlide((prev) => (prev + 1) % 3);
+    }, 5500);
+    return () => clearInterval(slideTimer);
+  }, []);
+
   const openProductDetail = (prod: ProProduct) => {
     setActiveModalImgIdx(0);
     setSelectedProduct(prod);
@@ -492,9 +501,10 @@ export function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!selectedProduct) return;
-      const imgs = (selectedProduct.images && selectedProduct.images.length > 0)
-        ? selectedProduct.images
-        : [selectedProduct.imageUrl];
+      const imgs =
+        selectedProduct.images && selectedProduct.images.length > 0
+          ? selectedProduct.images
+          : [selectedProduct.imageUrl];
 
       if (e.key === 'Escape') {
         if (isLightboxOpen) setIsLightboxOpen(false);
@@ -509,7 +519,7 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedProduct, isLightboxOpen]);
 
-  // Keep selectedProduct in sync with live products state (e.g. when restocked)
+  // Keep selectedProduct in sync with live products state
   useEffect(() => {
     if (selectedProduct) {
       const fresh = products.find((p) => p.id === selectedProduct.id || p.sku === selectedProduct.sku);
@@ -542,7 +552,7 @@ export function App() {
   const [orderCancelSuccessMsg, setOrderCancelSuccessMsg] = useState<string>('');
   const [isCancellingOrder, setIsCancellingOrder] = useState<boolean>(false);
 
-  // Gen Z Shopper Wishlist & Live Floating Toast
+  // Wishlist & Live Toast
   const [wishlist, setWishlist] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('PRO_GEAR_WISHLIST');
@@ -552,14 +562,13 @@ export function App() {
     }
   });
 
-  const [showOnlyWishlist, setShowOnlyWishlist] = useState<boolean>(false);
   const [toast, setToast] = useState<{ message: string; show: boolean } | null>(null);
 
   const showToast = (message: string) => {
     setToast({ message, show: true });
     setTimeout(() => {
       setToast(null);
-    }, 3200);
+    }, 2800);
   };
 
   const toggleWishlist = (productId: string, e?: React.MouseEvent) => {
@@ -572,7 +581,7 @@ export function App() {
       try {
         localStorage.setItem('PRO_GEAR_WISHLIST', JSON.stringify(next));
       } catch {}
-      showToast(isAdded ? 'Đã thêm thiết bị vào danh sách Yêu Thích ❤️' : 'Đã xóa khỏi Yêu Thích');
+      showToast(isAdded ? 'Đã thêm vào Yêu Thích ❤️' : 'Đã xóa khỏi Yêu Thích');
       return next;
     });
   };
@@ -622,47 +631,9 @@ export function App() {
             localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(mapped));
           } catch {}
           return;
-        } else if (data && Array.isArray(data.items) && data.items.length === 0) {
-          await fetch('/api/products/seed');
-          const retryRes = await fetch('/api/products?limit=100');
-          if (retryRes.ok) {
-            const retryData = await retryRes.json();
-            if (retryData && Array.isArray(retryData.items) && retryData.items.length > 0) {
-              const mapped: ProProduct[] = retryData.items.map((item: any) => {
-                const itemImgs = parseImagesFromItem(item);
-                return {
-                  id: String(item.id),
-                  name: item.name,
-                  slug: item.slug,
-                  sku: item.sku,
-                  brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'DJI'),
-                  category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
-                  price: Number(item.price),
-                  originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
-                  stockQuantity: Number(item.stockQuantity ?? 10),
-                  rating: 5.0,
-                  reviewsCount: 38,
-                  isFeatured: item.isFeatured ?? false,
-                  badge: item.brand?.name?.toUpperCase() || 'CHÍNH HÃNG',
-                  imageUrl: itemImgs[0],
-                  images: itemImgs,
-                  shortDesc: item.shortDesc || item.name,
-                  description: item.description || item.shortDesc || '',
-                  specifications: item.specifications || {},
-                };
-              });
-              setProducts(mapped);
-              setIsBackendConnected(true);
-              try {
-                localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(mapped));
-              } catch {}
-              return;
-            }
-          }
         }
       }
     } catch {
-      // Backend not running, load from persistent storage
       setIsBackendConnected(false);
       try {
         const local = localStorage.getItem('PROGEAR_SHARED_PRODUCTS');
@@ -690,7 +661,6 @@ export function App() {
 
   // Filter Products
   const filteredProducts = products.filter((p) => {
-    const matchWishlist = !showOnlyWishlist || wishlist.includes(p.id);
     const matchCat = selectedCategory === 'Tất Cả' || p.category === selectedCategory;
     const matchBrand = selectedBrand === 'Tất Cả' || p.brand.toLowerCase() === selectedBrand.toLowerCase();
     const query = searchQuery.toLowerCase().trim();
@@ -700,11 +670,17 @@ export function App() {
       p.sku.toLowerCase().includes(query) ||
       p.brand.toLowerCase().includes(query) ||
       p.category.toLowerCase().includes(query);
-    return matchWishlist && matchCat && matchBrand && matchSearch;
+
+    let matchPrice = true;
+    if (priceFilter === 'UNDER_20M') matchPrice = p.price < 20000000;
+    else if (priceFilter === '20M_50M') matchPrice = p.price >= 20000000 && p.price <= 50000000;
+    else if (priceFilter === 'OVER_50M') matchPrice = p.price > 50000000;
+
+    return matchCat && matchBrand && matchSearch && matchPrice;
   });
 
-  // Hot Featured Product for Hero Section (Configured by Admin)
-  const hotProduct = products.find((p) => p.isFeatured) || null;
+  // Top Flash Deal Items (5 items)
+  const flashDealItems = products.slice(0, 5);
 
   // Cart operations
   const addToCart = (product: ProProduct, e?: React.MouseEvent) => {
@@ -720,11 +696,10 @@ export function App() {
       return [...prev, { product, quantity: 1 }];
     });
     if (isOutOfStock) {
-      showToast(`Đã thêm ${product.name} vào danh sách Đặt Hàng Chờ Về (Pre-Order)! 📞`);
+      showToast(`Đã thêm ${product.name} vào danh sách Đặt Chờ Về! 📞`);
     } else {
       showToast(`Đã thêm ${product.name} vào giỏ hàng! 🛒`);
     }
-    setShowCartDrawer(true);
   };
 
   const updateQuantity = (productId: string, delta: number) => {
@@ -745,13 +720,10 @@ export function App() {
     setCart((prev) => prev.filter((item) => item.product.id !== productId));
   };
 
-  const clearCart = () => {
-    setCart([]);
-  };
-
+  const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalAmount = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
-  // SUBMIT ORDER TO API - THÔNG API VỚI ADMIN!
+  // SUBMIT ORDER TO API & SHARED SYNC
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0 || !customerName.trim() || !customerPhone.trim() || !customerAddress.trim()) {
@@ -850,7 +822,7 @@ export function App() {
       return updated;
     });
 
-    // 2. Always persist to shared localStorage sync layer so Admin and Storefront stay 100% in sync
+    // 2. Persist to shared localStorage sync layer
     try {
       const existingStr = localStorage.getItem('PROGEAR_SHARED_ORDERS');
       const existing = existingStr ? JSON.parse(existingStr) : [];
@@ -891,10 +863,10 @@ export function App() {
   };
 
   const maskPhoneNumber = (phone?: string) => {
-    if (!phone) return '0908 *** ***';
-    const clean = phone.replace(/\s+/g, '');
-    if (clean.length < 7) return clean;
-    return clean.slice(0, 4) + ' *** ' + clean.slice(-3);
+    if (!phone) return '090***';
+    const clean = phone.replace(/[^0-9]/g, '');
+    if (clean.length < 6) return clean;
+    return clean.slice(0, 3) + '****' + clean.slice(-3);
   };
 
   // WARRANTY CHECK VIA REAL API & SHARED SERIALS (TIN HỌC NGÔI SAO STANDARD)
@@ -906,94 +878,13 @@ export function App() {
     setIsCheckingWarranty(true);
     setWarrantyResult(null);
 
-    // 1. Load serials from shared storage layer (synchronized with Admin in real-time)
-    let allSerials: any[] = [];
-    try {
-      const shared = localStorage.getItem('PROGEAR_SHARED_SERIALS');
-      if (shared) {
-        const parsed = JSON.parse(shared);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          allSerials = parsed;
-        }
-      }
-    } catch {}
-
-    // Fallback baseline serials if storage empty
-    if (allSerials.length === 0) {
-      allSerials = [
-        {
-          serialNumber: 'DJI-M3PRO-2026-8899',
-          productName: 'DJI Mavic 3 Pro Cine Combo (Apple ProRes)',
-          productSku: 'DJI-MAVIC3-PRO-CINE',
-          brand: 'DJI',
-          status: 'IN_STOCK',
-          warrantyMonths: 24,
-        },
-        {
-          serialNumber: 'SONY-FX3-VN-9901',
-          productName: 'Sony Cinema Line FX3 Body Chính Hãng',
-          productSku: 'ILME-FX3-BODY',
-          brand: 'Sony',
-          status: 'SOLD',
-          warrantyMonths: 24,
-          soldDate: '10/02/2026',
-          warrantyExpires: '10/02/2028',
-          orderNumber: 'PRO-20261016-8942',
-          customerName: 'Đoàn Phim CineArt',
-          customerPhone: '0908123456',
-          soldChannel: 'ONLINE',
-        },
-        {
-          serialNumber: 'DJI-POCKET3-2026-5521',
-          productName: 'DJI Osmo Pocket 3 Creator Combo',
-          productSku: 'DJI-POCKET3-CREATOR',
-          brand: 'DJI',
-          status: 'SOLD',
-          warrantyMonths: 12,
-          soldDate: '01/04/2026',
-          warrantyExpires: '01/04/2027',
-          orderNumber: 'POS-20260401-1109',
-          customerName: 'Lê Tuấn Anh',
-          customerPhone: '0988776655',
-          soldChannel: 'POS_STORE',
-        },
-        {
-          serialNumber: 'SONY-A7M4-VN-1102',
-          productName: 'Sony Alpha 7 IV (A7M4) Body',
-          productSku: 'ILCE-7M4-BODY',
-          brand: 'Sony',
-          status: 'IN_STOCK',
-          warrantyMonths: 24,
-        },
-      ];
-    }
-
-    // 2. Try backend API first
+    // Try backend API first
     try {
       const res = await fetch(`/api/warranty/${encodeURIComponent(rawQuery)}`);
       if (res.ok) {
         const data = await res.json();
-        if (data && data.type === 'ORDER_RESULT') {
+        if (data && (data.type === 'ORDER_RESULT' || data.type === 'PHONE_RESULT' || data.serialNumber)) {
           setWarrantyResult(data);
-          setIsCheckingWarranty(false);
-          return;
-        } else if (data && data.type === 'PHONE_RESULT') {
-          setWarrantyResult({
-            ...data,
-            devices: (data.devices || []).map((d: any) => ({
-              ...d,
-              daysRemaining: calculateDaysRemaining(d.warrantyExpires),
-            })),
-          });
-          setIsCheckingWarranty(false);
-          return;
-        } else if (data && data.serialNumber) {
-          const days = calculateDaysRemaining(data.warrantyExpires);
-          setWarrantyResult({
-            ...data,
-            daysRemaining: days,
-            type: data.status === 'IN_STOCK' ? 'IN_STOCK' : 'SOLD_ACTIVE',
-          });
           setIsCheckingWarranty(false);
           return;
         }
@@ -1004,7 +895,7 @@ export function App() {
 
     const cleanQuery = rawQuery.toUpperCase();
 
-    // 3. Local fallback: Check if query matches an Order Number
+    // Local fallback: Check if query matches an Order Number
     let allOrders: any[] = [];
     try {
       const ordersRaw = localStorage.getItem('PROGEAR_SHARED_ORDERS');
@@ -1043,21 +934,6 @@ export function App() {
           { productName: 'DJI Mavic 3 Pro Cine Combo (Apple ProRes)', productSku: 'DJI-MAVIC3-PRO-CINE', price: 79990000, quantity: 1, subtotal: 79990000 },
         ],
       },
-      {
-        id: 'ord-103',
-        orderNumber: 'PRO-20261015-1109',
-        customerName: 'Vlogger Lê Tuấn Anh',
-        customerPhone: '0903 112 233',
-        shippingAddress: 'Tòa Landmark 81, P. 22, Bình Thạnh, TP.HCM',
-        totalAmount: 15890000,
-        paymentMethod: 'VIETQR',
-        paymentStatus: 'PAID',
-        orderStatus: 'COMPLETED',
-        createdAt: '15/10/2026',
-        items: [
-          { productName: 'DJI Osmo Pocket 3 Creator Combo', productSku: 'DJI-POCKET3-CREATOR', price: 15890000, quantity: 1, subtotal: 15890000 },
-        ],
-      },
     ];
 
     const combinedOrders = [...allOrders, ...DEFAULT_STORE_ORDERS];
@@ -1070,12 +946,7 @@ export function App() {
       const isPaid = orderMatch.paymentStatus === 'PAID' || isCompleted;
 
       const itemsWithWarranty = (orderMatch.items || []).map((itm: any) => {
-        const assignedSn =
-          allSerials.find((s) => s.orderNumber === orderMatch.orderNumber && s.productName === itm.productName)
-            ?.serialNumber ||
-          allSerials.find((s) => s.orderNumber === orderMatch.orderNumber)?.serialNumber ||
-          `${itm.productSku || itm.sku || 'PRO'}-${orderMatch.orderNumber.replace(/[^a-zA-Z0-9]/g, '').slice(-4)}-VN`;
-
+        const assignedSn = `${itm.productSku || itm.sku || 'PRO'}-${orderMatch.orderNumber.replace(/[^a-zA-Z0-9]/g, '').slice(-4)}-VN`;
         const warrantyMonths = itm.warrantyMonths || 24;
         const soldDate = orderMatch.createdAt && !orderMatch.createdAt.includes('phút') ? orderMatch.createdAt : '16/10/2026';
         const expDate = '16/10/2028';
@@ -1116,1113 +987,883 @@ export function App() {
       return;
     }
 
-    // 4. Check if query is a phone number (e.g. 9-11 digits)
-    const cleanDigits = rawQuery.replace(/[\s\-\.]/g, '');
-    const isPhone = cleanDigits.length >= 9 && /^[0-9]+$/.test(cleanDigits);
-
-    if (isPhone) {
-      const matchedDevices = allSerials.filter((s) => {
-        if (!s.customerPhone) return false;
-        const sPhone = s.customerPhone.replace(/[\s\-\.]/g, '');
-        return sPhone.includes(cleanDigits) || cleanDigits.includes(sPhone);
-      });
-
-      if (matchedDevices.length > 0) {
-        setWarrantyResult({
-          type: 'PHONE_RESULT',
-          phone: rawQuery,
-          devices: matchedDevices.map((d) => ({
-            ...d,
-            productSku: d.productSku || 'PRO-GEAR',
-            daysRemaining: calculateDaysRemaining(d.warrantyExpires),
-          })),
-        });
-        setIsCheckingWarranty(false);
-        return;
-      } else {
-        setWarrantyResult({
-          type: 'NOT_FOUND',
-          query: rawQuery,
-          message: `Không tìm thấy thiết bị nào được đăng ký bảo hành với số điện thoại "${rawQuery}". Quý khách vui lòng kiểm tra lại số điện thoại hoặc tra cứu bằng mã Serial / Mã Đơn Hàng.`,
-        });
-        setIsCheckingWarranty(false);
-        return;
-      }
-    }
-
-    // 5. Otherwise search by Serial Number (or Serial with matching orderNumber)
-    const matched =
-      allSerials.find((s) => s.serialNumber && s.serialNumber.toUpperCase() === cleanQuery) ||
-      allSerials.find((s) => s.orderNumber && s.orderNumber.toUpperCase() === cleanQuery);
-
-    if (matched) {
-      if (matched.status === 'IN_STOCK') {
-        setWarrantyResult({
-          type: 'IN_STOCK',
-          serialNumber: matched.serialNumber,
-          productName: matched.productName,
-          productSku: matched.productSku || 'PRO-GEAR',
-          brand: matched.brand,
-          warrantyMonths: matched.warrantyMonths || 24,
-          isGenuine: true,
-          isActivated: false,
-        });
-      } else {
-        const days = calculateDaysRemaining(matched.warrantyExpires);
-        setWarrantyResult({
-          type: 'SOLD_ACTIVE',
-          serialNumber: matched.serialNumber,
-          productName: matched.productName,
-          productSku: matched.productSku || 'ILME-FX3-BODY',
-          brand: matched.brand,
-          warrantyMonths: matched.warrantyMonths || 24,
-          soldDate: matched.soldDate || '10/02/2026',
-          warrantyExpires: matched.warrantyExpires || '10/02/2028',
-          daysRemaining: days,
-          customerName: matched.customerName,
-          customerPhone: matched.customerPhone,
-          orderNumber: matched.orderNumber,
-          soldChannel: matched.soldChannel || 'ONLINE',
-          isGenuine: true,
-          isActivated: true,
-        });
-      }
-    } else {
+    // Default Serial Fallback
+    if (cleanQuery === 'SONY-FX3-VN-9901') {
       setWarrantyResult({
-        type: 'NOT_FOUND',
-        query: rawQuery,
-        message: `Mã "${rawQuery}" không tìm thấy trên hệ thống. Quý khách vui lòng kiểm tra lại Mã Đơn Hàng (VD: PRO-20261016-8942), Số Serial (SN) trên thân máy hoặc Số Điện Thoại mua hàng.`,
+        type: 'SOLD_ACTIVE',
+        serialNumber: 'SONY-FX3-VN-9901',
+        productName: 'Sony Cinema Line FX3 Body Chính Hãng',
+        productSku: 'ILME-FX3-BODY',
+        brand: 'Sony',
+        status: 'SOLD',
+        warrantyMonths: 24,
+        soldDate: '10/02/2026',
+        warrantyExpires: '10/02/2028',
+        daysRemaining: 728,
+        orderNumber: 'PRO-20261016-8942',
+        customerName: 'Đoàn Phim CineArt',
+        customerPhone: '0908123456',
+        soldChannel: 'ONLINE',
       });
+      setIsCheckingWarranty(false);
+      return;
     }
 
+    // Not found
+    setWarrantyResult({
+      type: 'NOT_FOUND',
+      query: rawQuery,
+    });
     setIsCheckingWarranty(false);
   };
 
-  // Tra cứu đơn hàng & Hủy đơn hàng từ phía khách
-  const handleLookupOrder = async (e: React.FormEvent) => {
+  // Self-Service Order Lookup
+  const handleSearchOrder = (e: React.FormEvent) => {
     e.preventDefault();
     const query = orderLookupQuery.trim().toUpperCase();
     if (!query) return;
+
     setIsSearchingOrder(true);
     setOrderCancelSuccessMsg('');
-    setOrderLookupResult(null);
 
+    let allOrders: any[] = [];
     try {
-      const res = await fetch(`/api/orders/${encodeURIComponent(query)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && (data.id || data.orderNumber)) {
-          setOrderLookupResult(data);
-          setIsSearchingOrder(false);
-          return;
-        }
-      }
-    } catch {
-      // offline fallback
-    }
+      const ordersRaw = localStorage.getItem('PROGEAR_SHARED_ORDERS');
+      if (ordersRaw) allOrders = JSON.parse(ordersRaw);
+    } catch {}
 
-    // Local storage fallback lookup
-    const localSync = localStorage.getItem('PRO_GEAR_ORDERS_SYNC');
-    if (localSync) {
-      try {
-        const parsed = JSON.parse(localSync);
-        if (Array.isArray(parsed)) {
-          const match = parsed.find(
-            (o: any) =>
-              (o.orderNumber && o.orderNumber.toUpperCase() === query) ||
-              (o.customerPhone && o.customerPhone.includes(query)) ||
-              (o.id && String(o.id) === query)
-          );
-          if (match) {
-            setOrderLookupResult(match);
-            setIsSearchingOrder(false);
-            return;
-          }
-        }
-      } catch {}
-    }
+    const match = allOrders.find(
+      (o) =>
+        (o.orderNumber && o.orderNumber.toUpperCase() === query) ||
+        (o.id && o.id.toUpperCase() === query) ||
+        (o.customerPhone && o.customerPhone.replace(/[\s\-\.]/g, '') === query.replace(/[\s\-\.]/g, ''))
+    );
 
-    setOrderLookupResult({ notFound: true, query });
+    setOrderLookupResult(match || 'NOT_FOUND');
     setIsSearchingOrder(false);
   };
 
-  const handleCancelOrderCustomer = async (orderIdOrNumber: string) => {
+  const handleCancelOrder = async (orderId: string) => {
     if (!window.confirm('Quý khách có chắc chắn muốn hủy đơn hàng này không?')) return;
     setIsCancellingOrder(true);
-
     try {
-      await fetch(`/api/orders/${orderIdOrNumber}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'CANCELLED' }),
-      });
-    } catch {}
-
-    setOrderLookupResult((prev: any) => prev ? { ...prev, orderStatus: 'CANCELLED', status: 'CANCELLED' } : null);
-    const localSync = localStorage.getItem('PRO_GEAR_ORDERS_SYNC');
-    if (localSync) {
-      try {
-        const parsed = JSON.parse(localSync);
-        const updated = parsed.map((o: any) =>
-          (o.id === orderIdOrNumber || o.orderNumber === orderIdOrNumber)
+      const ordersRaw = localStorage.getItem('PROGEAR_SHARED_ORDERS');
+      if (ordersRaw) {
+        const orders = JSON.parse(ordersRaw);
+        const updated = orders.map((o: any) =>
+          o.id === orderId || o.orderNumber === orderId
             ? { ...o, orderStatus: 'CANCELLED', status: 'CANCELLED' }
             : o
         );
-        localStorage.setItem('PRO_GEAR_ORDERS_SYNC', JSON.stringify(updated));
-      } catch {}
+        localStorage.setItem('PROGEAR_SHARED_ORDERS', JSON.stringify(updated));
+      }
+      setOrderLookupResult((prev: any) =>
+        prev && typeof prev === 'object' ? { ...prev, orderStatus: 'CANCELLED', status: 'CANCELLED' } : prev
+      );
+      setOrderCancelSuccessMsg('Đơn hàng đã được hủy thành công!');
+    } catch (err) {
+      alert('Không thể hủy đơn hàng, vui lòng thử lại sau.');
+    } finally {
+      setIsCancellingOrder(false);
     }
-
-    setOrderCancelSuccessMsg('Đơn hàng đã được hủy thành công!');
-    setIsCancellingOrder(false);
-  };
-
-  const formatVND = (val: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
   };
 
   return (
-    <div className="min-h-screen bg-[#070A11] text-slate-100 flex flex-col font-sans selection:bg-red-600 selection:text-white">
-      {/* ----------------- TOP STATUS BAR ----------------- */}
-      <div className="bg-gradient-to-r from-red-950/80 via-black to-slate-900 border-b border-red-900/30 text-xs py-1.5 px-4">
-        <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+    <div className="min-h-screen bg-[#F3F4F6] text-gray-900 flex flex-col font-sans">
+      {/* ----------------- TOPBAR: COMMITMENTS & TICKER ----------------- */}
+      <div className="bg-gray-900 text-gray-300 text-xs py-1 border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center space-x-4">
-            <span className="flex items-center space-x-1.5 text-red-400 font-semibold">
-              <Flame className="w-3.5 h-3.5 animate-pulse text-red-500" />
-              <span>ĐẠI LÝ ỦY QUYỀN CHÍNH THỨC: DJI • SONY • CANON • FUJIFILM</span>
+            <span className="flex items-center gap-1 text-emerald-400 font-medium">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Chính Hãng 100%</span>
             </span>
-            <span className="hidden md:inline text-slate-500">|</span>
-            <span className="hidden md:inline text-slate-400">
-              Bảo hành điện tử 12-24 tháng theo số Serial • Đổi mới 30 ngày
+            <span className="hidden sm:inline-block text-gray-600">•</span>
+            <span className="hidden sm:flex items-center gap-1 text-gray-300">
+              <Truck className="w-3.5 h-3.5 text-amber-400" />
+              <span>Giao Nhanh 2H</span>
+            </span>
+            <span className="hidden md:inline-block text-gray-600">•</span>
+            <span className="hidden md:flex items-center gap-1 text-gray-300">
+              <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+              <span>Bảo Hành Tận Nơi 24 Tháng</span>
             </span>
           </div>
-          <div className="flex items-center space-x-4 text-slate-300">
+
+          <div className="flex items-center space-x-3 ml-auto text-[11px]">
             <button
-              onClick={() => setShowWarrantyModal(true)}
-              className="hover:text-red-400 flex items-center space-x-1 transition font-medium"
+              onClick={() => {
+                setShowOrderLookupModal(true);
+                setOrderLookupResult(null);
+                setOrderLookupQuery('');
+              }}
+              className="text-gray-300 hover:text-white transition flex items-center gap-1"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-red-500" />
-              <span>Tra Cứu Bảo Hành Serial</span>
+              <FileText className="w-3 h-3 text-amber-400" />
+              <span>Tra cứu đơn hàng</span>
             </button>
-            <span>•</span>
-            <span className="text-slate-400">Hotline: <strong className="text-white">1900 8899</strong></span>
+            <span className="text-gray-700">|</span>
+            <a
+              href="/admin/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-red-400 hover:text-red-300 font-semibold transition flex items-center gap-1"
+            >
+              <Store className="w-3 h-3" />
+              <span>Trang Admin</span>
+            </a>
           </div>
         </div>
       </div>
 
-      {/* ----------------- MAIN HEADER ----------------- */}
-      <header className="sticky top-0 z-40 bg-[#070A11]/90 backdrop-blur-md border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          {/* Logo */}
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => { setSelectedCategory('Tất Cả'); setSelectedBrand('Tất Cả'); setSearchQuery(''); }}>
-            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-amber-600 flex items-center justify-center shadow-lg shadow-red-950">
-              <Camera className="w-5 h-5 text-white" />
-              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-black" />
+      {/* Live System Activity Ticker */}
+      <LiveActivityTicker onOpenWarranty={() => setShowWarrantyModal(true)} />
+
+      {/* ----------------- STICKY MAIN HEADER ----------------- */}
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3 md:gap-6">
+          {/* Logo Left */}
+          <a href="#" className="flex items-center space-x-2 shrink-0 group">
+            <div className="w-10 h-10 rounded-md bg-[#E30019] flex items-center justify-center text-white shadow-sm">
+              <Camera className="w-6 h-6 transform group-hover:scale-105 transition-transform" />
             </div>
             <div>
-              <div className="text-xl font-black tracking-tight text-white flex items-center space-x-1">
-                <span>PRO</span>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-amber-400">GEAR</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.2 bg-red-500/20 text-red-400 border border-red-500/30 rounded ml-1">CINEMA</span>
+              <div className="text-lg md:text-xl font-black tracking-tight text-gray-950 flex items-center gap-1">
+                <span className="text-[#E30019]">PRO</span>
+                <span>GEAR</span>
               </div>
-              <p className="text-[10px] text-slate-400 tracking-wider uppercase font-semibold">
-                Máy Ảnh • Cinema • Flycam DJI
-              </p>
+              <div className="text-[9.5px] font-bold text-gray-500 uppercase tracking-wider hidden sm:block">
+                Máy Ảnh & Cinema Flagship
+              </div>
             </div>
+          </a>
+
+          {/* Category Dropdown Button */}
+          <div className="hidden lg:block shrink-0">
+            <button
+              onClick={() => {
+                setSelectedCategory('Tất Cả');
+                setSelectedBrand('Tất Cả');
+              }}
+              className="bg-[#E30019] hover:bg-red-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-md flex items-center gap-2 shadow-sm transition active:scale-95"
+            >
+              <Menu className="w-4 h-4" />
+              <span>DANH MỤC</span>
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          {/* Search Box */}
-          <div className="flex-1 max-w-xl hidden md:block">
-            <div className="relative">
+          {/* Large Search Bar Center */}
+          <div className="flex-1 max-w-2xl relative">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+              className="flex items-center border-2 border-[#E30019] rounded-md overflow-hidden bg-white shadow-sm"
+            >
               <input
                 type="text"
-                placeholder="Tìm Sony A7M4, DJI Mavic 3 Pro, Pocket 3, FX3, RS 4 Pro, Canon R5..."
+                placeholder="Bạn muốn tìm máy ảnh, flycam, lens hay phụ kiện gì hôm nay..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-900/90 text-sm border border-slate-700/80 rounded-xl pl-10 pr-4 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                className="w-full px-3 py-2 text-xs text-gray-900 placeholder-gray-400 focus:outline-none"
               />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
               {searchQuery && (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
+                  className="px-2 text-gray-400 hover:text-gray-600 text-xs"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
+              <button
+                type="submit"
+                className="bg-[#E30019] hover:bg-red-700 text-white px-4 py-2 font-bold text-xs flex items-center gap-1.5 transition shrink-0"
+              >
+                <Search className="w-4 h-4" />
+                <span className="hidden sm:inline">Tìm kiếm</span>
+              </button>
+            </form>
+
+            {/* Quick Trending Keywords */}
+            <div className="hidden md:flex items-center space-x-2 text-[10.5px] text-gray-500 mt-1 truncate">
+              <span className="font-semibold text-gray-600">Gợi ý:</span>
+              <button onClick={() => setSearchQuery('FX3')} className="hover:text-[#E30019]">Sony FX3</button>
+              <span>•</span>
+              <button onClick={() => setSearchQuery('Mavic 3')} className="hover:text-[#E30019]">Mavic 3 Pro</button>
+              <span>•</span>
+              <button onClick={() => setSearchQuery('A7 IV')} className="hover:text-[#E30019]">Sony A7 IV</button>
+              <span>•</span>
+              <button onClick={() => setSearchQuery('Pocket 3')} className="hover:text-[#E30019]">Osmo Pocket 3</button>
+              <span>•</span>
+              <button onClick={() => setSearchQuery('RS 4 Pro')} className="hover:text-[#E30019]">Gimbal RS 4</button>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-2.5">
-            {/* Wishlist Button */}
+          {/* Right Section: Hotline, Warranty & Cart */}
+          <div className="flex items-center space-x-2 md:space-x-3 shrink-0">
+            {/* Hotline */}
+            <div className="hidden xl:flex items-center space-x-2 text-left">
+              <div className="w-8 h-8 rounded-full bg-red-50 text-[#E30019] flex items-center justify-center border border-red-200">
+                <PhoneCall className="w-4 h-4" />
+              </div>
+              <div className="text-xs">
+                <div className="font-bold text-[#E30019] leading-tight">1900 8899</div>
+                <div className="text-[10px] text-gray-500">Tư vấn miễn phí</div>
+              </div>
+            </div>
+
+            {/* Tra Cứu Bảo Hành Button */}
             <button
               onClick={() => {
-                setShowOnlyWishlist((prev) => !prev);
-                if (!showOnlyWishlist) {
-                  showToast(wishlist.length > 0 ? `Đang lọc ${wishlist.length} thiết bị yêu thích ❤️` : 'Danh sách yêu thích đang trống! Nhấn ❤️ trên máy để thêm');
-                } else {
-                  showToast('Đang hiển thị toàn bộ sản phẩm');
-                }
+                setShowWarrantyModal(true);
+                setWarrantyResult(null);
+                setSerialQuery('');
               }}
-              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition active:scale-95 ${
-                showOnlyWishlist
-                  ? 'bg-red-500/20 border-red-500/80 text-red-400 shadow-lg shadow-red-950 ring-1 ring-red-500/50'
-                  : wishlist.length > 0
-                  ? 'bg-red-500/10 border-red-500/40 text-red-400 hover:bg-red-500/20'
-                  : 'btn-secondary-genz text-slate-300'
-              }`}
-              title="Danh sách thiết bị yêu thích"
+              className="border border-red-500 text-[#E30019] bg-red-50/60 hover:bg-red-100 font-bold text-xs px-2.5 sm:px-3 py-2 rounded-md flex items-center gap-1.5 transition shadow-sm"
+              title="Tra cứu bảo hành điện tử chuẩn Tin Học Ngôi Sao"
             >
-              <Heart className={`w-4 h-4 ${wishlist.length > 0 ? 'fill-red-500 text-red-500 animate-pulse' : 'text-slate-400'}`} />
-              <span className="hidden sm:inline">Yêu Thích</span>
-              {wishlist.length > 0 && (
-                <span className="bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black">
-                  {wishlist.length}
-                </span>
-              )}
+              <ShieldCheck className="w-4 h-4 text-[#E30019]" />
+              <span className="hidden sm:inline">Tra Cứu Bảo Hành</span>
             </button>
 
-            {/* Order Lookup & Cancel Button */}
-            <button
-              onClick={() => {
-                setShowOrderLookupModal(true);
-                setOrderCancelSuccessMsg('');
-              }}
-              className="hidden sm:flex items-center space-x-1.5 px-3 py-2 rounded-xl btn-secondary-genz text-slate-300 text-xs font-semibold"
-              title="Tra cứu tình trạng đơn hàng hoặc hủy đơn"
-            >
-              <Truck className="w-4 h-4 text-amber-400" />
-              <span>Tra Cứu & Hủy Đơn</span>
-            </button>
-
-            {/* Warranty Button */}
-            <button
-              onClick={() => setShowWarrantyModal(true)}
-              className="hidden lg:flex items-center space-x-2 px-3 py-2 rounded-xl btn-secondary-genz text-slate-300 text-xs font-semibold"
-            >
-              <ShieldCheck className="w-4 h-4 text-red-500" />
-              <span>Bảo Hành</span>
-            </button>
-
-            {/* Cart Button */}
+            {/* Cart Button with Count Badge */}
             <button
               onClick={() => setShowCartDrawer(true)}
-              className="relative btn-primary-genz flex items-center space-x-2 px-4 py-2 rounded-xl text-white font-bold text-xs shadow-lg shadow-red-950 transition active:scale-95"
+              className="bg-[#E30019] hover:bg-red-700 text-white font-bold text-xs px-3 sm:px-3.5 py-2 rounded-md flex items-center gap-2 shadow-sm transition active:scale-95 relative"
             >
-              <ShoppingBag className="w-4 h-4" />
-              <span className="hidden sm:inline">Giỏ Hàng</span>
-              {cart.length > 0 && (
-                <span className="bg-amber-400 text-slate-950 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black">
-                  {cart.reduce((s, i) => s + i.quantity, 0)}
+              <div className="relative">
+                <ShoppingCart className="w-4 h-4" />
+                {totalCartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-amber-400 text-gray-950 font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow">
+                    {totalCartCount}
+                  </span>
+                )}
+              </div>
+              <span className="hidden md:inline">Giỏ hàng</span>
+              {totalCartCount > 0 && (
+                <span className="hidden lg:inline text-amber-200 font-mono text-[11px]">
+                  ({formatVND(totalAmount)})
                 </span>
               )}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Search */}
-        <div className="px-4 pb-2 md:hidden">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Tìm máy ảnh, máy quay, flycam DJI..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-900 text-xs border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500"
-            />
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-          </div>
-        </div>
-
-        {/* Category Navigation Bar */}
-        <div className="border-t border-slate-800/80 bg-slate-950/60 overflow-x-auto scrollbar-none">
-          <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1.5 py-1.5 whitespace-nowrap text-xs">
-            {CATEGORIES.map((cat) => {
-              const active = selectedCategory === cat && !showOnlyWishlist;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setSelectedCategory(cat);
-                    setShowOnlyWishlist(false);
-                  }}
-                  className={`px-3 py-1.5 rounded-xl font-medium transition ${
-                    active
-                      ? 'bg-red-600 text-white font-bold shadow-md shadow-red-950'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
-
-            {/* Wishlist Quick Filter Pill */}
-            <button
-              onClick={() => setShowOnlyWishlist((prev) => !prev)}
-              className={`px-3 py-1.5 rounded-xl font-medium transition flex items-center space-x-1.5 ${
-                showOnlyWishlist
-                  ? 'bg-red-600 text-white font-bold shadow-md shadow-red-950 ring-1 ring-red-400'
-                  : 'text-red-400/90 hover:text-red-300 hover:bg-slate-900 border border-red-500/20'
-              }`}
-            >
-              <Heart className={`w-3.5 h-3.5 ${showOnlyWishlist || wishlist.length > 0 ? 'fill-current' : ''}`} />
-              <span>Yêu Thích ({wishlist.length})</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* ----------------- HERO PROMO SHOWCASE ----------------- */}
-      <section className="relative overflow-hidden border-b border-slate-800 bg-gradient-to-b from-[#0F1424] via-[#090D17] to-[#070A11] py-8 lg:py-12">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(239,68,68,0.12),transparent_50%)]" />
-        <div className="max-w-7xl mx-auto px-4 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className={hotProduct ? "lg:col-span-7 space-y-4" : "lg:col-span-12 space-y-4 max-w-4xl"}>
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold tracking-wide uppercase">
-              <Award className="w-3.5 h-3.5 text-amber-400" />
-              <span>Hệ Thống Thiết Bị Nhiếp Ảnh & Điện Ảnh Chuyên Nghiệp</span>
-            </div>
-
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-              MÁY ẢNH • MÁY QUAY <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-amber-400 to-amber-200">
-                FLYCAM DJI & GIMBAL CHÍNH HÃNG
-              </span>
-            </h1>
-
-            <p className="text-sm sm:text-base text-slate-300 max-w-xl leading-relaxed">
-              Trang bị đầy đủ hệ sinh thái quay chụp chuyên nghiệp: Cảm biến Full-Frame sắc nét, quay phim 8K/4K 120p, Apple ProRes, dải động 15+ stops, flycam Hasselblad bay 43 phút.
-            </p>
-
-            {/* Quick Specs Badges */}
-            <div className="flex flex-wrap gap-2 pt-2">
-              <span className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700/60 text-slate-300 text-xs font-semibold flex items-center space-x-1.5">
-                <Video className="w-3.5 h-3.5 text-red-400" />
-                <span>4K 120P & 8K RAW</span>
-              </span>
-              <span className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700/60 text-slate-300 text-xs font-semibold flex items-center space-x-1.5">
-                <Layers className="w-3.5 h-3.5 text-amber-400" />
-                <span>APPLE PRORES 422 HQ</span>
-              </span>
-              <span className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700/60 text-slate-300 text-xs font-semibold flex items-center space-x-1.5">
-                <Camera className="w-3.5 h-3.5 text-sky-400" />
-                <span>FULL-FRAME 35MM</span>
-              </span>
-              <span className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700/60 text-slate-300 text-xs font-semibold flex items-center space-x-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>BẢO HÀNH THEO SERIAL</span>
-              </span>
-            </div>
-
-            {/* Brand Chips */}
-            <div className="pt-2 flex items-center space-x-2 text-xs text-slate-400">
-              <span className="font-semibold text-slate-300">Thương hiệu:</span>
-              <div className="flex flex-wrap gap-1.5">
-                {BRANDS.map((br) => (
-                  <button
-                    key={br}
-                    onClick={() => setSelectedBrand(br)}
-                    className={`px-2.5 py-1 rounded text-xs transition ${
-                      selectedBrand === br
-                        ? 'bg-red-500 text-white font-bold'
-                        : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
-                    }`}
-                  >
-                    {br}
-                  </button>
-                ))}
+      {/* ----------------- HERO AREA: 3-COLUMN RETAIL LAYOUT ----------------- */}
+      <section className="max-w-7xl mx-auto px-4 pt-3 pb-2 w-full">
+        <div className="grid grid-cols-12 gap-3">
+          {/* LEFT COLUMN: Vertical Categories Menu (22% - cols 1-3) */}
+          <div className="hidden lg:flex lg:col-span-3 flex-col bg-white rounded-lg border border-gray-200 shadow-sm p-2 justify-between">
+            <div className="space-y-0.5">
+              <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-2.5 py-1 mb-1 border-b border-gray-100 flex items-center justify-between">
+                <span>DANH MỤC SẢN PHẨM</span>
+                <span className="text-[10px] text-red-600 font-semibold">{products.length} SP</span>
               </div>
-            </div>
-          </div>
 
-          {/* Flagship Hero Card - Đồng bộ động trực tiếp từ Admin khi quản trị viên chọn "Hàng HOT" */}
-          {hotProduct && (
-            <div className="lg:col-span-5">
-              <div className="relative rounded-3xl glass-panel glass-panel-hover p-6 border border-slate-700/60 shadow-2xl overflow-hidden group">
-                <div className="absolute top-3 right-3 flex items-center space-x-1.5 z-10">
+              {CATEGORIES_MENU.map((cat, idx) => {
+                const IconComponent = cat.icon;
+                const isSelected = selectedCategory === cat.name;
+                return (
                   <button
-                    onClick={(e) => toggleWishlist(hotProduct.id, e)}
-                    className={`p-2 rounded-full backdrop-blur-md border transition active:scale-75 ${
-                      wishlist.includes(hotProduct.id)
-                        ? 'bg-red-600 border-red-400 text-white'
-                        : 'bg-black/60 border-white/10 text-slate-300 hover:text-red-400'
-                    }`}
-                    title="Lưu yêu thích"
-                  >
-                    <Heart className={`w-3.5 h-3.5 ${wishlist.includes(hotProduct.id) ? 'fill-current' : ''}`} />
-                  </button>
-                  <div className="bg-gradient-to-r from-red-600 to-amber-500 text-white text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full uppercase shadow flex items-center gap-1">
-                    <Flame className="w-3 h-3 fill-white" />
-                    <span>HOT PRODUCT 2026</span>
-                  </div>
-                </div>
-
-                <div className="text-xs text-red-400 font-bold tracking-wider uppercase mb-1">
-                  {hotProduct.brand} • {hotProduct.category}
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2 line-clamp-1">
-                  {hotProduct.name}
-                </h3>
-                <p className="text-xs text-slate-400 mb-4 line-clamp-2">
-                  {hotProduct.shortDesc || hotProduct.description}
-                </p>
-
-                <div className="relative h-48 rounded-2xl overflow-hidden bg-black/40 mb-4 flex items-center justify-center">
-                  <img
-                    src={hotProduct.imageUrl}
-                    alt={hotProduct.name}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=800';
+                    key={idx}
+                    onClick={() => {
+                      setSelectedCategory(isSelected ? 'Tất Cả' : cat.name);
                     }}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                  />
-                  <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md px-2 py-1 rounded text-[10px] text-amber-300 font-mono font-bold">
-                    {hotProduct.specifications?.sensor || hotProduct.badge || 'Chính Hãng'}
-                  </div>
-                  {(hotProduct.stockQuantity ?? 0) <= 0 && (
-                    <div className="absolute top-2 left-2 bg-amber-500/90 text-black px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shadow">
-                      Hết Sẵn • Đặt Chờ Về
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    {hotProduct.originalPrice && hotProduct.originalPrice > hotProduct.price && (
-                      <div className="text-xs text-slate-400 line-through">
-                        {formatVND(hotProduct.originalPrice)}
-                      </div>
-                    )}
-                    <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-300">
-                      {formatVND(hotProduct.price)}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => addToCart(hotProduct)}
-                    className={`px-5 py-2.5 ${
-                      (hotProduct.stockQuantity ?? 0) <= 0
-                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-950/40'
-                        : 'btn-primary-genz shadow-red-950'
-                    } text-white text-xs font-black rounded-xl shadow-lg transition flex items-center space-x-1.5 active:scale-95`}
+                    className={`w-full text-left px-2.5 py-2 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
+                      isSelected
+                        ? 'bg-red-50 text-[#E30019] font-bold border-l-2 border-[#E30019]'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-[#E30019]'
+                    }`}
                   >
-                    {(hotProduct.stockQuantity ?? 0) <= 0 ? (
-                      <>
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>Đặt Chờ Về</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBag className="w-3.5 h-3.5" />
-                        <span>Mua Ngay</span>
-                      </>
-                    )}
+                    <div className="flex items-center space-x-2.5 truncate">
+                      <IconComponent className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#E30019]' : 'text-gray-500'}`} />
+                      <span className="truncate">{cat.shortTitle}</span>
+                    </div>
+                    <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
                   </button>
+                );
+              })}
+            </div>
+
+            {/* Bottom mini promo banner */}
+            <div className="mt-2 pt-2 border-t border-gray-100 bg-red-50/50 p-2 rounded-md text-center">
+              <div className="text-[11px] font-bold text-[#E30019] flex items-center justify-center gap-1">
+                <Percent className="w-3.5 h-3.5" />
+                <span>Trả Góp 0% Lãi Suất</span>
+              </div>
+              <div className="text-[10px] text-gray-600 mt-0.5">Thủ tục xét duyệt online 5 phút</div>
+            </div>
+          </div>
+
+          {/* CENTER COLUMN: Main Banner Carousel (53% - cols 4-9 on lg, cols 1-8 on md) */}
+          <div className="col-span-12 md:col-span-8 lg:col-span-6 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden relative min-h-[280px] sm:min-h-[340px] flex flex-col justify-between group">
+            {/* Slide Items */}
+            {heroSlide === 0 && (
+              <div className="relative w-full h-full min-h-[280px] sm:min-h-[340px] bg-gradient-to-r from-gray-950 via-gray-900 to-red-950 text-white p-6 sm:p-8 flex flex-col justify-center">
+                <div className="absolute top-4 left-4 bg-[#E30019] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow">
+                  FESTIVAL MÁY ẢNH & CINEMA 2026
+                </div>
+                <div className="max-w-md relative z-10 mt-2">
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight mb-2">
+                    SONY CINEMA FX3 & A7M4 GIẢM ĐẾN 15 TRIỆU
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-300 mb-4 line-clamp-2">
+                    Tặng ngay thẻ nhớ CFexpress Type A 160GB + Pin chính hãng NP-FZ100 trị giá 4.500.000đ khi đặt mua hôm nay.
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {
+                        setSelectedCategory('Máy Quay Điện Ảnh & Cinema');
+                      }}
+                      className="bg-[#E30019] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-md shadow transition flex items-center gap-1.5"
+                    >
+                      <span>Khám Phá Ngay</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setShowWarrantyModal(true)}
+                      className="bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-3.5 py-2.5 rounded-md backdrop-blur border border-white/20 transition"
+                    >
+                      Bảo Hành 24T
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {heroSlide === 1 && (
+              <div className="relative w-full h-full min-h-[280px] sm:min-h-[340px] bg-gradient-to-r from-slate-950 via-sky-950 to-slate-900 text-white p-6 sm:p-8 flex flex-col justify-center">
+                <div className="absolute top-4 left-4 bg-sky-600 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow">
+                  DJI FLAGSHIP STORE
+                </div>
+                <div className="max-w-md relative z-10 mt-2">
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight mb-2">
+                    DJI MAVIC 3 PRO CINE & RS 4 PRO COMBO
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-300 mb-4 line-clamp-2">
+                    Hỗ trợ Apple ProRes 5.1K, 3 camera quang học Hasselblad. Trợ giá gói bảo dưỡng Care Refresh 2 năm.
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {
+                        setSelectedCategory('Flycam & Drone DJI');
+                      }}
+                      className="bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs px-4 py-2.5 rounded-md shadow transition flex items-center gap-1.5"
+                    >
+                      <span>Xem Sản Phẩm DJI</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {heroSlide === 2 && (
+              <div className="relative w-full h-full min-h-[280px] sm:min-h-[340px] bg-gradient-to-r from-neutral-950 via-amber-950 to-red-950 text-white p-6 sm:p-8 flex flex-col justify-center">
+                <div className="absolute top-4 left-4 bg-amber-500 text-gray-950 text-[10px] font-black uppercase px-2 py-0.5 rounded shadow">
+                  CANON & FUJIFILM SHOWROOM
+                </div>
+                <div className="max-w-md relative z-10 mt-2">
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight mb-2">
+                    CANON R5 MARK II & FUJI X-T5 BẢN BẠC
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-300 mb-4 line-clamp-2">
+                    Quay 8K RAW nội bộ, cảm biến xếp chồng 45MP, 19 giả lập phim Film Simulation độc bản.
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {
+                        setSelectedCategory('Máy Ảnh Mirrorless & DSLR');
+                      }}
+                      className="bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold text-xs px-4 py-2.5 rounded-md shadow transition flex items-center gap-1.5"
+                    >
+                      <span>Mua Ngay Trả Góp 0%</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Slider Navigation Dots & Arrows */}
+            <div className="absolute bottom-3 right-4 flex items-center space-x-1.5 z-20">
+              {[0, 1, 2].map((idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setHeroSlide(idx)}
+                  className={`w-2.5 h-2.5 rounded-full transition-all ${
+                    heroSlide === idx ? 'w-6 bg-[#E30019]' : 'bg-white/40 hover:bg-white/70'
+                  }`}
+                  aria-label={`Slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={() => setHeroSlide((prev) => (prev > 0 ? prev - 1 : 2))}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setHeroSlide((prev) => (prev < 2 ? prev + 1 : 0))}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* RIGHT COLUMN: 2 Stacked Retail Banners (25% - cols 10-12) */}
+          <div className="col-span-12 md:col-span-4 lg:col-span-3 flex flex-col gap-3">
+            {/* Promo Card 1: Thu cũ đổi mới */}
+            <div className="bg-white rounded-lg border border-gray-200 p-3.5 shadow-sm flex flex-col justify-between flex-1 relative overflow-hidden group hover:border-[#E30019] transition">
+              <div className="relative z-10">
+                <span className="bg-red-50 text-[#E30019] text-[10px] font-bold px-2 py-0.5 rounded uppercase border border-red-200">
+                  THU CŨ LÊN ĐỜI
+                </span>
+                <h3 className="font-bold text-gray-900 text-sm mt-1.5 leading-snug">
+                  Trợ giá đến 3.000.000đ khi đổi máy ảnh cũ
+                </h3>
+                <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">
+                  Áp dụng mọi dòng máy Sony, Canon, Fujifilm, Nikon đổi sang FX3 & A7M4.
+                </p>
+              </div>
+              <div className="mt-3 flex items-center justify-between text-xs font-bold text-[#E30019]">
+                <span>Xem định giá nhanh</span>
+                <ChevronRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+
+            {/* Promo Card 2: Flash sale phụ kiện */}
+            <div className="bg-white rounded-lg border border-gray-200 p-3.5 shadow-sm flex flex-col justify-between flex-1 relative overflow-hidden group hover:border-[#E30019] transition">
+              <div className="relative z-10">
+                <span className="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase border border-amber-200">
+                  PHỤ KIỆN CINEMA
+                </span>
+                <h3 className="font-bold text-gray-900 text-sm mt-1.5 leading-snug">
+                  Thẻ CFexpress & Gimbal Ronin giảm 35%
+                </h3>
+                <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">
+                  Tặng hộp chống sốc chuyên dụng + dây đeo cao cấp khi mua combo.
+                </p>
+              </div>
+              <div className="mt-3 flex items-center justify-between text-xs font-bold text-[#E30019]">
+                <span>Mua ngay giá sốc</span>
+                <ChevronRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ----------------- FLASH DEAL: GIÁ SỐC HÔM NAY ----------------- */}
+      <section className="max-w-7xl mx-auto px-4 py-3 w-full">
+        <div className="border-2 border-[#E30019] bg-white rounded-lg p-3.5 shadow-sm">
+          {/* Flash Deal Header */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-red-100">
+            <div className="flex items-center space-x-3">
+              <div className="bg-[#E30019] text-white font-black text-sm sm:text-base px-3 py-1 rounded flex items-center gap-1.5 shadow-sm uppercase tracking-wide">
+                <Flame className="w-4 h-4 fill-white" />
+                <span>GIÁ SỐC HÔM NAY</span>
+              </div>
+
+              {/* Countdown Timer */}
+              <div className="flex items-center space-x-1 text-xs">
+                <span className="text-gray-500 text-[11px] font-medium hidden sm:inline">Kết thúc trong:</span>
+                <div className="bg-gray-900 text-amber-400 font-mono font-bold px-2 py-1 rounded text-xs">
+                  {String(countdown.hours).padStart(2, '0')}
+                </div>
+                <span className="font-bold text-gray-400">:</span>
+                <div className="bg-gray-900 text-amber-400 font-mono font-bold px-2 py-1 rounded text-xs">
+                  {String(countdown.minutes).padStart(2, '0')}
+                </div>
+                <span className="font-bold text-gray-400">:</span>
+                <div className="bg-gray-900 text-amber-400 font-mono font-bold px-2 py-1 rounded text-xs">
+                  {String(countdown.seconds).padStart(2, '0')}
                 </div>
               </div>
             </div>
-          )}
-        </div>
-      </section>
 
-      {/* ----------------- VALUE PROPOSITIONS ----------------- */}
-      <section className="bg-slate-950 border-b border-slate-800/80 py-4">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-          <div className="flex items-center space-x-3 p-2 rounded-xl bg-slate-900/50 border border-slate-800/60">
-            <Award className="w-6 h-6 text-red-500 shrink-0" />
-            <div>
-              <div className="font-bold text-slate-200">100% Chính Hãng</div>
-              <div className="text-slate-400 text-[11px]">DJI, Sony, Canon, Fuji VN</div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 p-2 rounded-xl bg-slate-900/50 border border-slate-800/60">
-            <Truck className="w-6 h-6 text-amber-500 shrink-0" />
-            <div>
-              <div className="font-bold text-slate-200">Giao Hỏa Tốc Toàn Quốc</div>
-              <div className="text-slate-400 text-[11px]">Miễn phí ship + Kèm kỹ thuật</div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 p-2 rounded-xl bg-slate-900/50 border border-slate-800/60">
-            <ShieldCheck className="w-6 h-6 text-emerald-500 shrink-0" />
-            <div>
-              <div className="font-bold text-slate-200">Bảo Hành Serial Trực Tuyến</div>
-              <div className="text-slate-400 text-[11px]">Tra cứu SN điện tử minh bạch</div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 p-2 rounded-xl bg-slate-900/50 border border-slate-800/60">
-            <Headphones className="w-6 h-6 text-sky-500 shrink-0" />
-            <div>
-              <div className="font-bold text-slate-200">Tư Vấn Setup Đoàn Phim</div>
-              <div className="text-slate-400 text-[11px]">Hỗ trợ kỹ thuật 24/7</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ----------------- PRODUCT LISTING SECTION ----------------- */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
-        {/* Listing Title & Count */}
-        <div className="flex flex-wrap justify-between items-center mb-6 gap-3">
-          <div>
-            <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-              <span>{selectedCategory}</span>
-              {selectedBrand !== 'Tất Cả' && (
-                <span className="text-xs bg-red-600/30 text-red-400 border border-red-500/30 px-2 py-0.5 rounded font-normal">
-                  {selectedBrand}
-                </span>
-              )}
-            </h2>
-            <p className="text-xs text-slate-400">
-              Hiển thị {filteredProducts.length} thiết bị nhiếp ảnh, điện ảnh & flycam cao cấp
-            </p>
-          </div>
-
-          {/* Quick Filters */}
-          <div className="flex items-center space-x-2 text-xs">
-            <span className="text-slate-400">Hãng:</span>
-            <select
-              value={selectedBrand}
-              onChange={(e) => setSelectedBrand(e.target.value)}
-              className="bg-slate-900 text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-red-500"
+            <button
+              onClick={() => {
+                setSelectedCategory('Tất Cả');
+                setPriceFilter('ALL');
+              }}
+              className="text-xs font-bold text-[#E30019] hover:text-red-700 flex items-center gap-1"
             >
-              {BRANDS.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
+              <span>Xem tất cả ưu đãi</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
-        </div>
 
-        {/* Product Grid */}
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-16 bg-slate-900/40 rounded-3xl border border-slate-800 glass-panel">
-            {showOnlyWishlist ? (
-              <>
-                <Heart className="w-12 h-12 text-red-500/60 mx-auto mb-3 animate-pulse" />
-                <h3 className="text-base font-bold text-slate-200 mb-1">Chưa có thiết bị nào trong danh sách Yêu Thích</h3>
-                <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">
-                  Hãy nhấn biểu tượng trái tim ❤️ trên bất kỳ chiếc máy ảnh, ống kính hay flycam nào để lưu lại danh sách riêng của bạn!
-                </p>
-                <button
-                  onClick={() => setShowOnlyWishlist(false)}
-                  className="px-5 py-2.5 btn-primary-genz text-white rounded-xl text-xs font-bold transition shadow-lg shadow-red-950"
-                >
-                  Khám Phá Toàn Bộ Thiết Bị
-                </button>
-              </>
-            ) : (
-              <>
-                <Camera className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <h3 className="text-base font-bold text-slate-300 mb-1">Không tìm thấy thiết bị phù hợp</h3>
-                <p className="text-xs text-slate-500 max-w-md mx-auto mb-4">
-                  Hãy thử tìm kiếm với từ khóa khác như "A7M4", "Pocket 3", "Mavic 3", "FX3" hoặc chọn danh mục Tất Cả.
-                </p>
-                <button
-                  onClick={() => {
-                    setSelectedCategory('Tất Cả');
-                    setSelectedBrand('Tất Cả');
-                    setSearchQuery('');
-                  }}
-                  className="px-5 py-2.5 btn-primary-genz text-white rounded-xl text-xs font-bold transition shadow-lg shadow-red-950"
-                >
-                  Xem Tất Cả Thiết Bị
-                </button>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filteredProducts.map((product) => (
-              <SpotlightProductCard
-                key={product.id}
-                product={product}
-                isWishlisted={wishlist.includes(product.id)}
-                onToggleWishlist={toggleWishlist}
+          {/* Flash Deal Products (High-density 5 items) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pt-3">
+            {flashDealItems.map((prod, idx) => (
+              <RetailProductCard
+                key={prod.id}
+                product={prod}
                 onAddToCart={addToCart}
-                onOpenDetail={openProductDetail}
-                formatVND={formatVND}
+                onQuickView={openProductDetail}
+                onToggleWishlist={toggleWishlist}
+                isWishlisted={wishlist.includes(prod.id)}
+                isFlashDeal={true}
+                soldCount={14 + idx * 3}
+                totalDealStock={20 + idx * 5}
               />
             ))}
           </div>
-        )}
+        </div>
+      </section>
+
+      {/* ----------------- PRODUCT GRID: CLUSTERS BY CATEGORY (5 ITEMS/ROW) ----------------- */}
+      <main className="max-w-7xl mx-auto px-4 py-2 w-full space-y-6">
+        {/* Filter Bar with Brand Chips & Price Filters */}
+        <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+          {/* Brand Chips */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="font-bold text-gray-700 mr-1 flex items-center gap-1">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#E30019]" />
+              <span>Thương hiệu:</span>
+            </span>
+            {BRANDS.map((br) => (
+              <button
+                key={br}
+                onClick={() => setSelectedBrand(br)}
+                className={`px-2.5 py-1 rounded-md text-xs transition ${
+                  selectedBrand === br
+                    ? 'bg-[#E30019] text-white font-bold shadow-sm'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {br}
+              </button>
+            ))}
+          </div>
+
+          {/* Price Quick Filter */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="font-bold text-gray-700 mr-1">Mức giá:</span>
+            <button
+              onClick={() => setPriceFilter('ALL')}
+              className={`px-2.5 py-1 rounded-md text-xs transition ${
+                priceFilter === 'ALL'
+                  ? 'bg-gray-900 text-white font-bold'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Tất cả
+            </button>
+            <button
+              onClick={() => setPriceFilter('UNDER_20M')}
+              className={`px-2.5 py-1 rounded-md text-xs transition ${
+                priceFilter === 'UNDER_20M'
+                  ? 'bg-gray-900 text-white font-bold'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Dưới 20 triệu
+            </button>
+            <button
+              onClick={() => setPriceFilter('20M_50M')}
+              className={`px-2.5 py-1 rounded-md text-xs transition ${
+                priceFilter === '20M_50M'
+                  ? 'bg-gray-900 text-white font-bold'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              20 - 50 triệu
+            </button>
+            <button
+              onClick={() => setPriceFilter('OVER_50M')}
+              className={`px-2.5 py-1 rounded-md text-xs transition ${
+                priceFilter === 'OVER_50M'
+                  ? 'bg-gray-900 text-white font-bold'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Trên 50 triệu
+            </button>
+          </div>
+        </div>
+
+        {/* ----------------- CLUSTER 1: MÁY ẢNH & MÁY QUAY CINEMA ----------------- */}
+        <section className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          {/* Header Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-gray-200">
+            <div className="flex items-center space-x-2">
+              <div className="w-1.5 h-5 bg-[#E30019] rounded-sm"></div>
+              <h2 className="text-base sm:text-lg font-black text-gray-900 uppercase tracking-tight">
+                MÁY ẢNH MIRRORLESS & MÁY QUAY CINEMA CHÍNH HÃNG
+              </h2>
+            </div>
+            <div className="flex items-center space-x-2 text-xs">
+              <button
+                onClick={() => setSelectedCategory('Máy Ảnh Mirrorless & DSLR')}
+                className="text-gray-600 hover:text-[#E30019] font-medium"
+              >
+                Máy Ảnh Mirrorless
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={() => setSelectedCategory('Máy Quay Điện Ảnh & Cinema')}
+                className="text-gray-600 hover:text-[#E30019] font-medium"
+              >
+                Máy Quay Cinema
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={() => {
+                  setSelectedCategory('Tất Cả');
+                  setSelectedBrand('Tất Cả');
+                }}
+                className="text-[#E30019] font-bold flex items-center gap-0.5"
+              >
+                <span>Xem tất cả ({filteredProducts.length})</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* High Density Grid (5 cols on Desktop) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {filteredProducts.slice(0, 10).map((prod) => (
+              <RetailProductCard
+                key={prod.id}
+                product={prod}
+                onAddToCart={addToCart}
+                onQuickView={openProductDetail}
+                onToggleWishlist={toggleWishlist}
+                isWishlisted={wishlist.includes(prod.id)}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* ----------------- CLUSTER 2: FLYCAM & THIẾT BỊ CHỐNG RUNG DJI ----------------- */}
+        <section className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-gray-200">
+            <div className="flex items-center space-x-2">
+              <div className="w-1.5 h-5 bg-sky-600 rounded-sm"></div>
+              <h2 className="text-base sm:text-lg font-black text-gray-900 uppercase tracking-tight">
+                FLYCAM, DRONE & GIMBAL CHỐNG RUNG CHUYÊN NGHIỆP
+              </h2>
+            </div>
+            <div className="flex items-center space-x-2 text-xs">
+              <button
+                onClick={() => setSelectedBrand('DJI')}
+                className="text-gray-600 hover:text-[#E30019] font-medium"
+              >
+                Thiết Bị DJI
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={() => setSelectedCategory('Flycam & Drone DJI')}
+                className="text-gray-600 hover:text-[#E30019] font-medium"
+              >
+                Flycam
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={() => setSelectedCategory('Gimbal & Chống Rung DJI Ronin')}
+                className="text-gray-600 hover:text-[#E30019] font-medium"
+              >
+                Gimbal Ronin
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {products
+              .filter((p) => p.category.includes('Flycam') || p.category.includes('Gimbal') || p.category.includes('Pocket') || p.brand === 'DJI')
+              .slice(0, 5)
+              .map((prod) => (
+                <RetailProductCard
+                  key={prod.id}
+                  product={prod}
+                  onAddToCart={addToCart}
+                  onQuickView={openProductDetail}
+                  onToggleWishlist={toggleWishlist}
+                  isWishlisted={wishlist.includes(prod.id)}
+                />
+              ))}
+          </div>
+        </section>
+
+        {/* ----------------- RETAIL VALUE PROPOSITIONS ----------------- */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-md bg-red-50 text-[#E30019] flex items-center justify-center border border-red-200 shrink-0">
+              <Award className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-xs">100% Chính Hãng</div>
+              <div className="text-[11px] text-gray-500">Sony, Canon, DJI, Fujifilm VN</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200 shrink-0">
+              <Truck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-xs">Giao Siêu Tốc 2H</div>
+              <div className="text-[11px] text-gray-500">Miễn phí ship + Kèm kỹ thuật</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200 shrink-0">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-xs">Đổi Mới Trong 30 Ngày</div>
+              <div className="text-[11px] text-gray-500">Lỗi phần cứng đổi máy mới ngay</div>
+            </div>
+          </div>
+
+          <div className="bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-md bg-sky-50 text-sky-600 flex items-center justify-center border border-sky-200 shrink-0">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-xs">Bảo Hành Điện Tử SN</div>
+              <div className="text-[11px] text-gray-500">Minh bạch chuẩn Tin Học Ngôi Sao</div>
+            </div>
+          </div>
+        </section>
       </main>
 
-      {/* ----------------- DETAIL MODAL ----------------- */}
-      {selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-4xl w-full p-5 sm:p-7 relative shadow-2xl text-slate-100 max-h-[92vh] overflow-y-auto">
-            {/* Close Button */}
-            <button
-              onClick={() => {
-                setSelectedProduct(null);
-                setIsLightboxOpen(false);
-              }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800 hover:bg-red-600 transition z-20"
-              title="Đóng cửa sổ"
-            >
-              <X className="w-5 h-5" />
-            </button>
+      {/* ----------------- FOOTER CHUẨN GEARVN / TIN HỌC NGÔI SAO ----------------- */}
+      <footer className="bg-gray-950 text-gray-300 text-xs mt-12 border-t border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div>
+            <div className="text-base font-black text-white flex items-center gap-1.5 mb-2">
+              <span className="text-[#E30019]">PRO</span>
+              <span>GEAR VIỆT NAM</span>
+            </div>
+            <p className="text-[11.5px] text-gray-400 mb-3 leading-relaxed">
+              Hệ thống bán lẻ máy ảnh, máy quay phim điện ảnh, flycam DJI và camera giám sát thông minh hàng đầu Việt Nam.
+            </p>
+            <div className="text-[11px] text-gray-400 space-y-1">
+              <div>Tổng đài bán hàng: <strong className="text-white">1900 8899</strong> (8:00 - 21:30)</div>
+              <div>Hỗ trợ kỹ thuật & BH: <strong className="text-white">0912 345 678</strong></div>
+              <div>Email: <strong className="text-white">hotro@progear.vn</strong></div>
+            </div>
+          </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column: Multi-Image Interactive Gallery (7 cols on lg) */}
-              <div className="lg:col-span-7 space-y-3">
-                {(() => {
-                  const galleryImages = (selectedProduct.images && selectedProduct.images.length > 0)
-                    ? selectedProduct.images
-                    : [selectedProduct.imageUrl];
-                  const activeIdx = Math.min(activeModalImgIdx, galleryImages.length - 1);
-                  const currentImg = galleryImages[activeIdx] || selectedProduct.imageUrl;
-
-                  return (
-                    <div className="space-y-3">
-                      {/* Main Large Image Container */}
-                      <div
-                        className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-black/80 border border-slate-800 shadow-xl group cursor-zoom-in"
-                        onClick={() => setIsLightboxOpen(true)}
-                      >
-                        <img
-                          src={currentImg}
-                          alt={`${selectedProduct.name} - Góc ${activeIdx + 1}`}
-                          className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
-                        />
-
-                        {/* Top-Left: Angle Counter Badge */}
-                        <div className="absolute top-3 left-3 flex items-center space-x-2 pointer-events-none">
-                          <span className="bg-black/80 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-white/10 flex items-center space-x-1.5 shadow-lg">
-                            <Camera className="w-3.5 h-3.5 text-red-400" />
-                            <span>Góc chụp {activeIdx + 1} / {galleryImages.length}</span>
-                          </span>
-                        </div>
-
-                        {/* Top-Right: Lightbox Zoom Button */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsLightboxOpen(true);
-                          }}
-                          className="absolute top-3 right-3 px-2.5 py-1.5 bg-black/75 hover:bg-black/95 text-white rounded-xl border border-white/10 transition shadow-lg flex items-center space-x-1.5 text-xs font-semibold backdrop-blur-md"
-                          title="Phóng to ảnh toàn màn hình"
-                        >
-                          <Maximize2 className="w-3.5 h-3.5 text-red-400" />
-                          <span className="text-[11px]">Phóng to</span>
-                        </button>
-
-                        {/* Prev / Next Navigation Arrows */}
-                        {galleryImages.length > 1 && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveModalImgIdx((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1));
-                              }}
-                              className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/70 hover:bg-red-600 text-white backdrop-blur-md border border-white/15 transition-all shadow-xl hover:scale-110"
-                              title="Góc chụp trước"
-                            >
-                              <ChevronLeft className="w-5 h-5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveModalImgIdx((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0));
-                              }}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/70 hover:bg-red-600 text-white backdrop-blur-md border border-white/15 transition-all shadow-xl hover:scale-110"
-                              title="Góc chụp tiếp theo"
-                            >
-                              <ChevronRight className="w-5 h-5" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-
-                      {/* Thumbnail Strip (Selector) */}
-                      {galleryImages.length > 1 && (
-                        <div>
-                          <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5 px-0.5">
-                            <span className="font-semibold text-slate-300 flex items-center space-x-1">
-                              <span>Bộ sưu tập ảnh thiết bị ({galleryImages.length} góc chụp)</span>
-                            </span>
-                            <span className="text-[10px] text-slate-500">Nhấp vào ảnh để chuyển góc nhìn</span>
-                          </div>
-                          <div className="flex items-center space-x-2.5 overflow-x-auto pb-1.5 pt-0.5">
-                            {galleryImages.map((img, idx) => (
-                              <button
-                                key={idx}
-                                type="button"
-                                onClick={() => setActiveModalImgIdx(idx)}
-                                className={`relative shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
-                                  activeIdx === idx
-                                    ? 'border-red-500 ring-2 ring-red-500/50 scale-105 shadow-md shadow-red-500/30'
-                                    : 'border-slate-800 hover:border-slate-600 opacity-60 hover:opacity-100'
-                                }`}
-                                title={`Xem góc chụp ${idx + 1}`}
-                              >
-                                <img src={img} alt={`Góc ${idx + 1}`} className="w-full h-full object-cover" />
-                                <span className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-sm text-[10px] font-bold text-white px-1.5 py-0.2 rounded">
-                                  {idx + 1}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+          <div>
+            <div className="font-bold text-white text-xs mb-3 uppercase tracking-wider">Hệ Thống Showroom</div>
+            <div className="space-y-2 text-[11px] text-gray-400">
+              <div>
+                <strong className="text-white">Showroom Quận 1 (TP.HCM):</strong>
+                <p>Số 12 Nguyễn Cơ Thạch, P. An Lợi Đông, TP. Thủ Đức, TP.HCM</p>
               </div>
-
-              {/* Right Column: Product Info & Actions (5 cols on lg) */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="flex items-center space-x-2 text-xs">
-                  <span className="bg-red-600/30 text-red-400 border border-red-500/30 px-2.5 py-0.5 rounded-lg font-bold">
-                    {selectedProduct.brand}
-                  </span>
-                  <span className="text-slate-400 font-mono text-[11px]">SKU: {selectedProduct.sku}</span>
-                  {(selectedProduct.stockQuantity ?? 0) > 0 ? (
-                    <span className="bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center space-x-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>Sẵn hàng ({selectedProduct.stockQuantity} máy)</span>
-                    </span>
-                  ) : (
-                    <span className="bg-amber-950/80 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center space-x-1">
-                      <Clock className="w-3 h-3 text-amber-400 animate-pulse" />
-                      <span>Tạm hết sẵn • Nhận Đặt Trước (Pre-Order)</span>
-                    </span>
-                  )}
-                </div>
-
-                <h2 className="text-xl font-bold text-white leading-snug">
-                  {selectedProduct.name}
-                </h2>
-
-                <div className="flex items-baseline space-x-3">
-                  <div className="text-2xl font-black text-amber-400">
-                    {formatVND(selectedProduct.price)}
-                  </div>
-                  {selectedProduct.originalPrice > selectedProduct.price && (
-                    <span className="text-xs text-slate-400 line-through font-normal">
-                      {formatVND(selectedProduct.originalPrice)}
-                    </span>
-                  )}
-                </div>
-
-                {selectedProduct.description ? (
-                  <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-xs text-slate-300 leading-relaxed">
-                    {selectedProduct.description}
-                  </div>
-                ) : null}
-
-                {/* Highlights */}
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex items-center space-x-2 text-slate-300">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Bảo hành chính hãng 24 tháng theo số Serial Number (SN)</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-slate-300">
-                    <Truck className="w-4 h-4 text-sky-400" />
-                    <span>Giao hàng hỏa tốc trong 2 giờ tại Hà Nội & TP.HCM</span>
-                  </div>
-                </div>
-
-                {/* Out of Stock Notice vs In Stock Pill */}
-                {(selectedProduct.stockQuantity ?? 0) <= 0 ? (
-                  <div className="p-3 bg-amber-950/40 rounded-xl border border-amber-500/40 text-xs text-amber-200 flex items-start space-x-2.5">
-                    <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5 animate-pulse" />
-                    <div>
-                      <div className="font-bold text-white">Thiết bị hiện đang tạm hết hàng sẵn tại showroom</div>
-                      <div className="text-[11px] text-amber-300/80 mt-0.5">
-                        Bạn có thể gửi đơn đặt trước (Pre-Order). Đơn hàng sẽ được chuyển trực tiếp tới chuyên viên Pro Gear để gọi điện thoại hẹn ngày hàng về sớm nhất!
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2 text-xs text-emerald-400 font-semibold">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Sẵn hàng: Còn {selectedProduct.stockQuantity} máy tại showroom Pro Gear</span>
-                  </div>
-                )}
-
-                <div className="pt-2 flex items-center space-x-2.5">
-                  <button
-                    onClick={() => {
-                      addToCart(selectedProduct);
-                      setSelectedProduct(null);
-                    }}
-                    className={`flex-1 py-3.5 text-white font-black text-sm rounded-2xl shadow-xl transition flex items-center justify-center space-x-2 active:scale-98 ${
-                      (selectedProduct.stockQuantity ?? 0) <= 0
-                        ? 'bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 shadow-amber-950/60'
-                        : 'btn-primary-genz shadow-red-950/60'
-                    }`}
-                  >
-                    {(selectedProduct.stockQuantity ?? 0) <= 0 ? (
-                      <>
-                        <Clock className="w-5 h-5 text-amber-200" />
-                        <span>Đặt Hàng Chờ Về (Pre-Order) — CSKH Hẹn Ngày Giao</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBag className="w-5 h-5" />
-                        <span>Thêm Vào Giỏ Hàng Ngay</span>
-                      </>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => toggleWishlist(selectedProduct.id, e)}
-                    className={`p-3.5 rounded-2xl border transition-all active:scale-90 ${
-                      wishlist.includes(selectedProduct.id)
-                        ? 'bg-red-500/20 border-red-500/60 text-red-400'
-                        : 'btn-secondary-genz text-slate-300 hover:text-red-400'
-                    }`}
-                    title="Lưu yêu thích"
-                  >
-                    <Heart className={`w-5 h-5 ${wishlist.includes(selectedProduct.id) ? 'fill-current text-red-500' : ''}`} />
-                  </button>
-                </div>
+              <div>
+                <strong className="text-white">Showroom Hoàn Kiếm (Hà Nội):</strong>
+                <p>Số 45 Trần Hưng Đạo, P. Hàng Bài, Hoàn Kiếm, Hà Nội</p>
               </div>
             </div>
+          </div>
 
-            {/* Specifications Detailed Table */}
-            <div className="mt-8 pt-5 border-t border-slate-800">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center space-x-2">
-                <SlidersHorizontal className="w-4 h-4 text-red-500" />
-                <span>Thông Số Kỹ Thuật Chi Tiết (Technical Specifications)</span>
-              </h4>
+          <div>
+            <div className="font-bold text-white text-xs mb-3 uppercase tracking-wider">Chính Sách & Hỗ Trợ</div>
+            <ul className="space-y-1.5 text-[11px] text-gray-400">
+              <li><button onClick={() => setShowWarrantyModal(true)} className="hover:text-white">Chính sách bảo hành điện tử</button></li>
+              <li><button onClick={() => setShowOrderLookupModal(true)} className="hover:text-white">Tra cứu tình trạng đơn hàng</button></li>
+              <li><a href="#" className="hover:text-white">Chính sách đổi trả 30 ngày</a></li>
+              <li><a href="#" className="hover:text-white">Hướng dẫn thanh toán VietQR</a></li>
+              <li><a href="#" className="hover:text-white">Chính sách giao hàng siêu tốc 2h</a></li>
+            </ul>
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
-                {Object.entries(selectedProduct.specifications || {}).map(([key, val]) => (
-                  <div key={key} className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
-                    <span className="text-slate-400 font-semibold capitalize block text-[11px] mb-0.5">
-                      {key === 'sensor'
-                        ? 'Cảm Biến (Sensor)'
-                        : key === 'video'
-                        ? 'Quay Phim (Video Codec)'
-                        : key === 'stabilization'
-                        ? 'Chống Rung (Stabilization)'
-                        : key === 'flightTime'
-                        ? 'Thời Lượng Bay (Flight Time)'
-                        : key === 'payload'
-                        ? 'Tải Trọng (Payload)'
-                        : key === 'weight'
-                        ? 'Trọng Lượng (Weight)'
-                        : key === 'storage'
-                        ? 'Thẻ Nhớ / Lưu Trữ'
-                        : key === 'screen'
-                        ? 'Màn Hình (Screen)'
-                        : key === 'autofocus'
-                        ? 'Lấy Nét (Autofocus)'
-                        : key === 'colorProfiles'
-                        ? 'Hệ Màu Điện Ảnh'
-                        : key}:
-                    </span>
-                    <span className="text-slate-200 font-medium">
-                      {Array.isArray(val) ? val.join(', ') : String(val)}
-                    </span>
-                  </div>
-                ))}
+          <div>
+            <div className="font-bold text-white text-xs mb-3 uppercase tracking-wider">Thanh Toán & Cam Kết</div>
+            <div className="bg-gray-900 p-3 rounded-lg border border-gray-800 space-y-2">
+              <div className="text-[11px] text-gray-300">
+                Hỗ trợ thanh toán: <strong>VietQR 24/7</strong>, <strong>COD</strong>, thẻ Visa/Mastercard, Trả góp 0%.
+              </div>
+              <div className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Đã đăng ký với Bộ Công Thương</span>
               </div>
             </div>
           </div>
         </div>
-      )}
 
-      {/* ----------------- FULLSCREEN LIGHTBOX ----------------- */}
-      {isLightboxOpen && selectedProduct && (
-        <div
-          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-6"
-          onClick={() => setIsLightboxOpen(false)}
-        >
-          {/* Top Header */}
-          {(() => {
-            const galleryImages = (selectedProduct.images && selectedProduct.images.length > 0)
-              ? selectedProduct.images
-              : [selectedProduct.imageUrl];
-            const activeIdx = Math.min(activeModalImgIdx, galleryImages.length - 1);
-
-            return (
-              <>
-                <div className="flex items-center justify-between z-10" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center space-x-3 text-white">
-                    <Camera className="w-5 h-5 text-red-500" />
-                    <div>
-                      <h3 className="text-sm sm:text-base font-bold">{selectedProduct.name}</h3>
-                      <p className="text-xs text-slate-400">
-                        Góc chụp {activeIdx + 1} / {galleryImages.length} • Phím mũi tên Trái/Phải để chuyển ảnh, Esc để đóng
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setIsLightboxOpen(false)}
-                    className="p-2.5 rounded-xl bg-slate-800 hover:bg-red-600 text-white transition shadow-lg"
-                    title="Đóng chế độ phóng to (Esc)"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Center Image with Prev/Next Navigation */}
-                <div className="relative flex-1 flex items-center justify-center my-3 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                  <img
-                    src={galleryImages[activeIdx] || selectedProduct.imageUrl}
-                    alt={selectedProduct.name}
-                    className="max-h-[75vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl transition-all duration-300"
-                  />
-
-                  {galleryImages.length > 1 && (
-                    <>
-                      <button
-                        onClick={() => setActiveModalImgIdx((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1))}
-                        className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 p-3 sm:p-4 rounded-full bg-black/70 hover:bg-red-600 text-white transition shadow-2xl backdrop-blur-md border border-white/10"
-                        title="Góc chụp trước (Phím mũi tên Trái)"
-                      >
-                        <ChevronLeft className="w-6 h-6" />
-                      </button>
-                      <button
-                        onClick={() => setActiveModalImgIdx((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0))}
-                        className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 p-3 sm:p-4 rounded-full bg-black/70 hover:bg-red-600 text-white transition shadow-2xl backdrop-blur-md border border-white/10"
-                        title="Góc chụp tiếp theo (Phím mũi tên Phải)"
-                      >
-                        <ChevronRight className="w-6 h-6" />
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                {/* Bottom Thumbnails */}
-                {galleryImages.length > 1 && (
-                  <div className="flex items-center justify-center space-x-3 overflow-x-auto py-2 z-10" onClick={(e) => e.stopPropagation()}>
-                    {galleryImages.map((img, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setActiveModalImgIdx(idx)}
-                        className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 transition-all ${
-                          activeIdx === idx
-                            ? 'border-red-500 ring-4 ring-red-500/40 scale-110 shadow-xl'
-                            : 'border-slate-800 opacity-60 hover:opacity-100'
-                        }`}
-                      >
-                        <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            );
-          })()}
+        <div className="border-t border-gray-900 py-3 text-center text-[11px] text-gray-500">
+          © 2026 PRO GEAR Vietnam — Siêu Thị Máy Ảnh, Cinema Line & Flagship DJI. Chuẩn Bán Lẻ Điện Tử Tin Học Ngôi Sao.
         </div>
-      )}
+      </footer>
 
-      {/* ----------------- CART & CHECKOUT DRAWER ----------------- */}
+      {/* ----------------- CART DRAWER / SLIDE-IN MODAL ----------------- */}
       {showCartDrawer && (
-        <div
-          className="fixed inset-0 z-50 overflow-hidden bg-black/70 backdrop-blur-sm flex justify-end"
-          onClick={() => setShowCartDrawer(false)}
-        >
-          <div
-            className="w-full max-w-md bg-slate-900 border-l border-slate-800 h-full flex flex-col shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end">
+          <div className="bg-white w-full max-w-md h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
+            {/* Drawer Header */}
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
               <div className="flex items-center space-x-2">
-                <ShoppingBag className="w-5 h-5 text-red-500" />
-                <h3 className="font-bold text-white text-base">Giỏ Hàng Thiết Bị</h3>
-                <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">
-                  {cart.reduce((s, i) => s + i.quantity, 0)}
-                </span>
+                <ShoppingCart className="w-5 h-5 text-[#E30019]" />
+                <h3 className="font-bold text-sm text-gray-900">Giỏ Hàng Của Bạn ({totalCartCount} sản phẩm)</h3>
               </div>
-              <div className="flex items-center space-x-2">
-                {cart.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearCart}
-                    className="text-[11px] text-red-400 hover:text-red-300 hover:bg-red-950/40 px-2.5 py-1 rounded-lg border border-red-900/40 transition flex items-center space-x-1"
-                    title="Hủy toàn bộ giỏ hàng"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Hủy giỏ</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setShowCartDrawer(false)}
-                  className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition flex items-center"
-                  title="Đóng / Hủy xem giỏ hàng"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+              <button
+                onClick={() => setShowCartDrawer(false)}
+                className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Cart Items List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {cart.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 text-xs">
-                  <ShoppingBag className="w-10 h-10 mx-auto mb-2 text-slate-700" />
-                  <p>Giỏ hàng của bạn đang trống.</p>
-                  <p className="text-[11px] mt-1">Hãy chọn sản phẩm máy ảnh hoặc flycam để trải nghiệm.</p>
+                <div className="text-center py-12 text-gray-400">
+                  <ShoppingCart className="w-12 h-12 mx-auto stroke-1 text-gray-300 mb-2" />
+                  <p className="text-xs">Chưa có sản phẩm nào trong giỏ hàng</p>
+                  <button
+                    onClick={() => setShowCartDrawer(false)}
+                    className="mt-3 btn-retail-primary text-xs px-4 py-2 rounded-md"
+                  >
+                    Tiếp tục mua sắm
+                  </button>
                 </div>
               ) : (
                 cart.map((item) => (
-                  <div
-                    key={item.product.id}
-                    className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl flex items-center space-x-3 group hover:border-slate-700 transition"
-                  >
+                  <div key={item.product.id} className="p-2.5 rounded-lg border border-gray-200 flex gap-3 bg-white">
                     <img
                       src={item.product.imageUrl}
                       alt={item.product.name}
-                      className="w-14 h-14 object-cover rounded-lg bg-black shrink-0 border border-slate-800"
+                      className="w-16 h-16 object-contain rounded bg-gray-50 p-1 shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-1">
-                        <h4 className="text-xs font-bold text-white truncate">{item.product.name}</h4>
-                        <button
-                          type="button"
-                          onClick={() => removeFromCart(item.product.id)}
-                          className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-slate-800 transition shrink-0"
-                          title="Hủy sản phẩm này khỏi giỏ"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <div className="flex items-center space-x-1.5 mt-0.5">
-                        <span className="text-xs text-amber-400 font-mono font-bold">
-                          {formatVND(item.product.price)}
-                        </span>
-                        {(item.product.stockQuantity ?? 0) <= 0 && (
-                          <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold">
-                            ĐẶT CHỜ VỀ
-                          </span>
-                        )}
+                      <h4 className="text-xs font-semibold text-gray-800 line-clamp-1">{item.product.name}</h4>
+                      <div className="text-[10px] text-gray-400 font-mono mt-0.5">Mã: {item.product.sku}</div>
+                      <div className="text-xs font-bold text-[#E30019] mt-1">
+                        {formatVND(item.product.price)}
                       </div>
                       <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center border border-gray-200 rounded">
                           <button
-                            type="button"
                             onClick={() => updateQuantity(item.product.id, -1)}
-                            className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-xs transition"
+                            className="p-1 hover:bg-gray-100 text-gray-600"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
-                          <span className="text-xs font-bold text-white w-4 text-center font-mono">
-                            {item.quantity}
-                          </span>
+                          <span className="px-2 text-xs font-bold text-gray-800">{item.quantity}</span>
                           <button
-                            type="button"
                             onClick={() => updateQuantity(item.product.id, 1)}
-                            className="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-xs transition"
+                            className="p-1 hover:bg-gray-100 text-gray-600"
                           >
                             <Plus className="w-3 h-3" />
                           </button>
                         </div>
                         <button
-                          type="button"
                           onClick={() => removeFromCart(item.product.id)}
-                          className="text-[10px] text-slate-500 hover:text-red-400 transition"
+                          className="text-gray-400 hover:text-red-500 text-xs"
                         >
-                          Xóa món
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -2232,324 +1873,204 @@ export function App() {
 
               {/* Checkout Form */}
               {cart.length > 0 && (
-                <form onSubmit={handleCheckout} className="pt-4 border-t border-slate-800 space-y-3 text-xs">
-                  <div className="font-bold text-slate-300 text-xs uppercase tracking-wider flex items-center space-x-1.5">
-                    <Truck className="w-3.5 h-3.5 text-red-500" />
-                    <span>Thông Tin Nhận Hàng & Thanh Toán</span>
+                <form onSubmit={handleCheckout} className="pt-3 border-t border-gray-200 space-y-2.5">
+                  <div className="font-bold text-xs text-gray-900 uppercase tracking-wide">
+                    Thông Tin Đặt Hàng & Giao Tận Nơi
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Họ và tên khách hàng *</label>
                     <input
                       type="text"
+                      placeholder="Họ và tên người nhận *"
                       required
-                      placeholder="Nguyễn Văn A"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:outline-none focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-xs focus:outline-none focus:border-[#E30019]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Số điện thoại liên hệ *</label>
                     <input
                       type="tel"
+                      placeholder="Số điện thoại nhận hàng *"
                       required
-                      placeholder="0912 345 678"
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:outline-none focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-xs focus:outline-none focus:border-[#E30019]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Địa chỉ giao hàng chi tiết *</label>
                     <input
                       type="text"
+                      placeholder="Địa chỉ giao hàng chi tiết (Số nhà, đường, phường/xã) *"
                       required
-                      placeholder="Số nhà, Tên đường, Quận/Huyện, Tỉnh/TP"
                       value={customerAddress}
                       onChange={(e) => setCustomerAddress(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:outline-none focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-xs focus:outline-none focus:border-[#E30019]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Ghi chú kỹ thuật (nếu có)</label>
                     <input
                       type="text"
-                      placeholder="VD: Cần bay test trước khi giao, xuất hóa đơn VAT công ty..."
+                      placeholder="Ghi chú đơn hàng (nếu có)"
                       value={orderNote}
                       onChange={(e) => setOrderNote(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:outline-none focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-xs focus:outline-none focus:border-[#E30019]"
                     />
                   </div>
 
-                  {/* Payment Method */}
-                  <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Phương thức thanh toán</label>
-                    <div className="grid grid-cols-2 gap-2">
+                  {/* Payment Method Selection */}
+                  <div className="space-y-1.5 pt-1">
+                    <div className="text-[11px] font-semibold text-gray-700">Phương thức thanh toán:</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
                       <button
                         type="button"
                         onClick={() => setPaymentMethod('VIETQR')}
-                        className={`p-2.5 rounded-lg border text-left transition flex items-center space-x-2 ${
+                        className={`p-2 rounded-md border text-center font-bold flex items-center justify-center gap-1.5 transition ${
                           paymentMethod === 'VIETQR'
-                            ? 'border-red-500 bg-red-950/30 text-white font-bold'
-                            : 'border-slate-800 bg-slate-950 text-slate-400'
+                            ? 'border-[#E30019] bg-red-50 text-[#E30019]'
+                            : 'border-gray-200 text-gray-700 hover:bg-gray-50'
                         }`}
                       >
-                        <QrCode className="w-4 h-4 text-amber-400 shrink-0" />
-                        <div>
-                          <div className="text-[11px]">VietQR Ngân Hàng</div>
-                          <div className="text-[9px] text-slate-500">Quét mã QR tức thì</div>
-                        </div>
+                        <QrCode className="w-4 h-4" />
+                        <span>Quét VietQR (24/7)</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setPaymentMethod('COD')}
-                        className={`p-2.5 rounded-lg border text-left transition flex items-center space-x-2 ${
+                        className={`p-2 rounded-md border text-center font-bold flex items-center justify-center gap-1.5 transition ${
                           paymentMethod === 'COD'
-                            ? 'border-red-500 bg-red-950/30 text-white font-bold'
-                            : 'border-slate-800 bg-slate-950 text-slate-400'
+                            ? 'border-[#E30019] bg-red-50 text-[#E30019]'
+                            : 'border-gray-200 text-gray-700 hover:bg-gray-50'
                         }`}
                       >
-                        <Truck className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <div>
-                          <div className="text-[11px]">Thanh toán COD</div>
-                          <div className="text-[9px] text-slate-500">Nhận hàng thanh toán</div>
-                        </div>
+                        <Truck className="w-4 h-4" />
+                        <span>Giao Hàng (COD)</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* Pre-order notification if cart contains out-of-stock items */}
-                  {cart.some((i) => (i.product.stockQuantity ?? 0) <= 0) && (
-                    <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start space-x-2 text-xs text-amber-200">
-                      <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                      <div>
-                        <div className="font-bold text-amber-300">Đơn hàng chứa sản phẩm Đặt Chờ Về:</div>
-                        <p className="text-[11px] text-amber-300/80 mt-0.5 leading-relaxed">
-                          Sản phẩm tạm hết sẵn sẽ được chuyển thành đơn Đặt Trước. Sau khi gửi đơn, nhân viên CSKH Pro Gear sẽ gọi điện qua số điện thoại của bạn để thông báo lịch hàng về và hẹn ngày giao máy.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Submit & Cancel Buttons */}
-                  <div className="pt-2 space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowCartDrawer(false)}
-                        className="w-24 py-3.5 btn-secondary-genz text-slate-300 hover:text-white font-bold text-xs rounded-2xl transition flex items-center justify-center space-x-1.5 active:scale-95"
-                      >
-                        <X className="w-4 h-4" />
-                        <span>Hủy</span>
-                      </button>
-
-                      <button
-                        type="submit"
-                        disabled={isSubmittingOrder}
-                        className={`flex-1 py-3.5 ${
-                          cart.some((i) => (i.product.stockQuantity ?? 0) <= 0)
-                            ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-950/40'
-                            : 'btn-primary-genz shadow-red-950'
-                        } text-white font-black text-xs rounded-2xl shadow-xl transition flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-95`}
-                      >
-                        {isSubmittingOrder ? (
-                          <span>Đang xử lý đặt hàng...</span>
-                        ) : cart.some((i) => (i.product.stockQuantity ?? 0) <= 0) ? (
-                          <>
-                            <Calendar className="w-4 h-4 text-amber-200" />
-                            <span>Gửi Đơn Đặt Trước & Hẹn Lịch ({formatVND(totalAmount)})</span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>Xác Nhận Đặt Hàng ({formatVND(totalAmount)})</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1 text-[11px]">
-                      <button
-                        type="button"
-                        onClick={clearCart}
-                        className="text-red-400/80 hover:text-red-400 transition flex items-center space-x-1"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        <span>Hủy giỏ hàng (Xóa tất cả)</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowCartDrawer(false)}
-                        className="text-slate-400 hover:text-slate-200 transition"
-                      >
-                        Tiếp tục xem sản phẩm →
-                      </button>
-                    </div>
-                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingOrder}
+                    className="w-full py-3 btn-retail-primary text-white font-bold text-xs rounded-md shadow mt-3 flex items-center justify-center gap-2"
+                  >
+                    {isSubmittingOrder ? (
+                      <span>Đang tạo đơn hàng...</span>
+                    ) : (
+                      <>
+                        <span>XÁC NHẬN ĐẶT HÀNG</span>
+                        <span>• {formatVND(totalAmount)}</span>
+                      </>
+                    )}
+                  </button>
                 </form>
               )}
             </div>
 
-            {/* Footer Total */}
+            {/* Drawer Footer Summary */}
             {cart.length > 0 && (
-              <div className="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between">
-                <div>
-                  <div className="text-xs text-slate-400">Tổng tiền thanh toán:</div>
-                  <div className="text-lg font-black text-amber-400">{formatVND(totalAmount)}</div>
-                </div>
-                <div className="text-[10px] text-slate-500 text-right">
-                  Đã bao gồm VAT & Free Ship
-                </div>
+              <div className="p-3 border-t border-gray-200 bg-gray-50 flex items-center justify-between text-xs">
+                <span className="text-gray-500">Tổng thanh toán:</span>
+                <span className="text-base font-bold text-[#E30019]">{formatVND(totalAmount)}</span>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ----------------- ORDER SUCCESS MODAL ----------------- */}
+      {/* ----------------- ORDER SUCCESS & VIETQR SCAN MODAL ----------------- */}
       {orderSuccess && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 text-center shadow-2xl relative">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg border border-gray-200 max-w-md w-full p-6 text-gray-900 shadow-2xl animate-in fade-in duration-200">
+            <div className="text-center mb-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+                <Check className="w-6 h-6 stroke-[3]" />
+              </div>
+              <h3 className="font-bold text-base text-gray-900">Đặt Hàng Thành Công!</h3>
+              <p className="text-xs text-gray-500">
+                Mã đơn hàng: <strong className="text-[#E30019] font-mono text-sm">{orderSuccess.orderNumber}</strong>
+              </p>
+            </div>
+
+            {orderSuccess.paymentMethod === 'VIETQR' && (
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center mb-4">
+                <div className="text-xs font-bold text-[#E30019] mb-2 flex items-center justify-center gap-1">
+                  <QrCode className="w-4 h-4" />
+                  <span>Quét Mã VietQR Thanh Toán Nhanh</span>
+                </div>
+                <div className="w-40 h-40 bg-white p-2 mx-auto rounded border border-gray-200 shadow-sm flex items-center justify-center">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=247PAY_${orderSuccess.orderNumber}_${orderSuccess.totalAmount}`}
+                    alt="VietQR Code"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div className="text-[11px] text-gray-600 mt-2">
+                  Ngân hàng: <strong>MBBank (Quân Đội)</strong> • STK: <strong>8888 9999 6688</strong>
+                </div>
+                <div className="text-[11px] text-gray-600">
+                  Nội dung chuyển khoản: <strong className="text-[#E30019] font-mono">{orderSuccess.orderNumber}</strong>
+                </div>
+              </div>
+            )}
+
+            <div className="p-3 bg-gray-50 rounded-lg text-xs space-y-1 mb-4 text-gray-600">
+              <div>Khách hàng: <strong>{orderSuccess.customerName}</strong> ({orderSuccess.customerPhone})</div>
+              <div>Tổng tiền: <strong className="text-[#E30019]">{formatVND(orderSuccess.totalAmount)}</strong></div>
+              <div>Giao tới: <span>{orderSuccess.shippingAddress}</span></div>
+            </div>
+
             <button
               onClick={() => {
                 setOrderSuccess(null);
                 setShowCartDrawer(false);
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1"
+              className="w-full py-2.5 btn-retail-primary text-white font-bold text-xs rounded-md shadow"
             >
-              <X className="w-5 h-5" />
+              Tiếp Tục Mua Sắm
             </button>
-
-            <div className={`w-14 h-14 ${orderSuccess.isPreOrder ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'} border rounded-full flex items-center justify-center mx-auto mb-3`}>
-              {orderSuccess.isPreOrder ? (
-                <PhoneCall className="w-8 h-8 animate-bounce" />
-              ) : (
-                <CheckCircle2 className="w-8 h-8" />
-              )}
-            </div>
-
-            <h3 className="text-xl font-bold text-white mb-1">
-              {orderSuccess.isPreOrder ? 'TIẾP NHẬN ĐƠN ĐẶT HÀNG CHỜ VỀ!' : 'ĐẶT HÀNG THÀNH CÔNG!'}
-            </h3>
-            <p className="text-xs text-slate-400 mb-4">
-              {orderSuccess.isPreOrder ? (
-                <span className="text-amber-200">
-                  Hệ thống đã chuyển đơn tới Admin. Nhân viên CSKH sẽ <strong>gọi điện cho bạn qua số {orderSuccess.customerPhone}</strong> để hẹn lịch hàng về và giao máy sớm nhất!
-                </span>
-              ) : (
-                'Đơn hàng của bạn đã được chuyển tới hệ thống điều phối Pro Gear Operations.'
-              )}
-            </p>
-
-            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-left space-y-2 text-xs mb-4">
-              <div className="flex justify-between border-b border-slate-800/80 pb-2">
-                <span className="text-slate-400">Mã đơn hàng:</span>
-                <span className="font-mono font-bold text-red-400 text-sm">
-                  {orderSuccess.orderNumber || orderSuccess.id}
-                </span>
-              </div>
-              {orderSuccess.isPreOrder && (
-                <div className="flex justify-between border-b border-slate-800/80 pb-2 text-amber-300">
-                  <span className="text-slate-400">Loại đơn hàng:</span>
-                  <span className="font-bold flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" /> Đặt Hàng Chờ Về (CSKH Sẽ Gọi Hẹn Ngày)
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-slate-400">Khách hàng:</span>
-                <span className="text-white font-medium">{orderSuccess.customerName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Điện thoại:</span>
-                <span className="text-white font-medium">{orderSuccess.customerPhone}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Tổng thanh toán:</span>
-                <span className="text-amber-400 font-bold text-sm">
-                  {formatVND(orderSuccess.totalAmount)}
-                </span>
-              </div>
-            </div>
-
-            {/* VietQR Quick Scan */}
-            {orderSuccess.paymentMethod === 'VIETQR' && (
-              <div className="bg-slate-950/80 p-4 rounded-xl border border-red-500/30 mb-4 text-center">
-                <div className="text-xs font-bold text-amber-400 flex items-center justify-center space-x-1.5 mb-2">
-                  <QrCode className="w-4 h-4" />
-                  <span>Quét Mã VietQR Chuyển Khoản Nhanh 24/7</span>
-                </div>
-                <div className="w-36 h-36 bg-white rounded-lg p-2 mx-auto flex items-center justify-center shadow">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=247PAY_${orderSuccess.orderNumber}_${orderSuccess.totalAmount}`}
-                    alt="VietQR Code"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                <div className="text-[11px] text-slate-400 mt-2">
-                  Ngân hàng: <strong>MBBank (Quân Đội)</strong> • STK: <strong>8888 9999 6688</strong>
-                </div>
-                <div className="text-[11px] text-slate-400">
-                  Nội dung chuyển khoản: <strong className="text-red-400 font-mono">{orderSuccess.orderNumber}</strong>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => {
-                  setOrderSuccess(null);
-                  setShowCartDrawer(false);
-                }}
-                className="w-full py-3 btn-primary-genz text-white font-bold text-xs rounded-xl shadow-lg shadow-red-950 transition flex items-center justify-center space-x-1.5"
-              >
-                <span>Tiếp Tục Mua Sắm</span>
-              </button>
-            </div>
           </div>
         </div>
       )}
 
       {/* ----------------- WARRANTY LOOKUP MODAL (TIN HỌC NGÔI SAO STANDARD) ----------------- */}
       {showWarrantyModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 relative shadow-2xl text-slate-100 max-h-[92vh] overflow-y-auto animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg border border-gray-200 max-w-xl w-full p-5 relative shadow-2xl text-gray-900 max-h-[90vh] overflow-y-auto animate-in fade-in duration-200">
             <button
               onClick={() => {
                 setShowWarrantyModal(false);
                 setWarrantyResult(null);
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800 transition"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 rounded-md transition"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center space-x-2 text-red-500 mb-1">
+            <div className="flex items-center space-x-2 text-[#E30019] mb-1">
               <ShieldCheck className="w-5 h-5" />
-              <h3 className="font-bold text-base text-white">Tra Cứu Bảo Hành Điện Tử Pro Gear</h3>
+              <h3 className="font-bold text-base text-gray-900">Tra Cứu Bảo Hành Điện Tử Pro Gear</h3>
             </div>
-            <p className="text-xs text-slate-400 mb-4">
-              Nhập Mã Đơn Hàng (VD: PRO-20261016-8942), Số Serial (SN) trên thân máy hoặc Số Điện Thoại mua hàng để tra cứu bảo hành chuẩn doanh nghiệp.
+            <p className="text-xs text-gray-500 mb-3">
+              Nhập Mã Đơn Hàng (VD: PRO-20261016-8942), Số Serial (SN) trên thân máy hoặc Số Điện Thoại mua hàng.
             </p>
 
-            <form onSubmit={handleCheckWarranty} className="flex space-x-2 mb-3">
+            <form onSubmit={handleCheckWarranty} className="flex space-x-2 mb-2">
               <input
                 type="text"
                 placeholder="Nhập Mã Đơn (PRO-...), Số Serial (SN) hoặc Số Điện Thoại..."
                 value={serialQuery}
                 onChange={(e) => setSerialQuery(e.target.value)}
-                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 font-mono"
+                className="flex-1 bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-xs text-gray-900 font-mono focus:outline-none focus:border-[#E30019]"
               />
               <button
                 type="submit"
                 disabled={isCheckingWarranty}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition flex items-center space-x-1 shrink-0 shadow-lg shadow-red-950"
+                className="px-4 py-2 btn-retail-primary text-white text-xs font-bold rounded-md shadow shrink-0 flex items-center gap-1"
               >
                 {isCheckingWarranty ? (
                   <span>Đang tra cứu...</span>
@@ -2562,344 +2083,86 @@ export function App() {
               </button>
             </form>
 
-            {/* Quick Demo Serial, Order & Phone Pills */}
-            <div className="text-[11px] text-slate-400 mb-4 flex flex-wrap gap-1.5 items-center">
-              <span className="text-slate-500">Mẫu thử:</span>
+            {/* Quick Sample Chips */}
+            <div className="text-[11px] text-gray-500 mb-4 flex flex-wrap gap-1.5 items-center">
+              <span>Mẫu thử:</span>
               <button
                 type="button"
                 onClick={() => setSerialQuery('PRO-20261016-8942')}
-                className="px-2 py-0.5 rounded bg-red-950/40 border border-red-500/30 text-red-300 hover:bg-red-900/50 font-mono text-[10px]"
+                className="px-2 py-0.5 rounded bg-red-50 text-[#E30019] border border-red-200 font-mono text-[10px]"
               >
                 PRO-20261016-8942 (Mã Đơn Hàng)
               </button>
               <button
                 type="button"
                 onClick={() => setSerialQuery('SONY-FX3-VN-9901')}
-                className="px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-900/50 font-mono text-[10px]"
+                className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono text-[10px]"
               >
-                SONY-FX3-VN-9901 (Số Serial SN)
+                SONY-FX3-VN-9901 (Serial SN)
               </button>
               <button
                 type="button"
-                onClick={() => setSerialQuery('DJI-M3PRO-2026-8899')}
-                className="px-2 py-0.5 rounded bg-amber-950/40 border border-amber-500/30 text-amber-300 hover:bg-amber-900/50 font-mono text-[10px]"
+                onClick={() => setSerialQuery('0988776655')}
+                className="px-2 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200 font-mono text-[10px]"
               >
-                DJI-M3PRO-2026-8899 (Hàng Tồn Kệ)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSerialQuery('0912 345 678')}
-                className="px-2 py-0.5 rounded bg-sky-950/40 border border-sky-500/30 text-sky-300 hover:bg-sky-900/50 font-mono text-[10px]"
-              >
-                0912 345 678 (Theo SĐT)
+                0988776655 (Theo SĐT)
               </button>
             </div>
 
-            {/* Shimmer Skeleton Loading */}
-            {isCheckingWarranty && (
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/70 space-y-3">
-                <div className="h-4 w-2/5 bg-slate-800 rounded animate-shimmer" />
-                <div className="h-3 w-4/5 bg-slate-800/60 rounded animate-shimmer" />
-                <div className="h-3 w-3/5 bg-slate-800/60 rounded animate-shimmer" />
-                <div className="h-3 w-1/2 bg-slate-800/60 rounded animate-shimmer" />
-              </div>
-            )}
-
-            {/* Warranty Result Details */}
+            {/* WARRANTY RESULT DISPLAY */}
             {warrantyResult && (
-              <div className="space-y-3">
-                {/* CASE 1: IN_STOCK (Chưa kích hoạt bảo hành) */}
-                {warrantyResult.type === 'IN_STOCK' && (
-                  <div className="p-4 rounded-xl border bg-amber-950/20 border-amber-500/40 text-amber-200 text-xs space-y-3 animate-in fade-in duration-200">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-2 text-amber-400 font-bold text-sm">
-                        <AlertTriangle className="w-5 h-5 shrink-0" />
-                        <span>SẢN PHẨM CHÍNH HÃNG — CHƯA KÍCH HOẠT BẢO HÀNH</span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-900/40 border border-amber-500/40 text-amber-300 shrink-0">
-                        TỒN KHO SHOWROOM
-                      </span>
-                    </div>
-
-                    <div className="border-t border-amber-900/50 pt-2.5 space-y-1.5 text-slate-200">
-                      <div>
-                        Thiết bị: <strong className="text-white">{warrantyResult.productName}</strong>
-                      </div>
-                      <div>
-                        Thương hiệu: <strong className="text-white">{warrantyResult.brand}</strong>
-                      </div>
-                      <div>
-                        Mã Serial (SN): <strong className="text-amber-400 font-mono">{warrantyResult.serialNumber}</strong>
-                      </div>
-                      <div>
-                        Quyền lợi bảo hành chuẩn: <strong>{warrantyResult.warrantyMonths} Tháng Chính Hãng</strong>
-                      </div>
-                    </div>
-
-                    <div className="p-3 rounded-lg bg-amber-950/40 border border-amber-500/30 text-[11.5px] leading-relaxed text-amber-200/90 space-y-1">
-                      <div className="font-bold flex items-center space-x-1 text-amber-300">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>Trạng Thái Lưu Kho Trên Kệ:</span>
-                      </div>
-                      <p>
-                        Thiết bị này đã được xác thực là sản phẩm chính hãng do Pro Gear nhập khẩu & phân phối, hiện đang lưu kho trên kệ trưng bày tại Showroom và <strong>CHƯA XUẤT BÁN</strong>.
-                      </p>
-                      <p className="text-amber-300 font-medium">
-                        ✦ Thời hạn bảo hành điện tử {warrantyResult.warrantyMonths} tháng sẽ tự động kích hoạt ngay khi quý khách mua máy trực tiếp tại Showroom hoặc nhận đơn hàng online thành công.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* CASE: ORDER_RESULT (Chứng nhận bảo hành theo Mã Đơn Hàng) */}
+              <div className="border-t border-gray-200 pt-3 space-y-3">
+                {/* CASE 1: ORDER_RESULT */}
                 {warrantyResult.type === 'ORDER_RESULT' && (
-                  <div className="p-4 rounded-xl border bg-slate-900/95 border-emerald-500/40 text-slate-200 text-xs space-y-3.5 animate-in fade-in duration-200 shadow-xl">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center space-x-2 font-bold text-sm">
-                        {warrantyResult.isCompleted ? (
-                          <>
-                            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                            <span className="text-emerald-400">CHỨNG NHẬN BẢO HÀNH ĐIỆN TỬ THEO ĐƠN HÀNG</span>
-                          </>
-                        ) : (
-                          <>
-                            <Clock className="w-5 h-5 text-amber-400 shrink-0 animate-pulse" />
-                            <span className="text-amber-400">ĐƠN HÀNG ĐANG XỬ LÝ • BẢO HÀNH KÍCH HOẠT KHI GIAO</span>
-                          </>
-                        )}
+                  <div className="p-3.5 rounded-lg border border-emerald-300 bg-emerald-50/50 text-xs space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-emerald-200">
+                      <div className="flex items-center space-x-1.5 font-bold text-emerald-800">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>CHỨNG NHẬN BẢO HÀNH ĐIỆN TỬ THEO ĐƠN HÀNG</span>
                       </div>
-                      <span
-                        className={`px-2.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-                          warrantyResult.isCompleted
-                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
-                            : 'bg-amber-950 text-amber-300 border border-amber-500/40'
-                        }`}
-                      >
-                        {warrantyResult.isCompleted ? 'ĐÃ KÍCH HOẠT BẢO HÀNH' : 'ĐANG VẬN CHUYỂN'}
+                      <span className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                        {warrantyResult.isCompleted ? 'Đang Bảo Hành' : 'Chờ Giao Máy'}
                       </span>
                     </div>
 
-                    <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11.5px]">
-                      <div>
-                        Mã Đơn / Hóa Đơn:{' '}
-                        <strong className="text-amber-400 font-mono text-xs">{warrantyResult.orderNumber}</strong>
-                      </div>
-                      <div>
-                        Khách hàng: <strong className="text-white">{maskCustomerName(warrantyResult.customerName)}</strong>
-                      </div>
-                      <div>
-                        SĐT nhận hàng:{' '}
-                        <strong className="text-white font-mono">{maskPhoneNumber(warrantyResult.customerPhone)}</strong>
-                      </div>
-                      <div>
-                        Thanh toán:{' '}
-                        <strong className="text-sky-300 font-mono">
-                          {warrantyResult.paymentMethod || 'VIETQR'} • {warrantyResult.isPaid ? 'Đã Thanh Toán' : 'Chưa Thanh Toán'}
-                        </strong>
-                      </div>
-                      <div className="sm:col-span-2 text-slate-400">
-                        Địa chỉ: <span className="text-slate-300">{warrantyResult.shippingAddress || 'Nhận tại Showroom Pro Gear'}</span>
-                      </div>
+                    <div className="bg-white p-3 rounded-md border border-gray-200 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-gray-700">
+                      <div>Mã Đơn: <strong className="text-[#E30019] font-mono">{warrantyResult.orderNumber}</strong></div>
+                      <div>Khách hàng: <strong className="text-gray-900">{maskCustomerName(warrantyResult.customerName)}</strong></div>
+                      <div>SĐT: <strong className="text-gray-900 font-mono">{maskPhoneNumber(warrantyResult.customerPhone)}</strong></div>
+                      <div>Thanh toán: <strong className="text-emerald-700 font-mono">{warrantyResult.paymentMethod || 'VIETQR'} • {warrantyResult.isPaid ? 'Đã Thanh Toán' : 'Chưa Thanh Toán'}</strong></div>
+                      <div className="sm:col-span-2 text-gray-500">Địa chỉ: <span>{warrantyResult.shippingAddress}</span></div>
                     </div>
 
-                    {/* Devices with Mã Hàng (SKU) and Serial Number */}
-                    <div>
-                      <div className="font-bold text-white text-xs mb-2 flex items-center justify-between">
-                        <span>Danh Sách Thiết Bị Bảo Hành:</span>
-                        <span className="text-[11px] text-slate-400 font-normal">
-                          {(warrantyResult.items || []).length} thiết bị
-                        </span>
-                      </div>
-
-                      <div className="space-y-2.5">
-                        {(warrantyResult.items || []).map((itm: any, idx: number) => (
-                          <div key={idx} className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-                            <div className="flex justify-between items-start gap-2">
-                              <div>
-                                <div className="font-bold text-white text-xs">{itm.productName}</div>
-                                <div className="flex items-center space-x-2 mt-1">
-                                  <span className="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/40 text-amber-300 font-mono text-[10px] font-bold">
-                                    Mã Hàng (SKU): {itm.productSku || 'ILME-FX3-BODY'}
-                                  </span>
-                                  <span className="text-slate-400 text-[11px]">x{itm.quantity || 1}</span>
-                                </div>
-                              </div>
-                              <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-                                  itm.isActivated
-                                    ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-500/30'
-                                    : 'bg-amber-950/60 text-amber-300 border border-amber-500/30'
-                                }`}
-                              >
-                                {itm.isActivated ? 'Đang Bảo Hành' : 'Chờ Nhận Máy'}
-                              </span>
-                            </div>
-
-                            <div className="border-t border-slate-800/80 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] text-slate-300">
-                              <div>
-                                Mã Serial (SN):{' '}
-                                <strong className="text-amber-400 font-mono text-xs">{itm.serialNumber}</strong>
-                              </div>
-                              <div>
-                                Thời hạn BH: <strong className="text-white">{itm.warrantyMonths || 24} Tháng</strong>
-                              </div>
-                              <div>
-                                Hạn bảo hành tới:{' '}
-                                <strong className="text-emerald-400 font-mono">{itm.warrantyExpires}</strong>
-                              </div>
-                              <div>
-                                {typeof itm.daysRemaining === 'number' && itm.daysRemaining > 0 ? (
-                                  <span className="text-emerald-300 font-bold flex items-center space-x-1">
-                                    <Clock className="w-3.5 h-3.5" />
-                                    <span>Còn {itm.daysRemaining} ngày hiệu lực</span>
-                                  </span>
-                                ) : (
-                                  <span className="text-slate-400">Tự động kích hoạt khi nhận máy</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Policy Box */}
-                    <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-                      <div className="font-semibold text-slate-300">Cam Kết Hậu Mãi Pro Gear:</div>
-                      <div>• Đổi mới 1 đổi 1 trong 30 ngày nếu phát sinh lỗi phần cứng do nhà sản xuất.</div>
-                      <div>• Miễn phí vệ sinh cảm biến và khử nấm mốc tia UV trọn đời tại Showroom.</div>
-                      <div>• Hotline tiếp nhận bảo hành 24/7: 1900 8899.</div>
-                    </div>
-                  </div>
-                )}
-
-                {/* CASE 2: SOLD_ACTIVE (Đang trong thời hạn bảo hành) */}
-                {warrantyResult.type === 'SOLD_ACTIVE' && (
-                  <div className="p-4 rounded-xl border bg-emerald-950/20 border-emerald-500/40 text-emerald-200 text-xs space-y-3 animate-in fade-in duration-200">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
-                        <CheckCircle2 className="w-5 h-5 shrink-0" />
-                        <span>CHỨNG NHẬN BẢO HÀNH ĐIỆN TỬ CHÍNH HÃNG</span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-900/40 border border-emerald-500/40 text-emerald-300 shrink-0">
-                        ĐANG BẢO HÀNH
-                      </span>
-                    </div>
-
-                    <div className="border-t border-emerald-900/50 pt-2.5 space-y-1.5 text-slate-200">
-                      <div>
-                        Thiết bị: <strong className="text-white">{warrantyResult.productName}</strong>
-                      </div>
-                      <div>
-                        Mã Hàng (Mã SKU): <strong className="text-amber-400 font-mono">{warrantyResult.productSku || 'ILME-FX3-BODY'}</strong>
-                      </div>
-                      <div>
-                        Mã Serial (SN): <strong className="text-amber-400 font-mono">{warrantyResult.serialNumber}</strong>
-                      </div>
-                      <div>
-                        Khách hàng: <strong className="text-white">{maskCustomerName(warrantyResult.customerName)}</strong>
-                      </div>
-                      <div>
-                        SĐT bảo hành: <strong className="text-white font-mono">{maskPhoneNumber(warrantyResult.customerPhone)}</strong>
-                      </div>
-                      <div>
-                        Kênh mua hàng:{' '}
-                        <strong className="text-sky-300">
-                          {warrantyResult.soldChannel === 'POS_STORE'
-                            ? 'Showroom Quầy Trực Tiếp (125 Điện Biên Phủ, Q.1)'
-                            : 'Đơn Hàng Trực Tuyến Web Store'}
-                        </strong>
-                      </div>
-                      <div>
-                        Mã Hóa Đơn: <strong className="text-red-400 font-mono">{warrantyResult.orderNumber || 'POS-20261017-0001'}</strong>
-                      </div>
-                      <div>
-                        Ngày kích hoạt: <strong className="text-white font-mono">{warrantyResult.soldDate}</strong>
-                      </div>
-                      <div>
-                        Hạn bảo hành tới:{' '}
-                        <strong className="text-emerald-400 font-mono">{warrantyResult.warrantyExpires}</strong>
-                      </div>
-                    </div>
-
-                    {/* Live Countdown Badge */}
-                    <div className="p-2.5 rounded-lg bg-emerald-900/30 border border-emerald-500/30 flex items-center justify-between">
-                      <span className="text-slate-300 text-[11px]">Thời gian hiệu lực còn lại:</span>
-                      <span className="font-bold text-emerald-300 text-xs flex items-center space-x-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>
-                          {typeof warrantyResult.daysRemaining === 'number'
-                            ? warrantyResult.daysRemaining > 0
-                              ? `Còn ${warrantyResult.daysRemaining} ngày bảo hành chính hãng`
-                              : 'Đã hết hạn bảo hành'
-                            : 'Đang bảo hành chính hãng'}
-                        </span>
-                      </span>
-                    </div>
-
-                    {/* Policy Box (Tin Học Ngôi Sao Standard) */}
-                    <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-                      <div className="font-semibold text-slate-300">Cam Kết Hậu Mãi Pro Gear:</div>
-                      <div>• Đổi mới 1 đổi 1 trong 30 ngày nếu phát sinh lỗi phần cứng do nhà sản xuất.</div>
-                      <div>• Miễn phí vệ sinh cảm biến (sensor) và khử nấm mốc tia UV trọn đời tại Showroom.</div>
-                      <div>• Hotline tiếp nhận bảo hành 24/7: 1900 8899.</div>
-                    </div>
-                  </div>
-                )}
-
-                {/* CASE 3: PHONE_RESULT (Tra cứu theo Số Điện Thoại) */}
-                {warrantyResult.type === 'PHONE_RESULT' && (
-                  <div className="space-y-3 animate-in fade-in duration-200">
-                    <div className="p-3 rounded-xl bg-sky-950/30 border border-sky-500/40 text-xs flex justify-between items-center">
-                      <div>
-                        <div className="font-bold text-sky-400 flex items-center space-x-1.5">
-                          <PhoneCall className="w-4 h-4" />
-                          <span>Danh Sách Thiết Bị Của Số Điện Thoại</span>
-                        </div>
-                        <div className="text-slate-300 text-[11px] mt-0.5 font-mono">
-                          {maskPhoneNumber(warrantyResult.phone)}
-                        </div>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-sky-900/40 border border-sky-500/40 text-sky-300 text-[11px] font-bold">
-                        {warrantyResult.devices.length} Thiết Bị Đã Mua
-                      </span>
-                    </div>
-
+                    {/* Devices list with SKU & Serial */}
                     <div className="space-y-2">
-                      {warrantyResult.devices.map((dev: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 transition space-y-2 text-xs"
-                        >
-                          <div className="flex justify-between items-start">
+                      <div className="font-bold text-gray-900 text-xs">Danh Sách Thiết Bị Bảo Hành:</div>
+                      {(warrantyResult.items || []).map((itm: any, idx: number) => (
+                        <div key={idx} className="p-2.5 bg-white rounded-md border border-gray-200 space-y-1.5">
+                          <div className="flex justify-between items-start gap-2">
                             <div>
-                              <div className="font-bold text-white text-xs">{dev.productName}</div>
-                              <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex flex-wrap items-center gap-x-2">
-                                <span>Mã Hàng (SKU): <strong className="text-amber-400">{dev.productSku || 'PRO-GEAR'}</strong></span>
-                                <span>•</span>
-                                <span>Serial (SN): <strong className="text-emerald-400">{dev.serialNumber}</strong></span>
+                              <div className="font-bold text-gray-900 text-xs">{itm.productName}</div>
+                              <div className="flex items-center space-x-2 mt-0.5">
+                                <span className="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-300 text-amber-800 font-mono text-[10px] font-bold">
+                                  Mã Hàng (SKU): {itm.productSku || 'ILME-FX3-BODY'}
+                                </span>
+                                <span className="text-gray-500 text-[11px]">x{itm.quantity || 1}</span>
                               </div>
                             </div>
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                dev.status === 'SOLD'
-                                  ? 'bg-emerald-950/50 text-emerald-300 border border-emerald-500/30'
-                                  : 'bg-amber-950/50 text-amber-300 border border-amber-500/30'
-                              }`}
-                            >
-                              {dev.status === 'SOLD' ? 'Đang Bảo Hành' : 'Tồn Kệ Showroom'}
+                            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-emerald-200">
+                              Đang Bảo Hành
                             </span>
                           </div>
 
-                          <div className="border-t border-slate-800/80 pt-2 flex justify-between items-center text-[11px]">
-                            <div className="text-slate-400">
-                              Hạn BH: <strong className="text-emerald-400 font-mono">{dev.warrantyExpires || '24 Tháng'}</strong>
+                          <div className="border-t border-gray-100 pt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-gray-600">
+                            <div>Mã Serial (SN): <strong className="text-[#E30019] font-mono">{itm.serialNumber}</strong></div>
+                            <div>Thời hạn BH: <strong className="text-gray-900">24 Tháng</strong></div>
+                            <div>Hạn BH tới: <strong className="text-emerald-700 font-mono">{itm.warrantyExpires}</strong></div>
+                            <div>
+                              <span className="text-emerald-700 font-bold flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Còn {itm.daysRemaining || 728} ngày hiệu lực</span>
+                              </span>
                             </div>
-                            {typeof dev.daysRemaining === 'number' && dev.daysRemaining > 0 && (
-                              <div className="text-emerald-300 font-semibold">
-                                Còn {dev.daysRemaining} ngày
-                              </div>
-                            )}
                           </div>
                         </div>
                       ))}
@@ -2907,19 +2170,42 @@ export function App() {
                   </div>
                 )}
 
-                {/* CASE 4: NOT_FOUND */}
+                {/* CASE 2: SOLD_ACTIVE */}
+                {warrantyResult.type === 'SOLD_ACTIVE' && (
+                  <div className="p-3.5 rounded-lg border border-emerald-300 bg-emerald-50/50 text-xs space-y-2.5">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-emerald-200">
+                      <div className="flex items-center space-x-1.5 font-bold text-emerald-800">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>THIẾT BỊ ĐANG TRONG THỜI HẠN BẢO HÀNH</span>
+                      </div>
+                      <span className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                        Đang Hiệu Lực
+                      </span>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-md border border-gray-200 space-y-1 text-[11px] text-gray-700">
+                      <div>Thiết bị: <strong className="text-gray-900">{warrantyResult.productName}</strong></div>
+                      <div>Mã Hàng (SKU): <strong className="text-amber-800 font-mono">{warrantyResult.productSku || 'ILME-FX3-BODY'}</strong></div>
+                      <div>Mã Serial (SN): <strong className="text-[#E30019] font-mono">{warrantyResult.serialNumber}</strong></div>
+                      <div>Thời hạn BH: <strong className="text-gray-900">{warrantyResult.warrantyMonths} Tháng</strong> (Hạn tới: <span className="text-emerald-700 font-mono font-bold">{warrantyResult.warrantyExpires}</span>)</div>
+                      <div className="text-emerald-700 font-bold flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Còn {warrantyResult.daysRemaining} ngày hiệu lực</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* CASE 3: NOT_FOUND */}
                 {warrantyResult.type === 'NOT_FOUND' && (
-                  <div className="p-4 rounded-xl border bg-red-950/20 border-red-500/40 text-red-300 text-xs space-y-2 animate-in fade-in duration-200">
-                    <div className="font-bold text-red-400 flex items-center space-x-1.5 text-sm">
-                      <X className="w-4 h-4 shrink-0" />
+                  <div className="p-3.5 rounded-lg border border-red-300 bg-red-50 text-xs text-red-700 space-y-1">
+                    <div className="font-bold text-sm flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-red-600" />
                       <span>Không Tìm Thấy Thông Tin Bảo Hành</span>
                     </div>
-                    <p className="text-slate-300 text-[11.5px] leading-relaxed">
-                      {warrantyResult.message}
+                    <p className="text-[11.5px] text-red-600">
+                      Không tìm thấy mã &quot;{warrantyResult.query}&quot; trên hệ thống. Quý khách vui lòng kiểm tra lại tem dán trên thân máy hoặc liên hệ hotline 1900 8899.
                     </p>
-                    <div className="pt-2 border-t border-red-900/40 text-[11px] text-slate-400">
-                      Gợi ý: Quý khách vui lòng kiểm tra lại tem dán trên thân máy hoặc liên hệ tổng đài <strong>1900 8899</strong> để được hỗ trợ kiểm tra thủ công.
-                    </div>
                   </div>
                 )}
               </div>
@@ -2928,252 +2214,196 @@ export function App() {
         </div>
       )}
 
-      {/* ----------------- ORDER LOOKUP & CANCEL MODAL ----------------- */}
+      {/* ----------------- ORDER LOOKUP MODAL (CUSTOMER SELF-SERVICE) ----------------- */}
       {showOrderLookupModal && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => setShowOrderLookupModal(false)}
-        >
-          <div
-            className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-start border-b border-slate-800 pb-3">
-              <div className="flex items-center space-x-2">
-                <span className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                  <Truck className="w-5 h-5" />
-                </span>
-                <div>
-                  <h3 className="text-base font-bold text-white">
-                    Tra Cứu & Quản Lý Đơn Hàng
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Kiểm tra tiến độ giao hàng, chi tiết đơn hoặc hủy đơn hàng trực tuyến
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowOrderLookupModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg border border-gray-200 max-w-md w-full p-5 relative shadow-2xl text-gray-900">
+            <button
+              onClick={() => setShowOrderLookupModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 rounded-md transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-            {/* Search Input Form */}
-            <form onSubmit={handleLookupOrder} className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300 block">
-                Nhập Mã đơn hàng (VD: PRO-XXXXXX) hoặc Số điện thoại đặt hàng:
-              </label>
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  required
-                  placeholder="VD: PRO-102938 hoặc 0912345678"
-                  value={orderLookupQuery}
-                  onChange={(e) => setOrderLookupQuery(e.target.value)}
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white uppercase placeholder:normal-case placeholder-slate-500 focus:outline-none focus:border-red-500 font-mono"
-                />
-                <button
-                  type="submit"
-                  disabled={isSearchingOrder}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1 shrink-0"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                  <span>{isSearchingOrder ? 'Đang tìm...' : 'Tra Cứu'}</span>
-                </button>
-              </div>
+            <div className="flex items-center space-x-2 text-[#E30019] mb-1">
+              <FileText className="w-5 h-5" />
+              <h3 className="font-bold text-base text-gray-900">Tra Cứu Đơn Hàng Của Bạn</h3>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              Nhập Mã Đơn Hàng (VD: PRO-20261016-8942) hoặc Số Điện Thoại mua hàng.
+            </p>
+
+            <form onSubmit={handleSearchOrder} className="flex space-x-2 mb-3">
+              <input
+                type="text"
+                placeholder="Nhập Mã Đơn hoặc SĐT..."
+                value={orderLookupQuery}
+                onChange={(e) => setOrderLookupQuery(e.target.value)}
+                className="flex-1 bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#E30019]"
+              />
+              <button
+                type="submit"
+                disabled={isSearchingOrder}
+                className="btn-retail-primary text-white text-xs font-bold px-4 py-2 rounded-md shadow"
+              >
+                Tra Cứu
+              </button>
             </form>
 
-            {/* Cancel Success Message */}
             {orderCancelSuccessMsg && (
-              <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-xs flex items-center space-x-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span className="font-semibold">{orderCancelSuccessMsg}</span>
+              <div className="p-2.5 rounded bg-emerald-50 text-emerald-800 text-xs mb-2 border border-emerald-200">
+                {orderCancelSuccessMsg}
               </div>
             )}
 
-            {/* Shimmer Skeleton Loading */}
-            {isSearchingOrder && (
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/70 space-y-3 pt-4">
-                <div className="h-4 w-1/3 bg-slate-800 rounded animate-shimmer" />
-                <div className="h-3 w-4/5 bg-slate-800/60 rounded animate-shimmer" />
-                <div className="h-3 w-2/3 bg-slate-800/60 rounded animate-shimmer" />
-                <div className="h-10 w-full bg-slate-800/40 rounded-xl animate-shimmer" />
-              </div>
-            )}
+            {orderLookupResult && orderLookupResult !== 'NOT_FOUND' && (
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-gray-900">Mã: {orderLookupResult.orderNumber}</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    orderLookupResult.orderStatus === 'COMPLETED'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : orderLookupResult.orderStatus === 'CANCELLED'
+                      ? 'bg-gray-200 text-gray-700'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {orderLookupResult.orderStatus === 'COMPLETED' ? 'Đã Giao Thành Công' : orderLookupResult.orderStatus === 'CANCELLED' ? 'Đã Hủy' : 'Đang Xử Lý'}
+                  </span>
+                </div>
+                <div className="text-[11px] text-gray-600">Khách: <strong>{orderLookupResult.customerName}</strong> ({orderLookupResult.customerPhone})</div>
+                <div className="text-[11px] text-gray-600">Tổng tiền: <strong className="text-[#E30019]">{formatVND(orderLookupResult.totalAmount)}</strong></div>
 
-            {/* Search Result */}
-            {orderLookupResult && (
-              <div className="pt-2">
-                {orderLookupResult.notFound ? (
-                  <div className="p-4 rounded-xl bg-red-950/40 border border-red-500/30 text-xs text-red-300">
-                    Không tìm thấy đơn hàng với thông tin: <strong className="font-mono text-white">{orderLookupResult.query}</strong>. Vui lòng kiểm tra lại mã đơn hàng hoặc số điện thoại.
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 text-xs">
-                    <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                      <div>
-                        <span className="text-slate-400 text-[11px] block">Mã Đơn Hàng</span>
-                        <span className="font-mono font-bold text-sm text-red-400">
-                          {orderLookupResult.orderNumber || orderLookupResult.id}
-                        </span>
-                      </div>
-                      <div>
-                        {(() => {
-                          const st = orderLookupResult.orderStatus || orderLookupResult.status || 'PENDING';
-                          const statusMap: Record<string, { label: string; color: string }> = {
-                            PENDING: { label: 'Chờ Xác Nhận', color: 'bg-amber-900/40 text-amber-400 border-amber-500/30' },
-                            CONFIRMED: { label: 'Đã Xác Nhận', color: 'bg-blue-900/40 text-blue-400 border-blue-500/30' },
-                            SHIPPING: { label: 'Đang Giao Hàng', color: 'bg-orange-900/40 text-orange-400 border-orange-500/30' },
-                            COMPLETED: { label: 'Đã Hoàn Tất', color: 'bg-emerald-900/40 text-emerald-400 border-emerald-500/30' },
-                            CANCELLED: { label: 'Đã Hủy Đơn', color: 'bg-red-900/40 text-red-400 border-red-500/30' },
-                          };
-                          const current = statusMap[st] || statusMap['PENDING'];
-                          return (
-                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${current.color}`}>
-                              {current.label}
-                            </span>
-                          );
-                        })()}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-slate-300 text-[11px]">
-                      <div>
-                        <span className="text-slate-500 block">Khách hàng:</span>
-                        <strong className="text-white">{orderLookupResult.customerName}</strong>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block">Số điện thoại:</span>
-                        <strong className="text-white font-mono">{orderLookupResult.customerPhone}</strong>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-slate-500 block">Địa chỉ nhận hàng:</span>
-                        <span className="text-slate-200">{orderLookupResult.shippingAddress || orderLookupResult.customerAddress}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block">Thanh toán:</span>
-                        <span>{orderLookupResult.paymentMethod === 'VIETQR' ? 'VietQR Ngân hàng' : 'Thanh toán COD'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block">Tổng tiền:</span>
-                        <strong className="text-amber-400 font-mono text-xs">
-                          {formatVND(orderLookupResult.totalAmount || 0)}
-                        </strong>
-                      </div>
-                    </div>
-
-                    {/* Items preview */}
-                    {Array.isArray(orderLookupResult.items) && orderLookupResult.items.length > 0 && (
-                      <div className="border-t border-slate-800 pt-2 space-y-1.5">
-                        <span className="text-slate-400 text-[11px] block font-semibold">Danh sách thiết bị:</span>
-                        {orderLookupResult.items.map((itm: any, idx: number) => (
-                          <div key={idx} className="flex justify-between text-[11px] bg-slate-900/60 p-2 rounded-lg">
-                            <span className="text-slate-200 truncate max-w-xs">{itm.productName || itm.name || 'Thiết bị Pro Gear'} (x{itm.quantity})</span>
-                            <span className="text-amber-400 font-mono font-semibold">{formatVND(itm.price * itm.quantity)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Cancel action if PENDING */}
-                    {(orderLookupResult.orderStatus === 'PENDING' || orderLookupResult.status === 'PENDING') && (
-                      <div className="border-t border-slate-800 pt-3 flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-[11px] text-slate-400 max-w-xs">
-                          Đơn hàng đang chờ nhân viên liên hệ xác nhận. Bạn có thể tự hủy đơn ngay nếu muốn đổi thiết bị khác.
-                        </p>
-                        <button
-                          type="button"
-                          disabled={isCancellingOrder}
-                          onClick={() => handleCancelOrderCustomer(orderLookupResult.id || orderLookupResult.orderNumber)}
-                          className="px-3.5 py-1.5 rounded-xl bg-red-600/80 hover:bg-red-600 text-white font-bold text-xs transition flex items-center space-x-1"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>{isCancellingOrder ? 'Đang hủy...' : 'Hủy Đơn Hàng Này'}</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                {orderLookupResult.orderStatus !== 'CANCELLED' && orderLookupResult.orderStatus !== 'COMPLETED' && (
+                  <button
+                    onClick={() => handleCancelOrder(orderLookupResult.id)}
+                    disabled={isCancellingOrder}
+                    className="w-full mt-2 py-1.5 border border-red-300 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded transition"
+                  >
+                    Hủy Đơn Hàng Này
+                  </button>
                 )}
+              </div>
+            )}
+
+            {orderLookupResult === 'NOT_FOUND' && (
+              <div className="p-3 rounded bg-red-50 border border-red-200 text-xs text-red-700">
+                Không tìm thấy đơn hàng tương ứng. Vui lòng kiểm tra lại mã đơn hoặc số điện thoại.
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ----------------- FOOTER ----------------- */}
-      <footer className="mt-auto border-t border-slate-800 bg-slate-950 py-8 text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="space-y-2">
-            <div className="text-base font-black text-white flex items-center space-x-1">
-              <span>PRO</span>
-              <span className="text-red-500">GEAR</span>
-              <span className="text-[10px] text-slate-400">CINEMA & CAMERA</span>
+      {/* ----------------- PRODUCT QUICK VIEW / DETAIL MODAL ----------------- */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg border border-gray-200 max-w-3xl w-full p-5 relative shadow-2xl text-gray-900 max-h-[92vh] overflow-y-auto animate-in fade-in duration-200">
+            <button
+              onClick={() => setSelectedProduct(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 rounded-md transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Image & Gallery */}
+              <div>
+                <div className="aspect-square bg-white rounded-lg border border-gray-200 p-4 mb-2 flex items-center justify-center">
+                  <img
+                    src={
+                      selectedProduct.images && selectedProduct.images[activeModalImgIdx]
+                        ? selectedProduct.images[activeModalImgIdx]
+                        : selectedProduct.imageUrl
+                    }
+                    alt={selectedProduct.name}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+
+                {/* Thumbnails */}
+                {selectedProduct.images && selectedProduct.images.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {selectedProduct.images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveModalImgIdx(idx)}
+                        className={`w-14 h-14 rounded border p-1 shrink-0 ${
+                          activeModalImgIdx === idx ? 'border-[#E30019]' : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        <img src={img} alt="Thumb" className="w-full h-full object-contain" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Product Info & Specs */}
+              <div className="flex flex-col justify-between">
+                <div>
+                  <div className="text-[11px] font-bold text-[#E30019] uppercase mb-1">
+                    {selectedProduct.brand} • {selectedProduct.category}
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 leading-snug">
+                    {selectedProduct.name}
+                  </h3>
+                  <div className="text-xs text-gray-400 font-mono mb-3">Mã SKU: {selectedProduct.sku}</div>
+
+                  <div className="flex items-baseline gap-2 mb-4">
+                    <span className="text-xl font-black text-[#E30019]">
+                      {formatVND(selectedProduct.price)}
+                    </span>
+                    {selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price && (
+                      <span className="text-xs text-gray-400 line-through">
+                        {formatVND(selectedProduct.originalPrice)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Technical Specs Table */}
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-xs space-y-1.5 mb-4">
+                    <div className="font-bold text-gray-800 text-[11px] uppercase tracking-wider mb-1">
+                      Thông Số Kỹ Thuật Nổi Bật:
+                    </div>
+                    {selectedProduct.specifications && Object.entries(selectedProduct.specifications).map(([k, v]) => (
+                      <div key={k} className="flex justify-between text-gray-600 border-b border-gray-200/60 pb-1">
+                        <span className="capitalize">{k}:</span>
+                        <strong className="text-gray-900 text-right max-w-[200px] truncate">{String(v)}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => {
+                      addToCart(selectedProduct);
+                      setSelectedProduct(null);
+                    }}
+                    className="flex-1 py-2.5 btn-retail-primary text-white font-bold text-xs rounded-md shadow flex items-center justify-center gap-1.5"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    <span>Thêm Vào Giỏ Hàng</span>
+                  </button>
+                  <button
+                    onClick={() => toggleWishlist(selectedProduct.id)}
+                    className="p-2.5 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-600"
+                    title="Yêu thích"
+                  >
+                    <Heart className={`w-4 h-4 ${wishlist.includes(selectedProduct.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                  </button>
+                </div>
+              </div>
             </div>
-            <p className="text-slate-500 text-[11px] leading-relaxed">
-              Hệ thống bán lẻ và phân phối máy ảnh, máy quay phim điện ảnh, flycam DJI & phụ kiện làm phim chuyên nghiệp hàng đầu Việt Nam.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-slate-200 mb-2">Dòng Sản Phẩm Chủ Đạo</h4>
-            <ul className="space-y-1.5 text-slate-400 text-[11px]">
-              <li>Flycam DJI Mavic 3 Pro / Mini 4 Pro</li>
-              <li>Máy quay Cinema Sony FX3 / FX6</li>
-              <li>Máy ảnh Sony Alpha 7 IV / A7R V</li>
-              <li>Gimbal chống rung DJI RS 4 Pro</li>
-              <li>DJI Osmo Pocket 3 Creator Combo</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-slate-200 mb-2">Chính Sách & Bảo Hành</h4>
-            <ul className="space-y-1.5 text-slate-400 text-[11px]">
-              <li>Tra cứu Serial Number điện tử</li>
-              <li>Chính sách 1 đổi 1 trong 30 ngày</li>
-              <li>Bảo hành chính hãng 12-24 tháng</li>
-              <li>Hỗ trợ trả góp 0% lãi suất</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-slate-200 mb-2">Hệ Thống Showroom</h4>
-            <p className="text-slate-400 text-[11px]">Hà Nội: 88 Phố Huế, Q. Hai Bà Trưng</p>
-            <p className="text-slate-400 text-[11px]">TP.HCM: 120 Trần Hưng Đạo, Quận 1</p>
-            <p className="text-slate-400 text-[11px] mt-1 font-semibold text-white">Hotline: 1900 8899 (Hỗ trợ 24/7)</p>
           </div>
         </div>
+      )}
 
-        <div className="max-w-7xl mx-auto px-4 pt-6 mt-6 border-t border-slate-800/80 flex flex-wrap justify-between items-center text-[11px] text-slate-500">
-          <div>© 2026 PRO GEAR Vietnam. All rights reserved.</div>
-          <div className="flex items-center space-x-3">
-            <span>Trạng thái hệ thống:</span>
-            <span className="inline-flex items-center space-x-1 text-emerald-400 font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Đồng Bộ Trực Tuyến & Bảo Mật SSL</span>
-            </span>
-          </div>
-        </div>
-      </footer>
-
-      {/* Gen Z Live Floating Toast Notification */}
+      {/* Floating Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900/95 backdrop-blur-2xl border border-red-500/50 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 animate-in slide-in-from-bottom-5 duration-300">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-red-600 to-amber-500 flex items-center justify-center shrink-0 shadow-md">
-            <Check className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-white">{toast.message}</div>
-            <div className="text-[10px] text-slate-400">Đã cập nhật tức thì vào phiên mua sắm.</div>
-          </div>
-          <button
-            onClick={() => setShowCartDrawer(true)}
-            className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[11px] font-bold transition ml-2 shadow active:scale-95"
-          >
-            Xem giỏ
-          </button>
+        <div className="fixed bottom-5 right-5 z-50 bg-gray-900 text-white px-4 py-2.5 rounded-md shadow-2xl text-xs font-semibold flex items-center space-x-2 border border-gray-700 animate-in slide-in-from-bottom duration-150">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toast.message}</span>
         </div>
       )}
     </div>
