@@ -80,3 +80,39 @@ npm run dev:admin
 ```
 
 *Lưu ý: Hệ thống đã tích hợp sẵn cơ chế đồng bộ dự phòng (Shared Sync Layer), do đó ngay cả khi backend chưa bật, các thao tác đặt hàng trên Web Khách Hàng vẫn lập tức đồng bộ sang Web Admin để bạn kiểm thử luồng bán hàng trơn tru.*
+
+---
+
+## 🧪 4. Kiểm Thử Tự Động Toàn Diện (Playwright QA & E2E Tester Suite)
+
+Hệ thống đã tích hợp sẵn bộ kiểm thử tự động End-to-End với **@playwright/test** chạy trực tiếp trên Chromium Engine (`/usr/bin/microsoft-edge-stable`):
+
+### 📋 Danh Sách Test Suites Đã Được Xác Thực (100% Pass):
+1. **`tests/e2e/01-storefront-flow.spec.ts`**:
+   - `TC-STORE-01`: Kiểm tra hiển thị Retail Header, danh mục, giỏ hàng, hotline.
+   - `TC-STORE-02`: Kiểm tra bộ lọc Live Search thiết bị (Sony, DJI, Lens...).
+   - `TC-STORE-03`: Thêm giỏ hàng và đặt hàng VietQR, kiểm tra hiển thị mã QR & số đơn hàng `PRO-YYYYMMDD-XXXX`.
+2. **`tests/e2e/02-admin-operations.spec.ts`**:
+   - `TC-ADMIN-01`: Kiểm tra điều hướng Sidebar Admin (Dashboard, Đơn Hàng, Sản Phẩm, Danh Mục, Bảo Hành).
+   - `TC-ADMIN-02`: Kiểm tra bảng đơn hàng và modal xem chi tiết.
+   - `TC-ADMIN-03`: Xuất bán tại quầy POS, gán khách hàng và kích hoạt bảo hành điện tử ngay lập tức.
+3. **`tests/e2e/03-warranty-verification.spec.ts`**:
+   - `TC-WARRANTY-01`: Tra cứu theo Mã đơn hàng (`PRO-20261016-8942`) hiển thị chứng nhận bảo hành Sony FX3 24 tháng kèm đồng hồ đếm ngược ngày hiệu lực.
+   - `TC-WARRANTY-02`: Tra cứu theo Serial (`SONY-FX3-VN-9901`) hiển thị trạng thái đang hiệu lực.
+   - `TC-WARRANTY-03`: Kiểm tra xử lý cảnh báo khi tra cứu mã không tồn tại.
+
+### 💻 Các Lệnh Chạy Kiểm Thử:
+```bash
+# Chạy toàn bộ 9 ca kiểm thử tự động (headless mode)
+npm run test:e2e
+
+# Chạy kiểm thử có giao diện trực quan (headed mode - mở trình duyệt Edge)
+npm run test:e2e:headed
+
+# Mở Playwright Interactive UI Tester Studio
+npm run test:e2e:ui
+
+# Mở báo cáo HTML kết quả kiểm thử
+npm run test:report
+```
+

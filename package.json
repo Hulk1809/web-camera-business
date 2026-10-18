@@ -13,7 +13,11 @@
     "build:all": "npm run build --workspaces",
     "docker:up": "docker compose -f deploy/docker-compose.yml up -d",
     "docker:down": "docker compose -f deploy/docker-compose.yml down",
-    "docker:logs": "docker compose -f deploy/docker-compose.yml logs -f"
+    "docker:logs": "docker compose -f deploy/docker-compose.yml logs -f",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:report": "playwright show-report test-results/html-report"
   },
   "keywords": [
     "ecommerce",
@@ -24,5 +28,8 @@
     "postgresql"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
 }

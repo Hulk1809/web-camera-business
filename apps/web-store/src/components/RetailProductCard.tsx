@@ -61,6 +61,8 @@ export function RetailProductCard({
   return (
     <div
       onClick={() => onQuickView(product)}
+      data-testid="product-card"
+      data-sku={product.sku}
       className="bg-white border border-gray-200 hover:border-[#E30019] rounded-lg p-2.5 flex flex-col justify-between group relative cursor-pointer product-card-hover select-none"
     >
       {/* Top badges & Wishlist */}
@@ -184,6 +186,7 @@ export function RetailProductCard({
 
         <button
           type="button"
+          data-testid="btn-quick-add-cart"
           onClick={(e) => onAddToCart(product, e)}
           className="p-1.5 bg-red-50 hover:bg-[#E30019] text-[#E30019] hover:text-white rounded-md transition-all border border-red-200 active:scale-90"
           title={isOutOfStock ? 'Đặt hàng chờ về' : 'Thêm nhanh vào giỏ hàng'}

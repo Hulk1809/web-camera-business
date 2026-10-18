@@ -1135,6 +1135,7 @@ export function App() {
           {/* Navigation Links */}
           <nav className="p-3 space-y-1">
             <button
+              data-testid="nav-dashboard"
               onClick={() => setActiveTab('dashboard')}
               className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold flex items-center justify-between transition-colors ${
                 activeTab === 'dashboard'
@@ -1149,6 +1150,7 @@ export function App() {
             </button>
 
             <button
+              data-testid="nav-orders"
               onClick={() => setActiveTab('orders')}
               className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold flex items-center justify-between transition-colors ${
                 activeTab === 'orders'
@@ -1168,6 +1170,7 @@ export function App() {
             </button>
 
             <button
+              data-testid="nav-products"
               onClick={() => setActiveTab('products')}
               className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold flex items-center justify-between transition-colors ${
                 activeTab === 'products'
@@ -1185,6 +1188,7 @@ export function App() {
             </button>
 
             <button
+              data-testid="nav-categories"
               onClick={() => setActiveTab('categories')}
               className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold flex items-center justify-between transition-colors ${
                 activeTab === 'categories'
@@ -1200,6 +1204,7 @@ export function App() {
             </button>
 
             <button
+              data-testid="nav-warranty"
               onClick={() => setActiveTab('warranty')}
               className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold flex items-center justify-between transition-colors ${
                 activeTab === 'warranty'
@@ -1217,6 +1222,7 @@ export function App() {
             </button>
 
             <button
+              data-testid="nav-k8s"
               onClick={() => setActiveTab('k8s')}
               className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold flex items-center justify-between transition-colors ${
                 activeTab === 'k8s'
@@ -1539,7 +1545,7 @@ export function App() {
                       filteredOrders.map((order) => {
                         const isPre = isOrderPreOrder(order);
                         return (
-                          <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
+                          <tr key={order.id} data-testid="admin-order-row" data-order-number={order.orderNumber} className="hover:bg-slate-50/80 transition-colors">
                             <td className="py-3 px-4">
                               <span className="font-mono font-bold text-indigo-600 tabular-nums">
                                 {order.orderNumber}
@@ -1597,6 +1603,7 @@ export function App() {
                             <td className="py-3 px-4 text-right">
                               <div className="flex items-center justify-end space-x-1.5">
                                 <button
+                                  data-testid="btn-view-order"
                                   onClick={() => setSelectedOrderDetails(order)}
                                   className="px-2.5 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-[11px] transition"
                                 >
@@ -1605,6 +1612,7 @@ export function App() {
 
                                 {order.orderStatus !== 'COMPLETED' && order.orderStatus !== 'CANCELLED' && (
                                   <button
+                                    data-testid="btn-complete-order"
                                     onClick={() => handleUpdateOrderStatus(order.id, 'COMPLETED')}
                                     className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] transition shadow-sm"
                                     title="Xác nhận hoàn tất và kích hoạt bảo hành điện tử"
@@ -1911,7 +1919,7 @@ export function App() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredSerials.map((s) => (
-                      <tr key={s.serialNumber} className="hover:bg-slate-50/80 transition-colors">
+                      <tr key={s.serialNumber} data-testid="admin-serial-row" data-serial={s.serialNumber} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3 px-4 font-mono font-bold text-indigo-700 text-sm tabular-nums">
                           {s.serialNumber}
                         </td>
@@ -1952,6 +1960,7 @@ export function App() {
                         <td className="py-3 px-4 text-right">
                           {s.status === 'IN_STOCK' ? (
                             <button
+                              data-testid="btn-pos-sell"
                               onClick={() => {
                                 setSelectedPosSerial(s);
                                 setShowPosModal(true);
@@ -1962,6 +1971,7 @@ export function App() {
                             </button>
                           ) : (
                             <button
+                              data-testid="btn-view-invoice"
                               onClick={() => {
                                 setInvoiceSerial(s);
                                 const related = orders.find((o) => o.orderNumber === s.orderNumber) || null;
@@ -2095,6 +2105,7 @@ export function App() {
               <div>
                 <label className="block text-slate-700 font-semibold mb-1">Họ tên khách hàng *</label>
                 <input
+                  data-testid="input-pos-customer-name"
                   type="text"
                   required
                   placeholder="Họ và tên..."
@@ -2107,6 +2118,7 @@ export function App() {
               <div>
                 <label className="block text-slate-700 font-semibold mb-1">Số điện thoại *</label>
                 <input
+                  data-testid="input-pos-customer-phone"
                   type="tel"
                   required
                   placeholder="09..."
@@ -2119,6 +2131,7 @@ export function App() {
               <div>
                 <label className="block text-slate-700 font-semibold mb-1">Hình thức thanh toán</label>
                 <select
+                  data-testid="select-pos-payment-method"
                   value={posPaymentMethod}
                   onChange={(e) => setPosPaymentMethod(e.target.value as any)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-indigo-600"
@@ -2130,6 +2143,7 @@ export function App() {
               </div>
 
               <button
+                data-testid="btn-pos-submit"
                 type="submit"
                 disabled={isPosSubmitting}
                 className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-md shadow mt-2"

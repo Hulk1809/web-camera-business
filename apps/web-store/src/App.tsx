@@ -1163,6 +1163,7 @@ export function App() {
             >
               <input
                 type="text"
+                data-testid="search-input"
                 placeholder="Bạn muốn tìm máy ảnh, flycam, lens hay phụ kiện gì hôm nay..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -1179,6 +1180,7 @@ export function App() {
               )}
               <button
                 type="submit"
+                data-testid="search-submit"
                 className="bg-[#E30019] hover:bg-red-700 text-white px-4 py-2 font-bold text-xs flex items-center gap-1.5 transition shrink-0"
               >
                 <Search className="w-4 h-4" />
@@ -1221,6 +1223,7 @@ export function App() {
                 setWarrantyResult(null);
                 setSerialQuery('');
               }}
+              data-testid="btn-open-warranty"
               className="border border-red-500 text-[#E30019] bg-red-50/60 hover:bg-red-100 font-bold text-xs px-2.5 sm:px-3 py-2 rounded-md flex items-center gap-1.5 transition shadow-sm"
               title="Tra cứu bảo hành điện tử chuẩn Tin Học Ngôi Sao"
             >
@@ -1231,6 +1234,7 @@ export function App() {
             {/* Cart Button with Count Badge */}
             <button
               onClick={() => setShowCartDrawer(true)}
+              data-testid="btn-cart-drawer"
               className="bg-[#E30019] hover:bg-red-700 text-white font-bold text-xs px-3 sm:px-3.5 py-2 rounded-md flex items-center gap-2 shadow-sm transition active:scale-95 relative"
             >
               <div className="relative">
@@ -1881,6 +1885,7 @@ export function App() {
                   <div>
                     <input
                       type="text"
+                      data-testid="input-customer-name"
                       placeholder="Họ và tên người nhận *"
                       required
                       value={customerName}
@@ -1892,6 +1897,7 @@ export function App() {
                   <div>
                     <input
                       type="tel"
+                      data-testid="input-customer-phone"
                       placeholder="Số điện thoại nhận hàng *"
                       required
                       value={customerPhone}
@@ -1903,6 +1909,7 @@ export function App() {
                   <div>
                     <input
                       type="text"
+                      data-testid="input-customer-address"
                       placeholder="Địa chỉ giao hàng chi tiết (Số nhà, đường, phường/xã) *"
                       required
                       value={customerAddress}
@@ -1914,6 +1921,7 @@ export function App() {
                   <div>
                     <input
                       type="text"
+                      data-testid="input-customer-note"
                       placeholder="Ghi chú đơn hàng (nếu có)"
                       value={orderNote}
                       onChange={(e) => setOrderNote(e.target.value)}
@@ -1927,6 +1935,7 @@ export function App() {
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <button
                         type="button"
+                        data-testid="payment-method-vietqr"
                         onClick={() => setPaymentMethod('VIETQR')}
                         className={`p-2 rounded-md border text-center font-bold flex items-center justify-center gap-1.5 transition ${
                           paymentMethod === 'VIETQR'
@@ -1940,6 +1949,7 @@ export function App() {
 
                       <button
                         type="button"
+                        data-testid="payment-method-cod"
                         onClick={() => setPaymentMethod('COD')}
                         className={`p-2 rounded-md border text-center font-bold flex items-center justify-center gap-1.5 transition ${
                           paymentMethod === 'COD'
@@ -1955,6 +1965,7 @@ export function App() {
 
                   <button
                     type="submit"
+                    data-testid="btn-submit-order"
                     disabled={isSubmittingOrder}
                     className="w-full py-3 btn-retail-primary text-white font-bold text-xs rounded-md shadow mt-3 flex items-center justify-center gap-2"
                   >
@@ -1984,7 +1995,7 @@ export function App() {
 
       {/* ----------------- ORDER SUCCESS & VIETQR SCAN MODAL ----------------- */}
       {orderSuccess && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div data-testid="order-success-modal" className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-lg border border-gray-200 max-w-md w-full p-6 text-gray-900 shadow-2xl animate-in fade-in duration-200">
             <div className="text-center mb-4">
               <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2">
@@ -1992,7 +2003,7 @@ export function App() {
               </div>
               <h3 className="font-bold text-base text-gray-900">Đặt Hàng Thành Công!</h3>
               <p className="text-xs text-gray-500">
-                Mã đơn hàng: <strong className="text-[#E30019] font-mono text-sm">{orderSuccess.orderNumber}</strong>
+                Mã đơn hàng: <strong data-testid="success-order-number" className="text-[#E30019] font-mono text-sm">{orderSuccess.orderNumber}</strong>
               </p>
             </div>
 
@@ -2030,6 +2041,7 @@ export function App() {
                 setShowCartDrawer(false);
               }}
               className="w-full py-2.5 btn-retail-primary text-white font-bold text-xs rounded-md shadow"
+              data-testid="btn-close-success-modal"
             >
               Tiếp Tục Mua Sắm
             </button>
@@ -2062,6 +2074,7 @@ export function App() {
             <form onSubmit={handleCheckWarranty} className="flex space-x-2 mb-2">
               <input
                 type="text"
+                data-testid="warranty-query-input"
                 placeholder="Nhập Mã Đơn (PRO-...), Số Serial (SN) hoặc Số Điện Thoại..."
                 value={serialQuery}
                 onChange={(e) => setSerialQuery(e.target.value)}
@@ -2069,6 +2082,7 @@ export function App() {
               />
               <button
                 type="submit"
+                data-testid="btn-submit-warranty"
                 disabled={isCheckingWarranty}
                 className="px-4 py-2 btn-retail-primary text-white text-xs font-bold rounded-md shadow shrink-0 flex items-center gap-1"
               >
@@ -2088,6 +2102,7 @@ export function App() {
               <span>Mẫu thử:</span>
               <button
                 type="button"
+                data-testid="chip-warranty-order"
                 onClick={() => setSerialQuery('PRO-20261016-8942')}
                 className="px-2 py-0.5 rounded bg-red-50 text-[#E30019] border border-red-200 font-mono text-[10px]"
               >
@@ -2095,6 +2110,7 @@ export function App() {
               </button>
               <button
                 type="button"
+                data-testid="chip-warranty-serial"
                 onClick={() => setSerialQuery('SONY-FX3-VN-9901')}
                 className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono text-[10px]"
               >
@@ -2102,6 +2118,7 @@ export function App() {
               </button>
               <button
                 type="button"
+                data-testid="chip-warranty-phone"
                 onClick={() => setSerialQuery('0988776655')}
                 className="px-2 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200 font-mono text-[10px]"
               >
@@ -2111,7 +2128,7 @@ export function App() {
 
             {/* WARRANTY RESULT DISPLAY */}
             {warrantyResult && (
-              <div className="border-t border-gray-200 pt-3 space-y-3">
+              <div data-testid="warranty-result" className="border-t border-gray-200 pt-3 space-y-3">
                 {/* CASE 1: ORDER_RESULT */}
                 {warrantyResult.type === 'ORDER_RESULT' && (
                   <div className="p-3.5 rounded-lg border border-emerald-300 bg-emerald-50/50 text-xs space-y-3">

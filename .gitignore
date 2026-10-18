@@ -36,3 +36,7 @@ Thumbs.db
 # Docker / K8s local volumes
 postgres_data/
 redis_data/
+
+# Playwright Test Outputs
+test-results/
+playwright-report/
