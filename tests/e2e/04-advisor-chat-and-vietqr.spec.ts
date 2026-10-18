@@ -35,10 +35,9 @@ test.describe('Live Advisor Chat, Multi-Staff Collision Locking & VietQR Payment
     if (await fbLoginBtn.isVisible()) {
       await fbLoginBtn.click();
       const fbNameInput = page.getByTestId('input-chat-fb-name');
-      if (await fbNameInput.isVisible()) {
-        await fbNameInput.fill('Đoàn Văn Hậu (Facebook)');
-        await page.getByTestId('btn-confirm-chat-fb').click();
-      }
+      await expect(fbNameInput).toBeVisible();
+      await fbNameInput.fill('Đoàn Văn Hậu (Facebook)');
+      await page.getByTestId('btn-confirm-chat-fb').click();
     }
 
     // Input message and send

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Headset, User, Mail, LogOut, CheckCircle2, Sparkles, MessageSquare } from 'lucide-react';
 import { CustomerUser, ChatSession, ChatMessage } from '../types/chat';
 import { chatSyncService } from '../services/chatSyncService';
+import { FacebookOAuthModal } from './FacebookOAuthModal';
 
 interface CustomerChatDrawerProps {
   isOpen: boolean;
@@ -23,7 +24,8 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
   const [emailAddress, setEmailAddress] = useState<string>('');
   const [emailPhone, setEmailPhone] = useState<string>('');
 
-  // Facebook name prompt state
+  // Facebook OAuth modal state
+  const [showFbOAuth, setShowFbOAuth] = useState<boolean>(false);
   const [showFbNamePrompt, setShowFbNamePrompt] = useState<boolean>(false);
   const [fbNameInput, setFbNameInput] = useState<string>('');
 
@@ -207,10 +209,10 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
             </div>
 
             {/* Facebook login area */}
-            {!showFbNamePrompt ? (
+            <div className="space-y-1.5">
               <button
                 type="button"
-                onClick={() => setShowFbNamePrompt(true)}
+                onClick={() => setShowFbOAuth(true)}
                 data-testid="btn-chat-login-facebook"
                 className="w-full py-2.5 px-4 bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs rounded-md shadow flex items-center justify-center space-x-2 transition active:scale-98 cursor-pointer"
               >
@@ -219,36 +221,10 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
                 </svg>
                 <span>Đăng Nhập Qua Facebook</span>
               </button>
-            ) : (
-              <form onSubmit={handleFacebookLogin} className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2.5 text-xs animate-in fade-in">
-                <div className="flex items-center justify-between text-blue-900 font-bold">
-                  <span>Nhập Họ & Tên Facebook Của Bạn:</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowFbNamePrompt(false)}
-                    className="text-gray-400 hover:text-gray-600 text-[10px]"
-                  >
-                    Hủy
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  required
-                  data-testid="input-chat-fb-name"
-                  placeholder="Ví dụ: Lê Minh Trí"
-                  value={fbNameInput}
-                  onChange={(e) => setFbNameInput(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white border border-blue-300 rounded focus:outline-none focus:border-blue-600 text-xs"
-                />
-                <button
-                  type="submit"
-                  data-testid="btn-confirm-chat-fb"
-                  className="w-full py-1.5 bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold rounded shadow transition text-xs"
-                >
-                  Xác Nhận Kết Nối Facebook
-                </button>
-              </form>
-            )}
+              <div className="text-[10.5px] text-center text-gray-500">
+                🔒 Mở cửa sổ Facebook chính thức để kết nối tên thật của bạn
+              </div>
+            </div>
 
             <div className="flex items-center space-x-2 my-2 text-xs text-gray-400">
               <div className="flex-1 h-px bg-gray-200"></div>
@@ -422,6 +398,16 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
           </div>
         )}
       </div>
+
+      {/* Official Facebook OAuth Modal */}
+      <FacebookOAuthModal
+        isOpen={showFbOAuth}
+        onClose={() => setShowFbOAuth(false)}
+        onSuccess={(fbUser) => {
+          setCurrentUser(fbUser);
+          setShowFbOAuth(false);
+        }}
+      />
     </div>
   );
 };
