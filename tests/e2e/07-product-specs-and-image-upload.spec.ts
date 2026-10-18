@@ -131,4 +131,53 @@ test.describe('Admin Product Technical Specifications & Image Management', () =>
     await expect(page.locator('text=Cảm biến (Sensor):').first()).toBeVisible();
     await expect(page.locator('text=Quay Video:').first()).toBeVisible();
   });
+
+  test('TC-PROD-04: Admin correctly parses stockQuantity from shared storage and displays positive stock and in-stock badges', async ({ page }) => {
+    // 1. Simulate web-store saving products with stockQuantity (without stock property)
+    await page.evaluate(() => {
+      const mockSharedProducts = [
+        {
+          id: 'prod-dji-m3pro',
+          name: 'DJI Mavic 3 Pro Cine Combo - 3 Camera Hasselblad Apple ProRes',
+          sku: 'DJI-MAVIC3-PRO-CINE',
+          brand: 'DJI',
+          category: 'Flycam & Drone DJI',
+          price: 79990000,
+          originalPrice: 87500000,
+          stockQuantity: 12, // Only stockQuantity, no stock
+          imageUrl: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
+        },
+        {
+          id: 'prod-canon-r5m2',
+          name: 'Canon EOS R5 Mark II Body - 45MP Stacked CMOS & 8K 60p RAW',
+          sku: 'CANON-R5-M2-BODY',
+          brand: 'Canon',
+          category: 'Máy Ảnh Mirrorless & DSLR',
+          price: 104990000,
+          originalPrice: 115000000,
+          stockQuantity: 6, // Only stockQuantity
+          imageUrl: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+        },
+      ];
+      localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(mockSharedProducts));
+    });
+
+    // 2. Reload admin page to trigger normalization
+    await page.reload();
+    await page.getByTestId('nav-products').click();
+    await expect(page.locator('text=Quản Lý Thiết Bị, Máy Ảnh & Tồn Kho')).toBeVisible();
+
+    // 3. Verify stock quantities are normalized and shown properly (>0, NOT 0 cái)
+    await expect(page.locator('text=12').first()).toBeVisible();
+    await expect(page.locator('text=6').first()).toBeVisible();
+
+    // 4. Verify "Sẵn hàng" is displayed for these items, NOT "Hết Sẵn • Pre-Order"
+    await expect(page.locator('text=Sẵn hàng').first()).toBeVisible();
+
+    // 5. Verify image elements have valid sources
+    const imgElements = page.locator('tbody img');
+    const firstImgSrc = await imgElements.first().getAttribute('src');
+    expect(firstImgSrc).toBeTruthy();
+  });
 });
+

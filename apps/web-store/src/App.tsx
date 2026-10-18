@@ -69,6 +69,7 @@ export interface ProProduct {
   price: number;
   originalPrice: number;
   stockQuantity: number;
+  stock?: number;
   rating: number;
   reviewsCount: number;
   isFeatured: boolean;
@@ -230,9 +231,9 @@ export const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 84,
     isFeatured: false,
     badge: 'HOT CREATOR',
-    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+    imageUrl: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
     images: [
-      'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+      'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
       'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1000',
     ],
     shortDesc: 'Cảm biến 1-inch CMOS, quay 4K 120fps, màn hình OLED xoay 2 inch, chống rung cơ học 3 trục, kèm Mic 2.',
@@ -258,9 +259,9 @@ export const DEFAULT_PRODUCTS: ProProduct[] = [
     reviewsCount: 19,
     isFeatured: false,
     badge: '8K CINEMA',
-    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+    imageUrl: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
     images: [
-      'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
+      'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
       'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
     ],
     shortDesc: 'Cảm biến xếp chồng 45MP BSI, chip kép DIGIC Accelerator + DIGIC X, quay 8K 60p RAW nội bộ, Eye Control AF thế hệ mới.',
@@ -528,16 +529,33 @@ export const CATEGORIES_MENU = [
 
 export const BRANDS = ['Tất Cả', 'Sony', 'DJI', 'Canon', 'Fujifilm', 'Nikon', 'Blackmagic Design'];
 
+export const normalizeStoreProduct = (p: any): ProProduct => {
+  const rawStock = (p.stockQuantity !== undefined && p.stockQuantity !== null && p.stockQuantity !== '')
+    ? p.stockQuantity
+    : (p.stock !== undefined && p.stock !== null && p.stock !== '')
+    ? p.stock
+    : 10;
+  const numStock = Number(rawStock);
+  const finalStock = !isNaN(numStock) ? numStock : 10;
+  return {
+    ...p,
+    stockQuantity: finalStock,
+    stock: finalStock,
+  };
+};
+
 export function App() {
   const [products, setProducts] = useState<ProProduct[]>(() => {
     try {
       const local = localStorage.getItem('PROGEAR_SHARED_PRODUCTS');
       if (local) {
         const parsed = JSON.parse(local);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(normalizeStoreProduct);
+        }
       }
     } catch {}
-    return DEFAULT_PRODUCTS;
+    return DEFAULT_PRODUCTS.map(normalizeStoreProduct);
   });
 
   const [selectedCategory, setSelectedCategory] = useState<string>('Tất Cả');
@@ -743,7 +761,8 @@ export function App() {
               category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
               price: Number(item.price),
               originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
-              stockQuantity: Number(item.stockQuantity ?? 10),
+              stockQuantity: Number(item.stockQuantity ?? item.stock ?? 10),
+              stock: Number(item.stockQuantity ?? item.stock ?? 10),
               rating: 5.0,
               reviewsCount: 38,
               isFeatured: item.isFeatured ?? false,
@@ -769,7 +788,7 @@ export function App() {
         const local = localStorage.getItem('PROGEAR_SHARED_PRODUCTS');
         if (local) {
           const parsed = JSON.parse(local);
-          if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
+          if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed.map(normalizeStoreProduct));
         }
       } catch {}
     }
@@ -781,13 +800,13 @@ export function App() {
       if (e.key === 'PROGEAR_SHARED_PRODUCTS' && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
-          if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
+          if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed.map(normalizeStoreProduct));
         } catch {}
       }
     };
     const handleCustomProductUpdate = (e: any) => {
       if (e.detail && Array.isArray(e.detail) && e.detail.length > 0) {
-        setProducts(e.detail);
+        setProducts(e.detail.map(normalizeStoreProduct));
       }
     };
     window.addEventListener('storage', handleStorageChange);
@@ -950,6 +969,7 @@ export function App() {
           return {
             ...p,
             stockQuantity: remaining,
+            stock: remaining,
             badge: remaining === 0 ? 'TẠM HẾT HÀNG' : p.badge,
           };
         }

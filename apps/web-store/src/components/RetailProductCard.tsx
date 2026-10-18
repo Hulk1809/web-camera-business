@@ -31,7 +31,7 @@ export function RetailProductCard({
   soldCount = 12,
   totalDealStock = 20,
 }: RetailProductCardProps) {
-  const isOutOfStock = (product.stockQuantity ?? 0) <= 0;
+  const isOutOfStock = (product.stockQuantity ?? (product as any).stock ?? 0) <= 0;
 
   // Calculate discount percentage
   const discountPercent =

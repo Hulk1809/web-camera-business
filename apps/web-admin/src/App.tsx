@@ -75,6 +75,7 @@ export interface Product {
   price: number;
   originalPrice: number;
   stock: number;
+  stockQuantity?: number;
   imageUrl: string;
   images?: string[];
   status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
@@ -144,6 +145,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
     price: 79990000,
     originalPrice: 87500000,
     stock: 12,
+    stockQuantity: 12,
     imageUrl: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
     images: [
       'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=1000',
@@ -167,6 +169,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
     price: 94990000,
     originalPrice: 102000000,
     stock: 8,
+    stockQuantity: 8,
     imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
     images: [
       'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000',
@@ -189,6 +192,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
     price: 53990000,
     originalPrice: 59990000,
     stock: 18,
+    stockQuantity: 18,
     imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
     status: 'IN_STOCK',
     isFeatured: false,
@@ -206,6 +210,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
     price: 19990000,
     originalPrice: 22500000,
     stock: 25,
+    stockQuantity: 25,
     imageUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=1000',
     status: 'IN_STOCK',
     isFeatured: false,
@@ -222,9 +227,14 @@ export const DEFAULT_PRODUCTS: Product[] = [
     category: 'Action Cam & Pocket Creator',
     price: 15890000,
     originalPrice: 17900000,
-    stock: 2,
-    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
-    status: 'LOW_STOCK',
+    stock: 30,
+    stockQuantity: 30,
+    imageUrl: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000',
+      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1000',
+    ],
+    status: 'IN_STOCK',
     isFeatured: false,
     specifications: {
       sensor: '1-inch CMOS',
@@ -239,16 +249,178 @@ export const DEFAULT_PRODUCTS: Product[] = [
     category: 'Máy Ảnh Mirrorless & DSLR',
     price: 104990000,
     originalPrice: 115000000,
-    stock: 0,
-    imageUrl: 'https://images.unsplash.com/photo-1502982720700-bfff97f2da71?w=1000',
-    status: 'OUT_OF_STOCK',
+    stock: 6,
+    stockQuantity: 6,
+    imageUrl: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+    images: [
+      'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000',
+    ],
+    status: 'IN_STOCK',
     isFeatured: false,
     specifications: {
       sensor: '45MP Stacked CMOS',
       video: '8K 60p RAW',
     },
   },
+  {
+    id: 'prod-dji-mini4pro',
+    name: 'DJI Mini 4 Pro Fly More Combo Plus (DJI RC 2) - Dưới 249g',
+    sku: 'DJI-MINI4-PRO-RC2',
+    brand: 'DJI',
+    category: 'Flycam & Drone DJI',
+    price: 24890000,
+    originalPrice: 27900000,
+    stock: 20,
+    stockQuantity: 20,
+    imageUrl: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1000',
+    status: 'IN_STOCK',
+    isFeatured: false,
+    specifications: {
+      weight: 'Dưới 249g',
+      video: '4K 60fps HDR',
+      flightTime: '45 phút',
+    },
+  },
+  {
+    id: 'prod-bmd-cinema6k',
+    name: 'Blackmagic Cinema Camera 6K (Full-Frame L-Mount)',
+    sku: 'BMD-CINEMA-6K-FF',
+    brand: 'Blackmagic Design',
+    category: 'Máy Quay Điện Ảnh & Cinema',
+    price: 62500000,
+    originalPrice: 68000000,
+    stock: 10,
+    stockQuantity: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1000',
+    status: 'IN_STOCK',
+    isFeatured: false,
+    specifications: {
+      sensor: 'Full-Frame 6K',
+      video: 'Blackmagic RAW 12-bit',
+    },
+  },
+  {
+    id: 'prod-fuji-xt5',
+    name: 'Fujifilm X-T5 Body (Silver) - 40.2MP Cảm biến X-Trans CMOS 5 HR',
+    sku: 'FUJI-XT5-BODY-SILVER',
+    brand: 'Fujifilm',
+    category: 'Máy Ảnh Mirrorless & DSLR',
+    price: 41900000,
+    originalPrice: 45900000,
+    stock: 15,
+    stockQuantity: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000',
+    status: 'IN_STOCK',
+    isFeatured: false,
+    specifications: {
+      sensor: '40.2MP X-Trans CMOS 5 HR',
+      video: '6.2K 30p',
+    },
+  },
+  {
+    id: 'prod-sony-2470gm2',
+    name: 'Ống kính Sony FE 24-70mm F2.8 GM II (SEL2470GM2)',
+    sku: 'SEL2470GM2',
+    brand: 'Sony',
+    category: 'Ống Kính Chuyên Dụng (Lenses)',
+    price: 49990000,
+    originalPrice: 54900000,
+    stock: 14,
+    stockQuantity: 14,
+    imageUrl: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=1000',
+    status: 'IN_STOCK',
+    isFeatured: false,
+    specifications: {
+      sensor: '24-70mm F2.8 GM II',
+      weight: '695g',
+    },
+  },
+  {
+    id: 'prod-dji-mic2',
+    name: 'Bộ Micro Thu Âm Không Dây DJI Mic 2 (2 TX + 1 RX + Hộp sạc)',
+    sku: 'DJI-MIC2-COMBO',
+    brand: 'DJI',
+    category: 'Âm Thanh & Ánh Sáng Studio',
+    price: 8490000,
+    originalPrice: 9490000,
+    stock: 40,
+    stockQuantity: 40,
+    imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=1000',
+    status: 'IN_STOCK',
+    isFeatured: false,
+    specifications: {
+      sensor: '32-bit Float',
+      flightTime: '18 giờ',
+    },
+  },
+  {
+    id: 'prod-nikon-z8',
+    name: 'Nikon Z8 Body - Máy ảnh Mirrorless 45.7MP Quay 8.3K N-RAW',
+    sku: 'NIKON-Z8-BODY',
+    brand: 'Nikon',
+    category: 'Máy Ảnh Mirrorless & DSLR',
+    price: 86900000,
+    originalPrice: 95000000,
+    stock: 9,
+    stockQuantity: 9,
+    imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000',
+    status: 'IN_STOCK',
+    isFeatured: false,
+    specifications: {
+      sensor: '45.7MP Stacked CMOS',
+      video: '8.3K 60p N-RAW',
+    },
+  },
 ];
+
+export const normalizeAdminProduct = (p: any): Product => {
+  if (!p || typeof p !== 'object') {
+    return DEFAULT_PRODUCTS[0];
+  }
+  const defaultMatch = DEFAULT_PRODUCTS.find((dp) => dp.id === p.id || dp.sku === p.sku);
+
+  let finalStock: number;
+  if (p.stock !== undefined && p.stock !== null && p.stock !== '') {
+    finalStock = Number(p.stock);
+  } else if (p.stockQuantity !== undefined && p.stockQuantity !== null && p.stockQuantity !== '') {
+    finalStock = Number(p.stockQuantity);
+  } else if (defaultMatch && defaultMatch.stock !== undefined) {
+    finalStock = defaultMatch.stock;
+  } else {
+    finalStock = 10;
+  }
+
+  if (isNaN(finalStock) || finalStock < 0) {
+    finalStock = 0;
+  }
+
+  let finalImg = p.imageUrl || defaultMatch?.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800';
+  if (typeof finalImg === 'string' && finalImg.includes('photo-1502982720700-bfff97f2da71')) {
+    finalImg = defaultMatch?.imageUrl || 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?w=1000';
+  }
+
+  const finalStatus: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' =
+    finalStock <= 0 ? 'OUT_OF_STOCK' : finalStock <= 3 ? 'LOW_STOCK' : 'IN_STOCK';
+
+  return {
+    ...p,
+    id: p.id || defaultMatch?.id || `prod-${Date.now()}`,
+    name: p.name || defaultMatch?.name || 'Sản phẩm máy ảnh',
+    sku: p.sku || defaultMatch?.sku || `SKU-${Date.now()}`,
+    brand: p.brand || defaultMatch?.brand || 'Sony',
+    category: p.category || defaultMatch?.category || 'Máy Ảnh Mirrorless & DSLR',
+    price: Number(p.price) || defaultMatch?.price || 1000000,
+    originalPrice: Number(p.originalPrice) || defaultMatch?.originalPrice || Math.round((Number(p.price) || 1000000) * 1.15),
+    stock: finalStock,
+    stockQuantity: finalStock,
+    imageUrl: finalImg,
+    images: Array.isArray(p.images) && p.images.length > 0 ? p.images : [finalImg],
+    status: finalStatus,
+    specifications: p.specifications || defaultMatch?.specifications || {},
+    isFeatured: p.isFeatured ?? defaultMatch?.isFeatured ?? false,
+  };
+};
 
 export const DEFAULT_ORDERS: Order[] = [
   {
@@ -516,7 +688,11 @@ export function App() {
       const local = localStorage.getItem('PROGEAR_SHARED_PRODUCTS');
       if (local) {
         const parsed = JSON.parse(local);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const normalized = parsed.map(normalizeAdminProduct);
+          localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(normalized));
+          return normalized;
+        }
       }
     } catch {}
     return DEFAULT_PRODUCTS;
@@ -679,20 +855,7 @@ export function App() {
       if (res.ok) {
         const data = await res.json();
         if (data && Array.isArray(data.items) && data.items.length > 0) {
-          const mapped: Product[] = data.items.map((item: any) => ({
-            id: String(item.id),
-            name: item.name,
-            sku: item.sku,
-            brand: item.brand?.name || (typeof item.brand === 'string' ? item.brand : 'DJI'),
-            category: item.category?.name || (typeof item.category === 'string' ? item.category : 'Máy Ảnh Mirrorless & DSLR'),
-            price: Number(item.price),
-            originalPrice: Number(item.originalPrice) || Math.round(Number(item.price) * 1.15),
-            stock: Number(item.stockQuantity ?? 10),
-            imageUrl: item.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
-            status: Number(item.stockQuantity ?? 10) <= 0 ? 'OUT_OF_STOCK' : Number(item.stockQuantity ?? 10) <= 3 ? 'LOW_STOCK' : 'IN_STOCK',
-            specifications: item.specifications || {},
-            isFeatured: item.isFeatured ?? false,
-          }));
+          const mapped: Product[] = data.items.map(normalizeAdminProduct);
           setProducts(mapped);
           try {
             localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(mapped));
@@ -795,7 +958,7 @@ export function App() {
       if (e.key === 'PROGEAR_SHARED_PRODUCTS' && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
-          if (Array.isArray(parsed)) setProducts(parsed);
+          if (Array.isArray(parsed)) setProducts(parsed.map(normalizeAdminProduct));
         } catch {}
       }
     };
@@ -921,12 +1084,14 @@ export function App() {
 
   // Quick Restock Product (+5 / +10)
   const handleQuickRestock = async (product: Product, addQuantity: number) => {
-    const newStock = Math.max(0, (product.stock || 0) + addQuantity);
+    const currentStock = product.stock ?? (product as any).stockQuantity ?? 0;
+    const newStock = Math.max(0, currentStock + addQuantity);
     const updated = products.map((p) =>
       p.id === product.id
         ? {
             ...p,
             stock: newStock,
+            stockQuantity: newStock,
             status: (newStock <= 0 ? 'OUT_OF_STOCK' : newStock <= 3 ? 'LOW_STOCK' : 'IN_STOCK') as any,
           }
         : p
@@ -1221,6 +1386,7 @@ export function App() {
             price: priceNum,
             originalPrice: origPriceNum,
             stock: stockNum,
+            stockQuantity: stockNum,
             imageUrl: finalImg,
             images: finalImages,
             status: (stockNum > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK') as any,
@@ -1279,6 +1445,7 @@ export function App() {
         price: priceNum,
         originalPrice: origPriceNum,
         stock: stockNum,
+        stockQuantity: stockNum,
         imageUrl: finalImg,
         images: finalImages,
         status: (stockNum > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK') as any,
@@ -1410,10 +1577,12 @@ export function App() {
     // Decrement Product Stock
     const updatedProducts = products.map((p) => {
       if (p.id === activeProduct.id || p.sku === activeProduct.sku) {
-        const newStock = Math.max(0, p.stock - qty);
+        const currentStock = p.stock ?? (p as any).stockQuantity ?? 0;
+        const newStock = Math.max(0, currentStock - qty);
         return {
           ...p,
           stock: newStock,
+          stockQuantity: newStock,
           status: (newStock <= 0 ? 'OUT_OF_STOCK' : newStock <= 3 ? 'LOW_STOCK' : 'IN_STOCK') as any,
         };
       }
@@ -1572,14 +1741,15 @@ export function App() {
     const matchesBrand = productBrandFilter === 'ALL' || p.brand.toLowerCase() === productBrandFilter.toLowerCase();
 
     let matchesStatus = true;
-    if (productStatusFilter === 'IN_STOCK') matchesStatus = (p.stock || 0) > 3;
-    else if (productStatusFilter === 'LOW_STOCK') matchesStatus = (p.stock || 0) > 0 && (p.stock || 0) <= 3;
-    else if (productStatusFilter === 'OUT_OF_STOCK') matchesStatus = (p.stock || 0) <= 0;
+    const currentStock = p.stock ?? (p as any).stockQuantity ?? 0;
+    if (productStatusFilter === 'IN_STOCK') matchesStatus = currentStock > 3;
+    else if (productStatusFilter === 'LOW_STOCK') matchesStatus = currentStock > 0 && currentStock <= 3;
+    else if (productStatusFilter === 'OUT_OF_STOCK') matchesStatus = currentStock <= 0;
 
     return matchesSearch && matchesBrand && matchesStatus;
   });
 
-  const lowStockCount = products.filter((p) => (p.stock || 0) <= 3).length;
+  const lowStockCount = products.filter((p) => (p.stock ?? (p as any).stockQuantity ?? 0) <= 3).length;
 
   // Filtered Serials
   const filteredSerials = serials.filter((s) => {
@@ -2301,6 +2471,10 @@ export function App() {
                           <img
                             src={prod.imageUrl}
                             alt={prod.name}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800';
+                            }}
                             className="w-10 h-10 object-contain rounded bg-slate-50 border border-slate-200 p-1"
                           />
                         </td>
@@ -2320,21 +2494,21 @@ export function App() {
                         <td className="py-2.5 px-4">
                           <div className="flex items-center space-x-1.5">
                             <span className={`font-mono font-bold tabular-nums text-sm ${
-                              (prod.stock || 0) <= 0
+                              (prod.stock ?? (prod as any).stockQuantity ?? 0) <= 0
                                 ? 'text-rose-600'
-                                : (prod.stock || 0) <= 3
+                                : (prod.stock ?? (prod as any).stockQuantity ?? 0) <= 3
                                 ? 'text-amber-600'
                                 : 'text-slate-900'
                             }`}>
-                              {prod.stock || 0}
+                              {prod.stock ?? (prod as any).stockQuantity ?? 0}
                             </span>
                             <span className="text-[10px] text-slate-400">cái</span>
                           </div>
-                          {(prod.stock || 0) <= 0 ? (
+                          {(prod.stock ?? (prod as any).stockQuantity ?? 0) <= 0 ? (
                             <span className="bg-rose-50 text-rose-700 text-[10px] font-bold px-1.5 py-0.5 rounded border border-rose-200">
                               Hết Sẵn • Pre-Order
                             </span>
-                          ) : (prod.stock || 0) <= 3 ? (
+                          ) : (prod.stock ?? (prod as any).stockQuantity ?? 0) <= 3 ? (
                             <span className="bg-amber-50 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded border border-amber-200">
                               Sắp hết hàng
                             </span>
@@ -2404,8 +2578,8 @@ export function App() {
                 {CATEGORIES_LIST.map((cat, idx) => {
                   const Icon = cat.icon;
                   const catProducts = products.filter((p) => p.category === cat.name);
-                  const totalStock = catProducts.reduce((sum, p) => sum + (p.stock || 0), 0);
-                  const totalVal = catProducts.reduce((sum, p) => sum + p.price * (p.stock || 0), 0);
+                  const totalStock = catProducts.reduce((sum, p) => sum + (p.stock ?? (p as any).stockQuantity ?? 0), 0);
+                  const totalVal = catProducts.reduce((sum, p) => sum + p.price * (p.stock ?? (p as any).stockQuantity ?? 0), 0);
 
                   return (
                     <div
@@ -3333,6 +3507,10 @@ export function App() {
                           <img
                             src={preset.url}
                             alt={preset.name}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800';
+                            }}
                             className="w-full h-14 object-contain rounded bg-slate-50 mb-1"
                           />
                           <div className="font-semibold text-slate-900 text-[10px] truncate">{preset.name}</div>
@@ -3362,6 +3540,10 @@ export function App() {
                         <img
                           src={productForm.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800'}
                           alt="Preview"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800';
+                          }}
                           className="w-full h-full object-contain"
                         />
                       </div>
@@ -3393,7 +3575,15 @@ export function App() {
                               }`}
                               onClick={() => setProductForm({ ...productForm, imageUrl: imgUrl })}
                             >
-                              <img src={imgUrl} alt="" className="w-full h-full object-contain rounded" />
+                              <img
+                                src={imgUrl}
+                                alt=""
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800';
+                                }}
+                                className="w-full h-full object-contain rounded"
+                              />
                               <button
                                 type="button"
                                 onClick={(e) => {
