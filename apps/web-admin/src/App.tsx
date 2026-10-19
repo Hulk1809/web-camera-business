@@ -1909,7 +1909,7 @@ export function App() {
             >
               <div className="flex items-center space-x-2.5">
                 <ShieldCheck className={`w-4 h-4 ${activeTab === 'warranty' ? 'text-indigo-600' : 'text-slate-400'}`} />
-                <span>Serial & Bảo Hành</span>
+                <span>Kho Serial & BH Điện Tử</span>
               </div>
               <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-1.5 py-0.2 rounded">
                 {activeWarrantyCount} BH
@@ -1997,12 +1997,14 @@ export function App() {
               {activeTab === 'finance' && 'Báo Cáo Doanh Số & Sao Kê Dòng Tiền (Financial Audit)'}
               {activeTab === 'products' && 'Quản Lý Thiết Bị, Máy Ảnh & Tồn Kho'}
               {activeTab === 'categories' && 'Danh Mục & Phân Loại Sản Phẩm'}
-              {activeTab === 'warranty' && 'Quản Lý Serial & Bảo Hành Điện Tử'}
+              {activeTab === 'warranty' && 'Quản Lý Serial & Bảo Hành Điện Tử (Kho Hàng & Kích Hoạt POS)'}
               {activeTab === 'chat' && 'Trung Tâm Tư Vấn CSKH & Hỗ Trợ Trực Tuyến'}
               {activeTab === 'k8s' && 'Giám Sát Hạ Tầng & Cụm Máy Chủ Kubernetes'}
             </h1>
             <p className="text-xs text-slate-500">
-              Đồng bộ dữ liệu thời gian thực giữa Web Bán Hàng, Quầy POS & Kho Lưu Trữ.
+              {activeTab === 'warranty'
+                ? 'Định danh Serial Number từng máy, theo dõi tồn kho trên kệ & kích hoạt bảo hành điện tử chính hãng khi xuất bán.'
+                : 'Đồng bộ dữ liệu thời gian thực giữa Web Bán Hàng, Quầy POS & Kho Lưu Trữ.'}
             </p>
           </div>
 
@@ -2626,6 +2628,34 @@ export function App() {
           {/* ----------------- TAB: WARRANTY & SERIALS ----------------- */}
           {activeTab === 'warranty' && (
             <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+              {/* Guidance Info Banner for staff */}
+              <div className="bg-gradient-to-r from-indigo-50/80 via-blue-50/60 to-white border-b border-indigo-100 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs text-indigo-950">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-indigo-950 flex items-center gap-1.5">
+                      <span>Quy trình quản lý Serial & Kích hoạt bảo hành điện tử:</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Chính Hãng Pro Gear</span>
+                    </div>
+                    <div className="text-slate-600 text-[11px] mt-0.5">
+                      Mỗi thiết bị trên kệ được cấp một mã SN riêng. Khi bán tại quầy, bấm <strong className="text-indigo-700 font-semibold underline decoration-indigo-300">Xuất Bán POS</strong> để gán vào đơn hàng & tự động kích hoạt bảo hành điện tử cho khách.
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] font-medium text-slate-600">
+                  <span className="inline-flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs">
+                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                    <span>Trên Kệ: Chờ bán & kích hoạt</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Đã Bán: Đang hiệu lực BH</span>
+                  </span>
+                </div>
+              </div>
+
               {/* Filter Bar */}
               <div className="p-3.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
                 <div className="relative flex-1 max-w-sm">
@@ -2635,15 +2665,15 @@ export function App() {
                     placeholder="Tìm theo Serial SN, Mã đơn, Khách hàng..."
                     value={serialSearchQuery}
                     onChange={(e) => setSerialSearchQuery(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-md text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                    className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-md text-xs text-slate-900 focus:outline-none focus:border-indigo-600 shadow-2xs"
                   />
                 </div>
 
-                <div className="flex items-center gap-1 text-xs">
+                <div className="flex items-center gap-1.5 text-xs">
                   <button
                     onClick={() => setSerialFilterTab('ALL')}
                     className={`px-3 py-1.5 rounded-md font-semibold transition ${
-                      serialFilterTab === 'ALL' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-200/60'
+                      serialFilterTab === 'ALL' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
                     }`}
                   >
                     Tất Cả ({serials.length})
@@ -2651,18 +2681,18 @@ export function App() {
                   <button
                     onClick={() => setSerialFilterTab('IN_STOCK')}
                     className={`px-3 py-1.5 rounded-md font-semibold transition ${
-                      serialFilterTab === 'IN_STOCK' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-200/60'
+                      serialFilterTab === 'IN_STOCK' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
                     }`}
                   >
-                    Trên Kệ Kho ({serials.filter((s) => s.status === 'IN_STOCK').length})
+                    Trên Kệ Chờ Bán ({serials.filter((s) => s.status === 'IN_STOCK').length})
                   </button>
                   <button
                     onClick={() => setSerialFilterTab('SOLD')}
                     className={`px-3 py-1.5 rounded-md font-semibold transition ${
-                      serialFilterTab === 'SOLD' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-200/60'
+                      serialFilterTab === 'SOLD' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
                     }`}
                   >
-                    Đang Bảo Hành ({activeWarrantyCount})
+                    Đã Bán • Đang Bảo Hành ({activeWarrantyCount})
                   </button>
                 </div>
               </div>
@@ -2674,9 +2704,9 @@ export function App() {
                     <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                       <th className="py-3 px-4">Số Serial (SN)</th>
                       <th className="py-3 px-4">Tên Thiết Bị & SKU</th>
-                      <th className="py-3 px-4">Trạng Thái</th>
+                      <th className="py-3 px-4">Trạng Thái Thiết Bị</th>
                       <th className="py-3 px-4">Khách Hàng / Đơn Hàng</th>
-                      <th className="py-3 px-4">Hạn Bảo Hành</th>
+                      <th className="py-3 px-4">Thời Hạn Bảo Hành</th>
                       <th className="py-3 px-4 text-right">Thao Tác</th>
                     </tr>
                   </thead>
@@ -2692,11 +2722,13 @@ export function App() {
                         </td>
                         <td className="py-3 px-4">
                           {s.status === 'IN_STOCK' ? (
-                            <span className="bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-bold px-2 py-0.5 rounded">
+                            <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-bold px-2 py-0.5 rounded">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                               Trong Kho Trên Kệ
                             </span>
                           ) : (
-                            <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded">
+                            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                               Đã Bán • Đang Bảo Hành
                             </span>
                           )}
@@ -2708,7 +2740,7 @@ export function App() {
                               <div className="text-[11px] text-slate-500 font-mono tabular-nums">{s.orderNumber}</div>
                             </div>
                           ) : (
-                            <span className="text-slate-400">Chưa gán khách</span>
+                            <span className="text-slate-400 italic text-[11px]">Chưa xuất bán (Chưa gán khách)</span>
                           )}
                         </td>
                         <td className="py-3 px-4">
@@ -2717,7 +2749,7 @@ export function App() {
                               {s.warrantyExpires} ({s.warrantyMonths}T)
                             </div>
                           ) : (
-                            <span className="text-slate-500">{s.warrantyMonths} Tháng (Kích hoạt khi bán)</span>
+                            <span className="text-slate-500 italic text-[11px]">{s.warrantyMonths} Tháng (Kích hoạt khi bán)</span>
                           )}
                         </td>
                         <td className="py-3 px-4 text-right">
@@ -2728,9 +2760,11 @@ export function App() {
                                 const matchProd = products.find((p) => (s.productSku && p.sku === s.productSku) || p.name === s.productName);
                                 openPosModal(matchProd, s);
                               }}
-                              className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-[11px] transition shadow-sm cursor-pointer"
+                              title="Xuất bán máy này tại quầy POS & tự động kích hoạt bảo hành điện tử"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-[11px] transition shadow-xs cursor-pointer active:scale-95"
                             >
-                              Bán POS
+                              <Receipt className="w-3 h-3" />
+                              <span>Xuất Bán POS</span>
                             </button>
                           ) : (
                             <button
@@ -2741,9 +2775,11 @@ export function App() {
                                 setInvoiceOrder(related);
                                 setShowInvoiceModal(true);
                               }}
-                              className="px-2.5 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-[11px] transition"
+                              title="Xem hóa đơn & chứng nhận bảo hành điện tử chính hãng"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-[11px] transition shadow-2xs cursor-pointer active:scale-95"
                             >
-                              Xem Phiếu BH
+                              <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                              <span>Xem Phiếu BH</span>
                             </button>
                           )}
                         </td>
