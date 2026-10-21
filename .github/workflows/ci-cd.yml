@@ -186,18 +186,23 @@ jobs:
           kubectl rollout status deployment/web-store -n camera-shop --timeout=60s
           kubectl rollout status deployment/web-admin -n camera-shop --timeout=60s
 
+          echo "=== INGRESS CONTROLLER & PUBLIC ENDPOINT ==="
+          kubectl get svc,ingress -A -o wide
+
+          # Đồng bộ schema trước khi kiểm tra TLS để API mới không phụ thuộc thời gian cấp chứng chỉ.
+          echo "=== Synchronizing Prisma schema into database ==="
+          kubectl exec deployment/backend -n camera-shop -- npx prisma db push --skip-generate
+
           # HTTP-01 needs public port 80; the issued certificate is then served on 443.
           kubectl wait --for=condition=Ready certificate/progear-tls \
             -n camera-shop --timeout=5m || {
               echo "=== CERTIFICATE STATUS ==="
               kubectl describe certificate progear-tls -n camera-shop || true
-              kubectl get challenges,orders -n camera-shop || true
+              kubectl get challenges,orders -n camera-shop -o wide || true
+              kubectl describe challenges -n camera-shop || true
+              kubectl get ingress -A -o yaml || true
               exit 1
             }
-
-          # Đồng bộ Prisma schema vào PostgreSQL (KHÔNG chạy seed để bảo vệ dữ liệu sản phẩm & đơn hàng thực tế)
-          echo "=== Synchronizing Prisma schema into database ==="
-          kubectl exec deployment/backend -n camera-shop -- npx prisma db push --skip-generate
 
           echo "=== Danh sách Pods & Dịch vụ sau khi Deploy Thành Công ==="
           kubectl get pods,svc,ingress,certificate -n camera-shop
