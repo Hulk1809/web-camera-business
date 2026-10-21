@@ -93,12 +93,12 @@ export const AdminAdvisorChatView: React.FC = () => {
   // Actions
   const handleClaim = () => {
     if (!selectedSession) return;
-    chatSyncService.claimSession(selectedSession.id, currentStaff);
+    chatSyncService.claimSession(selectedSession.id, currentStaff).catch(() => undefined);
   };
 
   const handleResolve = () => {
     if (!selectedSession) return;
-    chatSyncService.resolveSession(selectedSession.id);
+    chatSyncService.resolveSession(selectedSession.id).catch(() => undefined);
   };
 
   const handleSendMessage = (e?: React.FormEvent) => {
@@ -107,7 +107,7 @@ export const AdminAdvisorChatView: React.FC = () => {
 
     // If unassigned, automatically claim when staff replies
     if (isUnassigned) {
-      chatSyncService.claimSession(selectedSession.id, currentStaff);
+      chatSyncService.claimSession(selectedSession.id, currentStaff).catch(() => undefined);
     }
 
     chatSyncService.sendMessage(
@@ -116,14 +116,14 @@ export const AdminAdvisorChatView: React.FC = () => {
       `${currentStaff.name} (${currentStaff.role})`,
       inputText.trim(),
       currentStaff.avatar
-    );
+    ).catch(() => undefined);
     setInputText('');
   };
 
   const sendTemplateResponse = (text: string) => {
     if (!selectedSession) return;
     if (isUnassigned) {
-      chatSyncService.claimSession(selectedSession.id, currentStaff);
+      chatSyncService.claimSession(selectedSession.id, currentStaff).catch(() => undefined);
     }
     chatSyncService.sendMessage(
       selectedSession.id,
@@ -131,7 +131,7 @@ export const AdminAdvisorChatView: React.FC = () => {
       `${currentStaff.name} (${currentStaff.role})`,
       text,
       currentStaff.avatar
-    );
+    ).catch(() => undefined);
   };
 
   return (

@@ -54,15 +54,11 @@ test.describe('Admin Enterprise Operations & POS Counter Sales', () => {
   });
 
   test('TC-ADMIN-03: POS Counter Sale and Instant Electronic Warranty Activation', async ({ page }) => {
-    const token = await page.evaluate(() => sessionStorage.getItem('PROGEAR_ADMIN_TOKEN'));
-    const productsResponse = await page.request.get('http://localhost:4000/api/products?limit=100', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const productsResponse = await page.request.get('http://localhost:4000/api/products?limit=100');
     const products = (await productsResponse.json()).items;
     const product = products.find((item: any) => item.stockQuantity > 0);
     const serialNumber = `QA-POS-${Date.now()}`;
     const serialResponse = await page.request.post('http://localhost:4000/api/warranty', {
-      headers: { Authorization: `Bearer ${token}` },
       data: { productId: product.id, serialNumber, warrantyMonths: 24 },
     });
     expect(serialResponse.status()).toBe(201);
@@ -87,9 +83,7 @@ test.describe('Admin Enterprise Operations & POS Counter Sales', () => {
 
     // Verify the newly sold customer name appears in the table with active warranty
     await expect(page.locator(`text=${testCustomer}`).first()).toBeVisible();
-    const warrantyResponse = await page.request.get('http://localhost:4000/api/warranty', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const warrantyResponse = await page.request.get('http://localhost:4000/api/warranty');
     const persistedSerial = (await warrantyResponse.json()).find((item: any) => item.serialNumber === serialNumber);
     expect(persistedSerial).toMatchObject({ status: 'SOLD', customerName: testCustomer });
   });

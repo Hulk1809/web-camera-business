@@ -24,9 +24,11 @@
 ## Kết quả cuối
 
 - `npm run test:e2e`: **41/41 pass** với Store, Admin, API và PostgreSQL test riêng.
-- Backend unit: **5/5 pass**.
+- Backend unit: **9/9 pass** (gồm ownership/claim/phân quyền chat).
 - Inventory integration HTTP/PostgreSQL: **6/6 pass**.
 - `npm run build:all`: backend, Store và Admin đều pass.
+- Customer auth: đăng ký, logout và đăng nhập lại bằng backend/cookie HttpOnly pass.
+- Chat: khách tạo phiên/gửi tin trên Store, Admin nhận/claim/trả lời qua PostgreSQL pass.
 - Admin CRUD chuyên sâu: đăng nhập thật, sản phẩm/ảnh/thông số, nhập kho, đơn hàng, tài chính, POS, bảo hành, xóa mềm và phân quyền đều pass.
 - API quản trị chưa đăng nhập trả 401; JWT production đã chuyển sang GitHub Secret/Kubernetes Secret và được xoay mới.
 - Production read-only: Store/Admin desktop và mobile render pass; chưa smoke test bản sửa vì chưa deploy.
@@ -47,11 +49,11 @@
 
 ### Giới hạn chưa được nghiệm thu như tích hợp thật
 
-- Chat Store/Admin vẫn dùng localStorage, không có backend nên không trao đổi được giữa thiết bị/trình duyệt khác nhau.
-- Customer login và Facebook OAuth vẫn là mô phỏng UI; chưa tích hợp tài khoản backend/Meta OAuth thật.
+- Chat Store/Admin đã chuyển sang PostgreSQL + REST polling và đã pass luồng Store → Admin; WebSocket chưa cần cho MVP.
+- Customer email/password đã dùng backend thật và cookie HttpOnly. Facebook OAuth giả đã bị gỡ; OAuth thật vẫn tắt cho tới khi có Meta App ID/Secret.
 - Chưa kiểm thử giao dịch ngân hàng/webhook/refund, email ngoài hệ thống, Safari/Firefox, tải cao hay pentest.
 
-**QA SIGN-OFF: APPROVED cho thương mại cốt lõi, tồn kho, Admin, POS và phân quyền API. Không phê duyệt chat đa thiết bị, customer auth hoặc Meta OAuth là tích hợp production thật.**
+**QA SIGN-OFF: APPROVED cho thương mại cốt lõi, tồn kho, Admin, POS, phân quyền API, customer auth email và chat đa thiết bị. Meta OAuth chưa được phê duyệt vì thiếu credentials bên thứ ba.**
 
 ## Kết quả các nhóm
 

@@ -1,6 +1,6 @@
 # Store functional QA — 2026-10-20
 
-**QA SIGN-OFF: APPROVED cho Store commerce cốt lõi sau sửa lỗi.** Suite toàn hệ thống hiện 41/41 pass với API/PostgreSQL test riêng. Chat đa thiết bị, customer auth backend và Meta OAuth vẫn nằm ngoài phạm vi được phê duyệt.
+**QA SIGN-OFF: APPROVED cho Store commerce cốt lõi sau sửa lỗi.** Suite toàn hệ thống hiện 41/41 pass với API/PostgreSQL test riêng. Chat đa thiết bị và customer auth email đã tích hợp backend; Meta OAuth thật vẫn tắt do thiếu credentials.
 
 ## Environment and reproduction
 
@@ -35,11 +35,11 @@ Create an actual API order, then search its number from a clean Store context. E
 
 Search `SONY-FX3-VN-9901`. GET `/api/warranty/SONY-FX3-VN-9901` returns **200**, real serial/product, `type: IN_STOCK`, `isActivated: false`, explanatory message. UI creates an empty `warranty-result` div. Rendering handles only `ORDER_RESULT`, `SOLD_ACTIVE`, `NOT_FOUND` (`App.tsx:2520-2604`). Existing test incorrectly assumes this seed serial is activated.
 
-### Integration gaps — customer auth and chat are local simulations
+### RESOLVED — customer auth và chat từng là local simulations
 
-- Name + email produces a customer session with optional/unused password, no auth API request. UI login/logout works; **not authenticated backend coverage**.
-- Sending a chat message works in local UI and localStorage, with zero API POSTs. Store and Admin are different origins (3000 vs 3001), so these stores do not synchronize through localStorage. Backend AppModule has no chat module.
-- Facebook modal draws a simulated Facebook address bar and constructs local identity (`FacebookOAuthModal.tsx:41-64`); no real OAuth verified. Existing “Facebook login” passes are local UI only.
+- Email/password nay đăng ký, đăng nhập và logout qua backend bằng cookie HttpOnly.
+- Chat nay lưu PostgreSQL và đồng bộ Store/Admin bằng REST polling.
+- Facebook modal giả và input mật khẩu đã bị xóa; nút OAuth bị vô hiệu hóa cho tới khi có Meta credentials.
 
 ### Independent production evidence supplied by parent
 
@@ -57,10 +57,10 @@ Not rerun by this agent: `PRO_GEAR_WISHLIST='null'` causes `Cannot read properti
 | Cart | Add, quantity increment/decrement, remove, empty state; required checkout fields prevent empty submit |
 | COD/VietQR | POST 201, success number equals API, order persisted, stock decremented; QR box rendered. No transfer made |
 | Rejected checkout | Real stock violation returns 400 but false UI success — fail |
-| Tracking/cancel | Server/local divergence confirmed — fail |
+| Tracking/cancel | API xác minh mã đơn + số điện thoại; hủy cập nhật DB và hoàn kho — pass |
 | Warranty | Invalid lookup UI pass; live in-stock serial empty — fail; demo order result is fallback, not integration |
-| Customer auth | Local name/session/logout UI checked; backend authentication absent in this flow |
-| Chat | Local message rendering checked, no backend messaging integration |
+| Customer auth | Backend email/password + cookie HttpOnly — pass |
+| Chat | PostgreSQL persistence, customer token, admin claim/reply và polling — pass |
 | Promotions | Existing trade-in/mega-menu UI pass; installment branch conditional in legacy test, not guaranteed coverage |
 
 Not verified: real bank reconciliation/webhook/refund, real Meta OAuth, external email delivery, actual chat delivery to a remote advisor, delivered/expired warranty lifecycle, all responsive breakpoints, Safari/Firefox, accessibility audit, load/security penetration tests, every gallery image/download/clipboard edge case, trade-in submission to CRM. Backend unit/inventory suites and Admin CRUD belong to parallel agents. Public newsletter/footer policy links are not asserted. No claim of full integration pass.

@@ -1,6 +1,7 @@
 const {chromium,expect}=require('@playwright/test');
 const fs=require('node:fs');
 const out='/tmp/opencode/qa-admin', results=[], prefix=`QA_ADMIN_${Date.now()}`;
+fs.mkdirSync(out,{recursive:true});
 if(!fs.existsSync('/tmp/opencode/full-qa-environment.json'))throw Error('Readiness missing');
 let token='';
 const api=async(path,method='GET',body)=>{const r=await fetch('http://localhost:4000/api'+path,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:body?JSON.stringify(body):undefined}); return {status:r.status,data:await r.json()};};

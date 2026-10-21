@@ -31,7 +31,6 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onLoginSucce
       if (!['ADMIN', 'STAFF'].includes(result?.user?.role) || !result?.token) {
         throw new Error('Tài khoản không có quyền truy cập cổng quản trị');
       }
-      sessionStorage.setItem('PROGEAR_ADMIN_TOKEN', result.token);
       sessionStorage.setItem('PROGEAR_ADMIN_ROLE', result.user.role);
       const staff = result.user.role === 'ADMIN'
         ? PRESET_STAFF_ACCOUNTS.find((s) => s.id === 'admin_root')

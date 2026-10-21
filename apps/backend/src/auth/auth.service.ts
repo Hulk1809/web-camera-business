@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
@@ -12,7 +12,14 @@ export class AuthService {
   ) {}
 
   async register(data: { email: string; password: string; fullName: string; phone?: string; address?: string }) {
-    const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
+    const email = String(data.email || '').trim().toLowerCase();
+    const fullName = String(data.fullName || '').trim();
+    if (!/^\S+@\S+\.\S+$/.test(email)) throw new BadRequestException('Email không hợp lệ');
+    if (fullName.length < 2) throw new BadRequestException('Họ tên không hợp lệ');
+    if (typeof data.password !== 'string' || data.password.length < 8) {
+      throw new BadRequestException('Mật khẩu phải có ít nhất 8 ký tự');
+    }
+    const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
       throw new ConflictException('Email đã tồn tại trên hệ thống');
     }
@@ -20,9 +27,9 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(data.password, 10);
     const user = await this.prisma.user.create({
       data: {
-        email: data.email,
+        email,
         passwordHash,
-        fullName: data.fullName,
+        fullName,
         phone: data.phone,
         address: data.address,
         role: Role.CUSTOMER,
@@ -37,7 +44,7 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({ where: { email: String(email || '').trim().toLowerCase() } });
     if (!user) {
       throw new UnauthorizedException('Sai tài khoản hoặc mật khẩu');
     }

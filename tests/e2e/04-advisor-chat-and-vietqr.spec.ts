@@ -19,7 +19,7 @@ test.describe('Live Advisor Chat, Multi-Staff Collision Locking & VietQR Payment
     await expect(livechatBtn).toBeVisible();
   });
 
-  test('TC-CHAT-02: Customer Logins via Facebook 1-Click and Sends Consultation Message', async ({ page }) => {
+  test('TC-CHAT-02: Anonymous customer creates a persisted consultation session', async ({ page }) => {
     await page.goto('http://localhost:3000/');
     await page.waitForLoadState('domcontentloaded');
 
@@ -30,15 +30,10 @@ test.describe('Live Advisor Chat, Multi-Staff Collision Locking & VietQR Payment
     const drawer = page.getByTestId('customer-chat-drawer');
     await expect(drawer).toBeVisible();
 
-    // Perform Facebook login if not logged in
-    const fbLoginBtn = page.getByTestId('btn-chat-login-facebook');
-    if (await fbLoginBtn.isVisible()) {
-      await fbLoginBtn.click();
-      const fbNameInput = page.getByTestId('input-chat-fb-name');
-      await expect(fbNameInput).toBeVisible();
-      await fbNameInput.fill('Đoàn Văn Hậu (Facebook)');
-      await page.getByTestId('btn-confirm-chat-fb').click();
-    }
+    await expect(page.getByTestId('btn-chat-login-facebook')).toBeDisabled();
+    await page.getByTestId('input-chat-name').fill('Đoàn Văn Hậu');
+    await page.getByTestId('input-chat-email').fill(`chat-${Date.now()}@example.com`);
+    await page.getByTestId('btn-chat-login-email').click();
 
     // Input message and send
     const inputMsg = page.getByTestId('input-chat-message');

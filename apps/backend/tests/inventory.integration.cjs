@@ -7,6 +7,7 @@ const { randomUUID } = require('node:crypto');
 const { Module, ValidationPipe } = require('@nestjs/common');
 const { NestFactory } = require('@nestjs/core');
 const { PrismaClient } = require('@prisma/client');
+const { JwtService } = require('@nestjs/jwt');
 const passport = require('passport');
 const { PrismaService } = require('../src/prisma/prisma.service');
 const { ProductsService } = require('../src/products/products.service');
@@ -32,7 +33,8 @@ before(async () => {
   brand = await prisma.brand.create({ data: { name: suffix, slug: suffix } });
   class InventoryModule {}
   Module({ controllers: [ProductsController, OrdersController], providers: [ProductsService,
-    OrdersService, { provide: PrismaService, useValue: prisma }] })(InventoryModule);
+    OrdersService, { provide: PrismaService, useValue: prisma },
+    { provide: JwtService, useValue: { verify: () => null } }] })(InventoryModule);
   app = await NestFactory.create(InventoryModule, { logger: false });
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));

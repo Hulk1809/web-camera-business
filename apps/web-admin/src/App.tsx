@@ -657,10 +657,7 @@ export const PRESET_GEAR_IMAGES = [
 ];
 
 const adminFetch = (input: RequestInfo | URL, init: RequestInit = {}) => {
-  const headers = new Headers(init.headers);
-  const token = sessionStorage.getItem('PROGEAR_ADMIN_TOKEN');
-  if (token) headers.set('Authorization', `Bearer ${token}`);
-  return fetch(input, { ...init, headers });
+  return fetch(input, { ...init, credentials: 'include' });
 };
 
 export function App() {
@@ -671,8 +668,7 @@ export function App() {
   // Enterprise Authentication Guard State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
-      return sessionStorage.getItem('PROGEAR_ADMIN_LOGGED_IN') === 'true' &&
-        !!sessionStorage.getItem('PROGEAR_ADMIN_TOKEN');
+      return sessionStorage.getItem('PROGEAR_ADMIN_LOGGED_IN') === 'true';
     } catch {
       return false;
     }
@@ -680,6 +676,23 @@ export function App() {
   const [authenticatedRole, setAuthenticatedRole] = useState<string>(() =>
     sessionStorage.getItem('PROGEAR_ADMIN_ROLE') || '',
   );
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetch('/api/auth/profile', { credentials: 'include' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Expired admin session');
+        const profile = await response.json();
+        if (!['ADMIN', 'STAFF'].includes(profile.role)) throw new Error('Insufficient role');
+        setAuthenticatedRole(profile.role);
+      })
+      .catch(() => {
+        sessionStorage.removeItem('PROGEAR_ADMIN_LOGGED_IN');
+        sessionStorage.removeItem('PROGEAR_ADMIN_ROLE');
+        setIsAuthenticated(false);
+        setAuthenticatedRole('');
+      });
+  }, [isAuthenticated]);
 
   // Unassigned chat sessions counter
   const [waitingChatCount, setWaitingChatCount] = useState<number>(() => {
@@ -2102,10 +2115,10 @@ export function App() {
               onClick={() => {
                 try {
                   sessionStorage.removeItem('PROGEAR_ADMIN_LOGGED_IN');
-                  sessionStorage.removeItem('PROGEAR_ADMIN_TOKEN');
                   sessionStorage.removeItem('PROGEAR_ADMIN_ROLE');
                 } catch {}
                 setAuthenticatedRole('');
+                fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => undefined);
                 setIsAuthenticated(false);
               }}
               title="Đăng xuất khỏi cổng quản trị"
@@ -2901,7 +2914,7 @@ export function App() {
                 </div>
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
                   <div className="text-slate-500 font-medium">Public Domain / IP:</div>
-                  <div className="font-bold text-slate-900 font-mono">http://74.176.156.158</div>
+                  <div className="font-bold text-slate-900 font-mono">https://progear.74.176.156.158.nip.io</div>
                   <div className="text-indigo-600 font-semibold">● Port 80 Ingress</div>
                 </div>
               </div>

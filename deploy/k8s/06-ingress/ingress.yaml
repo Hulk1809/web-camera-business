@@ -6,11 +6,17 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - progear.74.176.156.158.nip.io
+      secretName: camera-ingress-tls
   rules:
-    - http:
+    - host: progear.74.176.156.158.nip.io
+      http:
         paths:
           # Backend API
           - path: /api

@@ -95,6 +95,50 @@ jobs:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG || secrets.KUBECONFIG }}
 
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.18.4
+
+      - name: Ensure cert-manager is available
+        run: |
+          set -euo pipefail
+
+          # Preserve a healthy cert-manager installed outside this workflow. If this
+          # workflow owns the release, upgrade --install remains fully idempotent.
+          if helm status cert-manager --namespace cert-manager >/dev/null 2>&1; then
+            helm upgrade --install cert-manager \
+              oci://quay.io/jetstack/charts/cert-manager \
+              --version v1.18.2 \
+              --namespace cert-manager \
+              --create-namespace \
+              --set crds.enabled=true \
+              --atomic \
+              --wait \
+              --timeout 5m
+          elif kubectl get deployment cert-manager cert-manager-webhook cert-manager-cainjector \
+            --namespace cert-manager >/dev/null 2>&1; then
+            echo "Using the existing cert-manager installation"
+          else
+            helm upgrade --install cert-manager \
+              oci://quay.io/jetstack/charts/cert-manager \
+              --version v1.18.2 \
+              --namespace cert-manager \
+              --create-namespace \
+              --set crds.enabled=true \
+              --atomic \
+              --wait \
+              --timeout 5m
+          fi
+
+          kubectl wait --for=condition=Established \
+            crd/clusterissuers.cert-manager.io \
+            crd/certificates.cert-manager.io \
+            --timeout=60s
+          kubectl rollout status deployment/cert-manager --namespace cert-manager --timeout=120s
+          kubectl rollout status deployment/cert-manager-webhook --namespace cert-manager --timeout=120s
+          kubectl rollout status deployment/cert-manager-cainjector --namespace cert-manager --timeout=120s
+
       - name: Apply Kubernetes Manifests & Deploy
         run: |
           kubectl apply -f deploy/k8s/00-namespace.yaml
@@ -126,6 +170,8 @@ jobs:
           kubectl apply -f deploy/k8s/03-backend/backend.yaml
           kubectl apply -f deploy/k8s/04-web-store/web-store.yaml
           kubectl apply -f deploy/k8s/05-web-admin/web-admin.yaml
+          kubectl apply -f deploy/k8s/06-ingress/cluster-issuer.yaml
+          kubectl apply -f deploy/k8s/06-ingress/certificate.yaml
           kubectl apply -f deploy/k8s/06-ingress/ingress.yaml
 
       - name: Verify Rollout Status (Zero Downtime)
@@ -140,9 +186,18 @@ jobs:
           kubectl rollout status deployment/web-store -n camera-shop --timeout=60s
           kubectl rollout status deployment/web-admin -n camera-shop --timeout=60s
 
+          # HTTP-01 needs public port 80; the issued certificate is then served on 443.
+          kubectl wait --for=condition=Ready certificate/progear-tls \
+            -n camera-shop --timeout=5m || {
+              echo "=== CERTIFICATE STATUS ==="
+              kubectl describe certificate progear-tls -n camera-shop || true
+              kubectl get challenges,orders -n camera-shop || true
+              exit 1
+            }
+
           # Đồng bộ Prisma schema vào PostgreSQL (KHÔNG chạy seed để bảo vệ dữ liệu sản phẩm & đơn hàng thực tế)
           echo "=== Synchronizing Prisma schema into database ==="
-          kubectl exec deployment/backend -n camera-shop -- npx prisma db push --skip-generate || true
+          kubectl exec deployment/backend -n camera-shop -- npx prisma db push --skip-generate
 
           echo "=== Danh sách Pods & Dịch vụ sau khi Deploy Thành Công ==="
-          kubectl get pods,svc,ingress -n camera-shop
+          kubectl get pods,svc,ingress,certificate -n camera-shop

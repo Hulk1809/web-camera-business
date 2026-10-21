@@ -6,11 +6,21 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for Storefront and Admin Portal
+  const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? ['https://progear.74.176.156.158.nip.io']
+    : ['http://localhost:3000', 'http://localhost:3001'];
   app.enableCors({
-    origin: '*',
+    origin: allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+  });
+
+  app.use((_req: any, res: any, next: () => void) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.removeHeader('X-Powered-By');
+    next();
   });
 
   // Global validation pipe

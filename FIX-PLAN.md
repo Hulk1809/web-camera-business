@@ -39,3 +39,5 @@ Kiểm thử cạnh tranh hiện dùng mô phỏng repository; cần kiểm th�
 - QA commerce cốt lõi: 41/41 E2E, 5/5 unit và 6/6 integration HTTP/PostgreSQL pass; build toàn bộ pass.
 - Chat đa thiết bị, customer auth backend và Meta OAuth chưa phải tích hợp thật; chưa deploy bản sửa mới.
 - JWT production đã được chuyển khỏi manifest sang GitHub Secret `JWT_SECRET` và Kubernetes Secret.
+- HTTPS mục tiêu: `https://progear.74.176.156.158.nip.io` bằng cert-manager và Let’s Encrypt; chờ deploy/smoke test chứng chỉ.
+- Customer auth email/password dùng cookie HttpOnly; chat Store/Admin dùng PostgreSQL và REST polling. Facebook OAuth thật được tắt an toàn khi chưa có Meta credentials.

@@ -655,6 +655,7 @@ export function App() {
   // Customer Order Lookup & Self-Service Cancel
   const [showOrderLookupModal, setShowOrderLookupModal] = useState<boolean>(false);
   const [orderLookupQuery, setOrderLookupQuery] = useState<string>('');
+  const [orderLookupPhone, setOrderLookupPhone] = useState<string>('');
   const [orderLookupResult, setOrderLookupResult] = useState<any>(null);
   const [isSearchingOrder, setIsSearchingOrder] = useState<boolean>(false);
   const [orderCancelSuccessMsg, setOrderCancelSuccessMsg] = useState<string>('');
@@ -671,6 +672,25 @@ export function App() {
   // Customer Account States
   const [customerUser, setCustomerUser] = useState<CustomerUser | null>(() => chatSyncService.getCustomerSession());
   const [showCustomerAuthModal, setShowCustomerAuthModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetch('/api/auth/profile', { credentials: 'include' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('No active customer session');
+        const profile = await response.json();
+        if (profile.role !== 'CUSTOMER') return;
+        const user: CustomerUser = {
+          id: profile.id, name: profile.fullName, email: profile.email,
+          authProvider: 'EMAIL',
+        };
+        chatSyncService.saveCustomerSession(user);
+        setCustomerUser(user);
+      })
+      .catch(() => {
+        chatSyncService.clearCustomerSession();
+        setCustomerUser(null);
+      });
+  }, []);
 
   // Sync advisor assignment status & customer session
   useEffect(() => {
@@ -1197,19 +1217,20 @@ export function App() {
   const handleSearchOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     const query = orderLookupQuery.trim().toUpperCase();
-    if (!query) return;
+    if (!query || orderLookupPhone.replace(/\D/g, '').length < 9) return;
 
     setIsSearchingOrder(true);
     setOrderCancelSuccessMsg('');
 
     let match: any = null;
-    if (!/^[0-9\s\-.]+$/.test(query)) {
-      try {
-        const response = await fetch(`/api/orders/${encodeURIComponent(query)}`);
-        if (response.ok) match = await response.json();
-      } catch (error) {
-        console.warn('Không thể tra cứu đơn hàng từ API:', error);
-      }
+    try {
+      const response = await fetch('/api/orders/lookup', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, customerPhone: orderLookupPhone }),
+      });
+      if (response.ok) match = await response.json();
+    } catch (error) {
+      console.warn('Không thể tra cứu đơn hàng từ API:', error);
     }
 
     let allOrders: any[] = [];
@@ -1223,9 +1244,8 @@ export function App() {
 
     match ||= allOrders.find(
       (o) =>
-        (o.orderNumber && o.orderNumber.toUpperCase() === query) ||
-        (o.id && o.id.toUpperCase() === query) ||
-        (o.customerPhone && o.customerPhone.replace(/[\s\-\.]/g, '') === query.replace(/[\s\-\.]/g, ''))
+        ((o.orderNumber && o.orderNumber.toUpperCase() === query) || (o.id && o.id.toUpperCase() === query)) &&
+        o.customerPhone?.replace(/\D/g, '') === orderLookupPhone.replace(/\D/g, '')
     );
 
     setOrderLookupResult(match || 'NOT_FOUND');
@@ -1323,6 +1343,7 @@ export function App() {
                 <button
                   data-testid="btn-customer-logout"
                   onClick={() => {
+                    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => undefined);
                     chatSyncService.clearCustomerSession();
                     setCustomerUser(null);
                   }}
@@ -2699,21 +2720,24 @@ export function App() {
               <h3 className="font-bold text-base text-gray-900">Tra Cứu Đơn Hàng Của Bạn</h3>
             </div>
             <p className="text-xs text-gray-500 mb-3">
-              Nhập Mã Đơn Hàng (VD: PRO-20261016-8942) hoặc Số Điện Thoại mua hàng.
+              Nhập mã đơn hàng và số điện thoại đã dùng khi mua hàng.
             </p>
 
-            <form onSubmit={handleSearchOrder} className="flex space-x-2 mb-3">
+            <form onSubmit={handleSearchOrder} className="space-y-2 mb-3">
               <input
                 type="text"
-                placeholder="Nhập Mã Đơn hoặc SĐT..."
+                placeholder="Nhập Mã Đơn..."
                 value={orderLookupQuery}
                 onChange={(e) => setOrderLookupQuery(e.target.value)}
-                className="flex-1 bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#E30019]"
+                className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#E30019]"
               />
+              <input type="tel" data-testid="order-lookup-phone" placeholder="Số điện thoại đặt hàng"
+                value={orderLookupPhone} onChange={(e) => setOrderLookupPhone(e.target.value)} required
+                className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#E30019]" />
               <button
                 type="submit"
                 disabled={isSearchingOrder}
-                className="btn-retail-primary text-white text-xs font-bold px-4 py-2 rounded-md shadow"
+                className="w-full btn-retail-primary text-white text-xs font-bold px-4 py-2 rounded-md shadow"
               >
                 Tra Cứu
               </button>

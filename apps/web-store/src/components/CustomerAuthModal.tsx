@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { X, User, Mail, Phone, Lock, CheckCircle2, ShieldCheck, ArrowRight, ExternalLink } from 'lucide-react';
 import { CustomerUser } from '../types/chat';
 import { chatSyncService } from '../services/chatSyncService';
-import { FacebookOAuthModal } from './FacebookOAuthModal';
 
 interface CustomerAuthModalProps {
   isOpen: boolean;
@@ -16,6 +15,8 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({
   onSuccess,
 }) => {
   const [tab, setTab] = useState<'LOGIN' | 'FACEBOOK'>('LOGIN');
+  const [authMode, setAuthMode] = useState<'REGISTER' | 'LOGIN'>('REGISTER');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form states
   const [fullName, setFullName] = useState<string>('');
@@ -23,42 +24,51 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({
   const [password, setPassword] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [showFbOAuth, setShowFbOAuth] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
   // Handle Standard Email/Phone Login
-  const handleStandardSubmit = (e: React.FormEvent) => {
+  const handleStandardSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim()) {
+    setErrorMessage('');
+    if (authMode === 'REGISTER' && !fullName.trim()) {
       setErrorMessage('Vui lòng nhập họ và tên của bạn.');
       return;
     }
-    if (!emailOrPhone.trim()) {
-      setErrorMessage('Vui lòng nhập Email hoặc Số điện thoại.');
+    if (!/^\S+@\S+\.\S+$/.test(emailOrPhone.trim())) {
+      setErrorMessage('Vui lòng nhập địa chỉ email hợp lệ.');
       return;
     }
-
-    const cleanName = fullName.trim();
-    const user: CustomerUser = {
-      id: `cust_${Date.now()}`,
-      name: cleanName,
-      email: emailOrPhone.includes('@') ? emailOrPhone.trim() : `${emailOrPhone.trim()}@progear-guest.vn`,
-      phone: !emailOrPhone.includes('@') ? emailOrPhone.trim() : (phone.trim() || '0912345678'),
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      authProvider: 'EMAIL',
-    };
-
-    chatSyncService.saveCustomerSession(user);
-    if (onSuccess) onSuccess(user);
-    onClose();
+    if (password.length < 8) {
+      setErrorMessage('Mật khẩu phải có ít nhất 8 ký tự.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/auth/${authMode === 'REGISTER' ? 'register' : 'login'}`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(authMode === 'REGISTER'
+          ? { fullName: fullName.trim(), email: emailOrPhone.trim(), password, phone: phone.trim() || undefined }
+          : { email: emailOrPhone.trim(), password }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(Array.isArray(result?.message) ? result.message.join(', ') : result?.message || 'Đăng nhập thất bại');
+      const user: CustomerUser = {
+        id: result.user.id, name: result.user.fullName, email: result.user.email,
+        phone: phone.trim() || undefined,
+        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+        authProvider: 'EMAIL',
+      };
+      chatSyncService.saveCustomerSession(user);
+      if (onSuccess) onSuccess(user);
+      onClose();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Không thể xác thực tài khoản.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleFbSuccess = (fbUser: CustomerUser) => {
-    setShowFbOAuth(false);
-    if (onSuccess) onSuccess(fbUser);
-    onClose();
-  };
 
   return (
     <>
@@ -130,7 +140,11 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({
           {/* Form Content */}
           {tab === 'LOGIN' ? (
             <form onSubmit={handleStandardSubmit} className="p-5 space-y-3.5">
-              <div>
+              <div className="grid grid-cols-2 rounded-lg bg-gray-100 p-1">
+                <button type="button" onClick={() => { setAuthMode('REGISTER'); setErrorMessage(''); }} className={`rounded-md py-2 font-bold ${authMode === 'REGISTER' ? 'bg-white text-[#E30019] shadow-sm' : 'text-gray-500'}`}>Đăng ký</button>
+                <button type="button" onClick={() => { setAuthMode('LOGIN'); setErrorMessage(''); }} className={`rounded-md py-2 font-bold ${authMode === 'LOGIN' ? 'bg-white text-[#E30019] shadow-sm' : 'text-gray-500'}`}>Đăng nhập</button>
+              </div>
+              {authMode === 'REGISTER' && <div>
                 <label className="block text-gray-700 font-semibold mb-1">
                   Họ và Tên của bạn <span className="text-[#E30019]">*</span>
                 </label>
@@ -146,11 +160,11 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({
                     className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 text-xs focus:outline-hidden focus:border-[#E30019]"
                   />
                 </div>
-              </div>
+              </div>}
 
               <div>
                 <label className="block text-gray-700 font-semibold mb-1">
-                  Email hoặc Số Điện Thoại <span className="text-[#E30019]">*</span>
+                  Email <span className="text-[#E30019]">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -158,7 +172,7 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({
                     type="text"
                     data-testid="input-customer-email"
                     required
-                    placeholder="name@email.com hoặc 0912 345 678"
+                    placeholder="name@email.com"
                     value={emailOrPhone}
                     onChange={(e) => setEmailOrPhone(e.target.value)}
                     className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 text-xs focus:outline-hidden focus:border-[#E30019]"
@@ -167,11 +181,14 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-gray-700 font-semibold mb-1">Mật khẩu (Tùy chọn)</label>
+                <label className="block text-gray-700 font-semibold mb-1">Mật khẩu <span className="text-[#E30019]">*</span></label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="password"
+                    data-testid="input-customer-password"
+                    required
+                    minLength={8}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -183,9 +200,10 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({
               <button
                 type="submit"
                 data-testid="btn-customer-submit-login"
-                className="w-full py-2.5 px-4 bg-[#E30019] hover:bg-red-700 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                disabled={isSubmitting}
+                className="w-full py-2.5 px-4 bg-[#E30019] hover:bg-red-700 disabled:opacity-60 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer mt-2"
               >
-                <span>Đăng Nhập & Bắt Đầu Mua Hàng</span>
+                <span>{isSubmitting ? 'Đang xác thực...' : authMode === 'REGISTER' ? 'Tạo Tài Khoản' : 'Đăng Nhập'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
@@ -196,13 +214,13 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                   </svg>
-                  <span>Xác Thực Chính Thức Qua Facebook</span>
+                  <span>Facebook OAuth Chưa Khả Dụng</span>
                 </div>
                 <p className="text-[11px] text-blue-800 leading-relaxed mb-2">
-                  Hệ thống sẽ mở cửa sổ đăng nhập bảo mật chính thức của Facebook. Bạn đăng nhập bằng tài khoản Facebook của mình, ProGear sẽ tự động nhận diện <strong>Họ & Tên thật</strong> và <strong>Ảnh đại diện</strong> từ trang cá nhân của bạn.
+                  Tính năng này cần Meta App ID và App Secret. Với bản đồ án hiện tại, vui lòng đăng ký hoặc đăng nhập bằng email.
                 </p>
                 <div className="text-[10.5px] text-blue-700 bg-white/70 p-2 rounded border border-blue-200">
-                  🔒 Cổng kết nối bảo mật chuẩn Meta OAuth 2.0. Không bao giờ lưu trữ mật khẩu của bạn.
+                  Khi có Meta credentials, callback OAuth sẽ được xử lý an toàn tại backend.
                 </div>
               </div>
 
@@ -210,13 +228,13 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({
               <button
                 type="button"
                 data-testid="btn-open-facebook-oauth"
-                onClick={() => setShowFbOAuth(true)}
-                className="w-full py-3 px-4 bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs rounded-lg shadow-md flex items-center justify-center space-x-2 transition active:scale-98 cursor-pointer"
+                disabled
+                className="w-full py-3 px-4 bg-gray-300 text-gray-600 font-bold text-xs rounded-lg flex items-center justify-center space-x-2 cursor-not-allowed"
               >
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
-                <span>Chuyển Sang Cửa Sổ Đăng Nhập Facebook</span>
+                <span>Facebook OAuth Chưa Được Cấu Hình</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
@@ -244,11 +262,6 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({
       </div>
 
       {/* Official Facebook OAuth Popup */}
-      <FacebookOAuthModal
-        isOpen={showFbOAuth}
-        onClose={() => setShowFbOAuth(false)}
-        onSuccess={handleFbSuccess}
-      />
     </>
   );
 };

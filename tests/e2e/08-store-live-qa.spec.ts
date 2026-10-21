@@ -78,7 +78,8 @@ test.describe('Store live API QA', () => {
     expect(r.status()).toBe(201);
     const order = await r.json();
     await expect(page.getByTestId('success-order-number')).toHaveText(order.orderNumber);
-    expect((await (await request.get(`http://localhost:4000/api/orders/${order.id}`)).json()).id).toBe(order.id);
+    const lookup = await request.post('http://localhost:4000/api/orders/lookup', { data: { query: order.orderNumber, customerPhone: '0900000042' } });
+    expect((await lookup.json()).id).toBe(order.id);
     const after = (await (await request.get('http://localhost:4000/api/products?limit=100')).json()).items.find((x:any) => x.id === p.id);
     expect(after.stockQuantity).toBe(p.stockQuantity - 1);
     if (method === 'vietqr') {
@@ -116,7 +117,8 @@ test.describe('Store live API QA', () => {
     expect(r.status()).toBe(201);
     const order = await r.json();
     await page.getByRole('button', { name: 'Tra cứu tình trạng đơn hàng', exact:true }).click();
-    await page.getByPlaceholder('Nhập Mã Đơn hoặc SĐT...').fill(order.orderNumber);
+    await page.getByPlaceholder('Nhập Mã Đơn...').fill(order.orderNumber);
+    await page.getByTestId('order-lookup-phone').fill('0900000044');
     await page.getByRole('button', { name: 'Tra Cứu', exact: true }).click();
     await expect(page.getByText(`Mã: ${order.orderNumber}`, {exact:true})).toBeVisible();
   });
@@ -130,31 +132,35 @@ test.describe('Store live API QA', () => {
     expect(created.status()).toBe(201);
     const order = await created.json();
     await page.getByRole('button', { name: 'Tra cứu tình trạng đơn hàng', exact:true }).click();
-    await page.getByPlaceholder('Nhập Mã Đơn hoặc SĐT...').fill(order.orderNumber);
+    await page.getByPlaceholder('Nhập Mã Đơn...').fill(order.orderNumber);
+    await page.getByTestId('order-lookup-phone').fill('0900000045');
     await page.getByRole('button', { name: 'Tra Cứu', exact: true }).click();
     page.once('dialog', dialog => dialog.accept());
     const response = page.waitForResponse(r => r.url().includes(`/api/orders/${order.id}/cancel`) && r.request().method() === 'POST');
     await page.getByRole('button', { name: /Hủy Đơn Hàng/ }).click();
     expect((await response).ok()).toBeTruthy();
     await expect(page.getByText('Đơn hàng đã được hủy thành công!')).toBeVisible();
-    expect((await (await request.get(`http://localhost:4000/api/orders/${order.id}`)).json()).orderStatus).toBe('CANCELLED');
+    const cancelledLookup = await request.post('http://localhost:4000/api/orders/lookup', { data: { query: order.orderNumber, customerPhone: '0900000045' } });
+    expect((await cancelledLookup.json()).orderStatus).toBe('CANCELLED');
     const restored = (await (await request.get('http://localhost:4000/api/products?limit=100')).json()).items.find((item:any) => item.id === product.id);
     expect(restored.stockQuantity).toBe(product.stockQuantity);
   });
-  test('auth and chat are local UI only: capture absence of API writes', async ({ page }, info) => {
+  test('customer registration and chat persist through backend APIs', async ({ page }, info) => {
     const writes:string[] = [];
     page.on('request', r => { if (r.url().includes('/api/') && r.method() === 'POST') writes.push(r.url()); });
     await page.getByTestId('btn-customer-login-header').click();
     await page.getByTestId('input-customer-fullname').fill('QA Local Customer');
-    await page.getByTestId('input-customer-email').fill('qa-store@example.invalid');
+    await page.getByTestId('input-customer-email').fill(`qa-store-${Date.now()}@example.com`);
+    await page.getByTestId('input-customer-password').fill('QaStorePass123!');
     await page.getByTestId('btn-customer-submit-login').click();
     await expect(page.getByTestId('customer-name-display')).toHaveText('QA Local Customer');
     await page.getByTestId('btn-livechat-bubble').click();
     await page.getByTestId('input-chat-message').fill('QA local-only chat evidence');
     await page.getByTestId('btn-send-chat').click();
     await expect(page.getByTestId('customer-chat-drawer')).toContainText('QA local-only chat evidence');
-    expect(writes).toEqual([]);
-    await info.attach('integration-limitation', {body:'Login and chat showed success but sent zero API POST requests. UI-only pass, not authentication/messaging integration.',contentType:'text/plain'});
+    expect(writes.some(url => url.includes('/api/auth/register'))).toBeTruthy();
+    expect(writes.some(url => url.includes('/api/chat/customer/sessions'))).toBeTruthy();
+    await info.attach('integration-evidence', {body:JSON.stringify(writes,null,2),contentType:'application/json'});
   });
   test('BUG: rejected order must not show checkout success', async ({ page }) => {
     const card = page.locator('#product-catalog [data-sku="NIKON-Z8-BODY"]');

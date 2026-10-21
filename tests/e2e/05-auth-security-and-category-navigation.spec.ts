@@ -67,8 +67,10 @@ test.describe('Security Gate, Customer Auth with Real Name, & Category Mega Menu
 
     // Enter real customer name
     const customerRealName = 'Lê Hoàng Phúc';
+    const customerEmail = `hoangphuc.${Date.now()}@example.com`;
     await page.getByTestId('input-customer-fullname').fill(customerRealName);
-    await page.getByTestId('input-customer-email').fill('hoangphuc.dop@gmail.com');
+    await page.getByTestId('input-customer-email').fill(customerEmail);
+    await page.getByTestId('input-customer-password').fill('CustomerPass123!');
     await page.getByTestId('btn-customer-submit-login').click();
 
     // Modal closes and Header displays exact real name
@@ -78,9 +80,17 @@ test.describe('Security Gate, Customer Auth with Real Name, & Category Mega Menu
     // Logout
     await page.getByTestId('btn-customer-logout').click();
     await expect(page.getByTestId('btn-customer-login-header')).toBeVisible();
+
+    // Login again with the persisted backend account.
+    await page.getByTestId('btn-customer-login-header').click();
+    await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
+    await page.getByTestId('input-customer-email').fill(customerEmail);
+    await page.getByTestId('input-customer-password').fill('CustomerPass123!');
+    await page.getByTestId('btn-customer-submit-login').click();
+    await expect(page.getByTestId('customer-name-display')).toHaveText(customerRealName);
   });
 
-  test('TC-CUST-02: Customer connects via Facebook with custom display name in Live Chat', async ({ page }) => {
+  test('TC-CUST-02: Facebook login is safely disabled until Meta OAuth is configured', async ({ page }) => {
     await page.goto('http://localhost:3000/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForLoadState('domcontentloaded');
@@ -89,22 +99,9 @@ test.describe('Security Gate, Customer Auth with Real Name, & Category Mega Menu
     await page.getByTestId('btn-livechat-bubble').click();
     await expect(page.getByTestId('customer-chat-drawer')).toBeVisible();
 
-    // Click Facebook login -> prompts for Facebook display name
-    await page.getByTestId('btn-chat-login-facebook').click();
-    await expect(page.getByTestId('input-chat-fb-name')).toBeVisible();
-
-    const realFbName = 'Phan Thanh Hà';
-    await page.getByTestId('input-chat-fb-name').fill(realFbName);
-    await page.getByTestId('btn-confirm-chat-fb').click();
-
-    // Send chat question
-    const chatInput = page.getByTestId('input-chat-message');
-    await expect(chatInput).toBeVisible();
-    await chatInput.fill('Shop có giao hỏa tốc Sony FX3 trong 2h ở Hà Nội không?');
-    await page.getByTestId('btn-send-chat').click();
-
-    // Verify customer's real name is displayed on storefront header as well
-    await expect(page.getByTestId('customer-name-display')).toHaveText(realFbName);
+    const facebookButton = page.getByTestId('btn-chat-login-facebook');
+    await expect(facebookButton).toBeDisabled();
+    await expect(facebookButton).toContainText('Chưa Cấu Hình');
   });
 
   test('TC-CAT-01: Category Mega Menu opens from Header, filters DJI Drone category, and scrolls smoothly', async ({ page }) => {

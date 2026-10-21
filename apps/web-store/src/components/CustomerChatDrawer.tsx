@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Headset, User, Mail, LogOut, CheckCircle2, Sparkles, MessageSquare } from 'lucide-react';
 import { CustomerUser, ChatSession, ChatMessage } from '../types/chat';
 import { chatSyncService } from '../services/chatSyncService';
-import { FacebookOAuthModal } from './FacebookOAuthModal';
 
 interface CustomerChatDrawerProps {
   isOpen: boolean;
@@ -24,11 +23,6 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
   const [emailAddress, setEmailAddress] = useState<string>('');
   const [emailPhone, setEmailPhone] = useState<string>('');
 
-  // Facebook OAuth modal state
-  const [showFbOAuth, setShowFbOAuth] = useState<boolean>(false);
-  const [showFbNamePrompt, setShowFbNamePrompt] = useState<boolean>(false);
-  const [fbNameInput, setFbNameInput] = useState<string>('');
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Customer can sign in from the Store header while this drawer is mounted.
@@ -40,17 +34,16 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
   // Sync sessions
   useEffect(() => {
     if (!currentUser) return;
-    const sess = chatSyncService.getOrCreateCustomerSession(currentUser, currentProductName);
-    setSession(sess);
-
+    let sessionId = '';
+    let cancelled = false;
+    chatSyncService.getOrCreateCustomerSession(currentUser, currentProductName)
+      .then((created) => { if (!cancelled) { sessionId = created.id; setSession(created); } })
+      .catch(() => undefined);
     const unsubscribe = chatSyncService.subscribe((sessions) => {
-      const updated = sessions.find((s) => s.id === sess.id || s.customer.id === currentUser.id);
-      if (updated) {
-        setSession({ ...updated });
-      }
+      const updated = sessions.find((s) => s.id === sessionId || s.customer.id === currentUser.id);
+      if (updated && !cancelled) setSession({ ...updated });
     });
-
-    return () => unsubscribe();
+    return () => { cancelled = true; unsubscribe(); };
   }, [currentUser, currentProductName]);
 
   // Auto scroll
@@ -61,27 +54,6 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
   }, [session?.messages, isOpen]);
 
   if (!isOpen) return null;
-
-  // Handle Facebook login with user's real name
-  const handleFacebookLogin = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!showFbNamePrompt) {
-      setShowFbNamePrompt(true);
-      return;
-    }
-
-    const finalName = fbNameInput.trim() || 'Khách Hàng Facebook';
-    const fbUser: CustomerUser = {
-      id: `fb_${Date.now()}`,
-      name: finalName,
-      email: `${finalName.toLowerCase().replace(/[^a-z0-9]/g, '')}.fb@gmail.com`,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-      authProvider: 'FACEBOOK',
-    };
-    chatSyncService.saveCustomerSession(fbUser);
-    setCurrentUser(fbUser);
-    setShowFbNamePrompt(false);
-  };
 
   // Handle Email login
   const handleEmailLogin = (e: React.FormEvent) => {
@@ -115,7 +87,7 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
       currentUser.name,
       inputText.trim(),
       currentUser.avatar
-    );
+    ).catch(() => undefined);
     setInputText('');
   };
 
@@ -218,17 +190,17 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
             <div className="space-y-1.5">
               <button
                 type="button"
-                onClick={() => setShowFbOAuth(true)}
+                disabled
                 data-testid="btn-chat-login-facebook"
-                className="w-full py-2.5 px-4 bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs rounded-md shadow flex items-center justify-center space-x-2 transition active:scale-98 cursor-pointer"
+                className="w-full py-2.5 px-4 bg-gray-300 text-gray-600 font-bold text-xs rounded-md flex items-center justify-center space-x-2 cursor-not-allowed"
               >
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
-                <span>Đăng Nhập Qua Facebook</span>
+                <span>Facebook OAuth Chưa Cấu Hình</span>
               </button>
               <div className="text-[10.5px] text-center text-gray-500">
-                🔒 Mở cửa sổ Facebook chính thức để kết nối tên thật của bạn
+                Vui lòng dùng tài khoản email trong thời gian chờ Meta credentials.
               </div>
             </div>
 
@@ -405,15 +377,6 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
         )}
       </div>
 
-      {/* Official Facebook OAuth Modal */}
-      <FacebookOAuthModal
-        isOpen={showFbOAuth}
-        onClose={() => setShowFbOAuth(false)}
-        onSuccess={(fbUser) => {
-          setCurrentUser(fbUser);
-          setShowFbOAuth(false);
-        }}
-      />
     </div>
   );
 };

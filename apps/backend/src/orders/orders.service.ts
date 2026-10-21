@@ -139,6 +139,21 @@ export class OrdersService {
     return order;
   }
 
+  async lookupForCustomer(query: string, customerPhone: string) {
+    const normalizedPhone = String(customerPhone || '').replace(/\D/g, '');
+    if (!query?.trim() || normalizedPhone.length < 9) throw new BadRequestException('Mã đơn và số điện thoại không hợp lệ');
+    const order = await this.prisma.order.findFirst({
+      where: {
+        OR: [{ id: query.trim() }, { orderNumber: { equals: query.trim(), mode: 'insensitive' } }],
+      },
+      include: { items: true, serialsAssigned: true },
+    });
+    if (!order || order.customerPhone.replace(/\D/g, '') !== normalizedPhone) {
+      throw new NotFoundException('Không tìm thấy đơn hàng khớp thông tin xác nhận');
+    }
+    return order;
+  }
+
   async updateStatus(id: string, status: OrderStatus, paymentStatus?: PaymentStatus) {
     const order = await this.prisma.order.findFirst({
       where: {

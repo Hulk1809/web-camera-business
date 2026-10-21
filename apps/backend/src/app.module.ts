@@ -8,6 +8,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { WarrantyModule } from './warranty/warranty.module';
 import { AppController } from './app.controller';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AppController } from './app.controller';
     CategoriesModule,
     DashboardModule,
     WarrantyModule,
+    ChatModule,
   ],
   controllers: [AppController],
 })
