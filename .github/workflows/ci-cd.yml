@@ -177,8 +177,6 @@ jobs:
             service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path=/healthz \
             --overwrite
           kubectl apply -f deploy/k8s/06-ingress/cluster-issuer.yaml
-          # One-time recovery for the previously invalid ACME order.
-          kubectl delete certificate progear-tls -n camera-shop --ignore-not-found=true
           kubectl apply -f deploy/k8s/06-ingress/certificate.yaml
           kubectl apply -f deploy/k8s/06-ingress/ingress.yaml
 
