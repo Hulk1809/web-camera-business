@@ -4,6 +4,7 @@
   "description": "Camera E-Commerce NestJS Backend API",
   "main": "dist/src/main.js",
   "scripts": {
+    "test": "node --test tests/*.test.cjs",
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",

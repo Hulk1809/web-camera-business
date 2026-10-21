@@ -17,7 +17,7 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
-    "test:report": "playwright show-report test-results/html-report"
+    "test:report": "playwright show-report playwright-report"
   },
   "keywords": [
     "ecommerce",

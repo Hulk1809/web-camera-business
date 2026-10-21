@@ -4,7 +4,7 @@ test.describe('POS Product Custom Selection & Pre-Order Fulfillment Verification
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:3001/admin/');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
 
     // If login screen is shown, log in as Quản Trị Trưởng
     const loginScreen = page.getByTestId('admin-login-screen');
@@ -30,8 +30,10 @@ test.describe('POS Product Custom Selection & Pre-Order Fulfillment Verification
     const productSelect = page.getByTestId('select-pos-product');
     await expect(productSelect).toBeVisible();
 
-    // Select the Sony FX3 option by product ID
-    await productSelect.selectOption({ value: 'prod-sony-fx3' });
+    // Select the Sony FX3 using the persisted database ID.
+    const fx3Value = await productSelect.locator('option').filter({ hasText: 'Sony Cinema Line FX3' }).getAttribute('value');
+    expect(fx3Value).toBeTruthy();
+    await productSelect.selectOption(fx3Value!);
 
     // 4. Verify unit price is automatically populated with 94,990,000 VND
     const priceInput = page.getByTestId('input-pos-price');

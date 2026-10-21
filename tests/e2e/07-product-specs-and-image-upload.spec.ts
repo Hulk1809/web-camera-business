@@ -4,7 +4,7 @@ test.describe('Admin Product Technical Specifications & Image Management', () =>
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:3001/admin/');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
 
     // If login screen is shown, log in as Quản Trị Trưởng
     const loginScreen = page.getByTestId('admin-login-screen');
@@ -30,8 +30,9 @@ test.describe('Admin Product Technical Specifications & Image Management', () =>
     await expect(page.locator('text=Thêm Thiết Bị Mới Vào Kho Hàng')).toBeVisible();
 
     // 4. Fill basic info
-    const testName = 'Canon Cinema EOS C70 Super 35 4K DGO';
-    const testSku = 'CANON-C70-PRO';
+    const unique = Date.now();
+    const testName = `Canon Cinema EOS C70 Super 35 4K DGO QA ${unique}`;
+    const testSku = `CANON-C70-PRO-${unique}`;
     await page.getByTestId('input-product-name').fill(testName);
     await page.getByTestId('input-product-sku').fill(testSku);
     await page.getByTestId('select-product-brand').selectOption('Canon');
@@ -180,4 +181,3 @@ test.describe('Admin Product Technical Specifications & Image Management', () =>
     expect(firstImgSrc).toBeTruthy();
   });
 });
-

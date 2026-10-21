@@ -16,8 +16,15 @@ export class OrdersService {
     note?: string;
     items: Array<{ productId: string; quantity: number }>;
   }) {
-    if (!data.items || data.items.length === 0) {
+    if (!Array.isArray(data.items) || data.items.length === 0) {
       throw new BadRequestException('Đơn hàng phải có ít nhất 1 sản phẩm');
+    }
+
+    for (const item of data.items) {
+      if (!item || typeof item.productId !== 'string' || !item.productId.trim() ||
+          !Number.isSafeInteger(item.quantity) || item.quantity <= 0) {
+        throw new BadRequestException('Sản phẩm phải có ID và số lượng nguyên dương');
+      }
     }
 
     // ACID Transaction: Kiểm tra tồn kho, trừ kho, tạo đơn hàng và các order items
@@ -30,7 +37,7 @@ export class OrdersService {
           where: { id: item.productId },
         });
 
-        if (!product) {
+        if (!product || !product.isActive) {
           throw new NotFoundException(`Sản phẩm với ID ${item.productId} không tồn tại`);
         }
 
@@ -41,11 +48,14 @@ export class OrdersService {
         const subtotal = product.price * item.quantity;
         totalAmount += subtotal;
 
-        // Trừ tồn kho
-        await tx.product.update({
-          where: { id: product.id },
+        // Kiểm tra và trừ kho nguyên tử để các đơn đồng thời không bán vượt tồn.
+        const reserved = await tx.product.updateMany({
+          where: { id: product.id, isActive: true, stockQuantity: { gte: item.quantity } },
           data: { stockQuantity: { decrement: item.quantity } },
         });
+        if (reserved.count !== 1) {
+          throw new BadRequestException(`Sản phẩm ${product.name} không còn đủ số lượng trong kho`);
+        }
 
         orderItemsData.push({
           productId: product.id,
@@ -150,6 +160,38 @@ export class OrdersService {
         ...(updatedPaymentStatus ? { paymentStatus: updatedPaymentStatus } : {}),
       },
       include: { items: true, serialsAssigned: true },
+    });
+  }
+
+  async cancelByCustomer(id: string, customerPhone: string) {
+    const normalizedPhone = String(customerPhone || '').replace(/\D/g, '');
+    if (normalizedPhone.length < 9) throw new BadRequestException('Số điện thoại xác nhận không hợp lệ');
+
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findFirst({
+        where: { OR: [{ id }, { orderNumber: id }] },
+        include: { items: true },
+      });
+      if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
+      if (order.customerPhone.replace(/\D/g, '') !== normalizedPhone) {
+        throw new BadRequestException('Số điện thoại không khớp với đơn hàng');
+      }
+      if (order.orderStatus !== OrderStatus.PENDING) {
+        throw new BadRequestException('Chỉ có thể hủy đơn hàng đang chờ xử lý');
+      }
+
+      const cancelled = await tx.order.updateMany({
+        where: { id: order.id, orderStatus: OrderStatus.PENDING },
+        data: { orderStatus: OrderStatus.CANCELLED },
+      });
+      if (cancelled.count !== 1) throw new BadRequestException('Trạng thái đơn hàng vừa thay đổi, vui lòng tải lại');
+      for (const item of order.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stockQuantity: { increment: item.quantity } },
+        });
+      }
+      return tx.order.findUnique({ where: { id: order.id }, include: { items: true } });
     });
   }
 }

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Admin Enterprise Operations & POS Counter Sales', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:3001/admin/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const loginScreen = page.getByTestId('admin-login-screen');
     if (await loginScreen.isVisible()) {
       await page.getByTestId('input-admin-email').fill('admin@progear.vn');
@@ -54,14 +54,21 @@ test.describe('Admin Enterprise Operations & POS Counter Sales', () => {
   });
 
   test('TC-ADMIN-03: POS Counter Sale and Instant Electronic Warranty Activation', async ({ page }) => {
-    await page.getByTestId('nav-warranty').click();
-
-    // Look for an in-stock serial with "Bán POS" button
-    const posSellBtn = page.getByTestId('btn-pos-sell').first();
-    await expect(posSellBtn).toBeVisible();
-
-    // Click POS sell
-    await posSellBtn.click();
+    const token = await page.evaluate(() => sessionStorage.getItem('PROGEAR_ADMIN_TOKEN'));
+    const productsResponse = await page.request.get('http://localhost:4000/api/products?limit=100', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const products = (await productsResponse.json()).items;
+    const product = products.find((item: any) => item.stockQuantity > 0);
+    const serialNumber = `QA-POS-${Date.now()}`;
+    const serialResponse = await page.request.post('http://localhost:4000/api/warranty', {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { productId: product.id, serialNumber, warrantyMonths: 24 },
+    });
+    expect(serialResponse.status()).toBe(201);
+    await page.reload();
+    await page.getByTestId('btn-open-pos-header').click();
+    await page.getByTestId('select-pos-product').selectOption(product.id);
 
     // Ensure POS Modal is opened
     await expect(page.locator('text=Xuất Bán Tại Quầy Showroom (POS)')).toBeVisible();
@@ -80,7 +87,11 @@ test.describe('Admin Enterprise Operations & POS Counter Sales', () => {
 
     // Verify the newly sold customer name appears in the table with active warranty
     await expect(page.locator(`text=${testCustomer}`).first()).toBeVisible();
-    await expect(page.locator('text=Đã Bán • Đang Bảo Hành').first()).toBeVisible();
+    const warrantyResponse = await page.request.get('http://localhost:4000/api/warranty', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const persistedSerial = (await warrantyResponse.json()).find((item: any) => item.serialNumber === serialNumber);
+    expect(persistedSerial).toMatchObject({ status: 'SOLD', customerName: testCustomer });
   });
 
   test('TC-ADMIN-04: Revenue Statement (Doanh Số & Sao Kê), Category Breakdown and Audit Receipts', async ({ page }) => {
@@ -122,4 +133,3 @@ test.describe('Admin Enterprise Operations & POS Counter Sales', () => {
     await expect(page.locator('text=Báo Cáo Doanh Số & Sao Kê Tài Chính')).toBeVisible();
   });
 });
-

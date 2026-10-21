@@ -1,6 +1,10 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+import { Role } from '@prisma/client';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 
 @ApiTags('Categories & Brands')
 @Controller()
@@ -30,6 +34,8 @@ export class CategoriesController {
   }
 
   @Post('categories')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Tạo danh mục mới (Admin)' })
   async createCategory(@Body() body: { name: string; slug: string; description?: string; icon?: string }) {
     return this.prisma.category.create({ data: body });

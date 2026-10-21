@@ -649,6 +649,7 @@ export function App() {
   const [orderNote, setOrderNote] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'VIETQR' | 'COD'>('VIETQR');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState<boolean>(false);
+  const [orderSubmitError, setOrderSubmitError] = useState<string>('');
   const [orderSuccess, setOrderSuccess] = useState<any>(null);
 
   // Customer Order Lookup & Self-Service Cancel
@@ -703,7 +704,8 @@ export function App() {
   const [wishlist, setWishlist] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('PRO_GEAR_WISHLIST');
-      return saved ? JSON.parse(saved) : [];
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) && parsed.every((id) => typeof id === 'string') ? parsed : [];
     } catch {
       return [];
     }
@@ -890,6 +892,7 @@ export function App() {
     }
 
     setIsSubmittingOrder(true);
+    setOrderSubmitError('');
 
     const hasPreOrderItem = cart.some((i) => (i.product.stockQuantity ?? 0) <= 0);
     const orderPrefixNote = hasPreOrderItem ? '[ĐẶT HÀNG CHỜ VỀ - PRE-ORDER] ' : '';
@@ -908,6 +911,7 @@ export function App() {
 
     let confirmedOrder: any = null;
 
+    let backendUnavailable = false;
     try {
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -915,15 +919,27 @@ export function App() {
         body: JSON.stringify(orderPayload),
       });
 
-      if (res.ok) {
-        confirmedOrder = await res.json();
+      if (!res.ok) {
+        const responseBody = await res.json().catch(() => null);
+        const message = Array.isArray(responseBody?.message)
+          ? responseBody.message.join(', ')
+          : responseBody?.message;
+        throw new Error(message || 'Không thể tạo đơn hàng. Vui lòng kiểm tra lại giỏ hàng.');
       }
+      confirmedOrder = await res.json();
     } catch (err) {
-      console.warn('Backend API offline, using local synchronization fallback:', err);
+      if (err instanceof TypeError) {
+        backendUnavailable = true;
+        console.warn('Backend API offline, using local synchronization fallback:', err);
+      } else {
+        setOrderSubmitError(err instanceof Error ? err.message : 'Không thể tạo đơn hàng. Vui lòng thử lại.');
+        setIsSubmittingOrder(false);
+        return;
+      }
     }
 
-    // Fallback if backend was offline or mock id
-    if (!confirmedOrder || !confirmedOrder.orderNumber) {
+    // Chỉ tạo đơn cục bộ khi không thể kết nối API, không che giấu lỗi nghiệp vụ từ server.
+    if (backendUnavailable) {
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const randomCode = Math.floor(1000 + Math.random() * 9000);
       confirmedOrder = {
@@ -984,7 +1000,8 @@ export function App() {
     // 2. Persist to shared localStorage sync layer
     try {
       const existingStr = localStorage.getItem('PROGEAR_SHARED_ORDERS');
-      const existing = existingStr ? JSON.parse(existingStr) : [];
+      const parsed = existingStr ? JSON.parse(existingStr) : [];
+      const existing = Array.isArray(parsed) ? parsed : [];
       localStorage.setItem('PROGEAR_SHARED_ORDERS', JSON.stringify([confirmedOrder, ...existing]));
     } catch (storageErr) {
       console.error('Lỗi lưu đơn hàng vào local sync:', storageErr);
@@ -1177,7 +1194,7 @@ export function App() {
   };
 
   // Self-Service Order Lookup
-  const handleSearchOrder = (e: React.FormEvent) => {
+  const handleSearchOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     const query = orderLookupQuery.trim().toUpperCase();
     if (!query) return;
@@ -1185,13 +1202,26 @@ export function App() {
     setIsSearchingOrder(true);
     setOrderCancelSuccessMsg('');
 
+    let match: any = null;
+    if (!/^[0-9\s\-.]+$/.test(query)) {
+      try {
+        const response = await fetch(`/api/orders/${encodeURIComponent(query)}`);
+        if (response.ok) match = await response.json();
+      } catch (error) {
+        console.warn('Không thể tra cứu đơn hàng từ API:', error);
+      }
+    }
+
     let allOrders: any[] = [];
     try {
       const ordersRaw = localStorage.getItem('PROGEAR_SHARED_ORDERS');
-      if (ordersRaw) allOrders = JSON.parse(ordersRaw);
+      if (ordersRaw) {
+        const parsed = JSON.parse(ordersRaw);
+        if (Array.isArray(parsed)) allOrders = parsed;
+      }
     } catch {}
 
-    const match = allOrders.find(
+    match ||= allOrders.find(
       (o) =>
         (o.orderNumber && o.orderNumber.toUpperCase() === query) ||
         (o.id && o.id.toUpperCase() === query) ||
@@ -1206,9 +1236,22 @@ export function App() {
     if (!window.confirm('Quý khách có chắc chắn muốn hủy đơn hàng này không?')) return;
     setIsCancellingOrder(true);
     try {
+      const isLocalOrder = orderId.startsWith('local-ord-');
+      if (!isLocalOrder) {
+        const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customerPhone: orderLookupResult?.customerPhone }),
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => null);
+          throw new Error(body?.message || 'Server từ chối hủy đơn hàng');
+        }
+      }
       const ordersRaw = localStorage.getItem('PROGEAR_SHARED_ORDERS');
       if (ordersRaw) {
-        const orders = JSON.parse(ordersRaw);
+        const parsed = JSON.parse(ordersRaw);
+        const orders = Array.isArray(parsed) ? parsed : [];
         const updated = orders.map((o: any) =>
           o.id === orderId || o.orderNumber === orderId
             ? { ...o, orderStatus: 'CANCELLED', status: 'CANCELLED' }
@@ -2376,6 +2419,11 @@ export function App() {
                       </>
                     )}
                   </button>
+                  {orderSubmitError && (
+                    <div data-testid="order-submit-error" className="rounded-md border border-red-200 bg-red-50 p-2 text-[11px] font-medium text-red-700">
+                      {orderSubmitError}
+                    </div>
+                  )}
                 </form>
               )}
             </div>
@@ -2600,7 +2648,24 @@ export function App() {
                   </div>
                 )}
 
-                {/* CASE 3: NOT_FOUND */}
+                {/* CASE 3: IN_STOCK */}
+                {warrantyResult.type === 'IN_STOCK' && (
+                  <div className="p-3.5 rounded-lg border border-amber-300 bg-amber-50 text-xs space-y-2">
+                    <div className="font-bold text-amber-800 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>SẢN PHẨM CHÍNH HÃNG — CHƯA KÍCH HOẠT BẢO HÀNH</span>
+                    </div>
+                    <div className="bg-white p-3 rounded-md border border-amber-200 space-y-1 text-[11px] text-gray-700">
+                      <div>Thiết bị: <strong>{warrantyResult.productName}</strong></div>
+                      <div>Mã hàng: <strong className="font-mono">{warrantyResult.productSku}</strong></div>
+                      <div>Serial: <strong className="font-mono text-[#E30019]">{warrantyResult.serialNumber}</strong></div>
+                      <div>Trạng thái: <strong className="text-amber-700">Đang lưu kho, chưa xuất bán</strong></div>
+                    </div>
+                    <p className="text-[11px] text-amber-700">{warrantyResult.message}</p>
+                  </div>
+                )}
+
+                {/* CASE 4: NOT_FOUND */}
                 {warrantyResult.type === 'NOT_FOUND' && (
                   <div className="p-3.5 rounded-lg border border-red-300 bg-red-50 text-xs text-red-700 space-y-1">
                     <div className="font-bold text-sm flex items-center gap-1.5">

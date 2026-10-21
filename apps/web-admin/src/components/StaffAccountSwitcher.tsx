@@ -36,6 +36,7 @@ export const StaffAccountSwitcher: React.FC<StaffAccountSwitcherProps> = ({ onSt
   }, []);
 
   const selectStaff = (staff: AdvisorStaff) => {
+    if (currentStaff.id !== 'admin_root' && staff.id === 'admin_root') return;
     chatSyncService.setActiveStaff(staff);
     setCurrentStaff(staff);
     setIsOpen(false);
@@ -78,7 +79,9 @@ export const StaffAccountSwitcher: React.FC<StaffAccountSwitcherProps> = ({ onSt
           </div>
 
           <div className="space-y-1 mt-1.5">
-            {PRESET_STAFF_ACCOUNTS.map((staff) => {
+            {PRESET_STAFF_ACCOUNTS.filter(
+              (staff) => currentStaff.id === 'admin_root' || staff.id !== 'admin_root',
+            ).map((staff) => {
               const isSelected = staff.id === currentStaff.id;
               return (
                 <button

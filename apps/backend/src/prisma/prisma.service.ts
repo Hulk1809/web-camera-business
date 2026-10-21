@@ -33,27 +33,30 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   public async autoSeed(forceUpdate = false) {
     try {
+      // Tài khoản vận hành phải luôn tồn tại, kể cả khi kho đã có dữ liệu.
+      const adminPasswordHash = await bcrypt.hash('admin123456', 10);
+      const staffPasswordHash = await bcrypt.hash('progear123', 10);
+      await Promise.all([
+        ...['admin@camerasmart.vn', 'admin@progear.vn'].map((email) =>
+          this.user.upsert({ where: { email }, update: {}, create: {
+            email, fullName: 'Admin Quản Trị', passwordHash: adminPasswordHash, role: Role.ADMIN,
+          } }),
+        ),
+        ...[
+          ['tuvan1@progear.vn', 'Hoàng Nam'],
+          ['tuvan2@progear.vn', 'Minh Thư'],
+          ['tuvan3@progear.vn', 'Quốc Anh'],
+        ].map(([email, fullName]) => this.user.upsert({ where: { email }, update: {}, create: {
+          email, fullName, passwordHash: staffPasswordHash, role: Role.STAFF,
+        } })),
+      ]);
+
       const productCount = await this.product.count();
       if (productCount > 0 && !forceUpdate) {
         this.logger.log(`📦 Database already has ${productCount} products. Skipping autoSeed to protect live user data.`);
         return;
       }
       this.logger.log('🌱 Seeding / Refreshing Pro Camera, Cinema & DJI products with multi-image gallery...');
-
-      // 1. Admin user
-      const passwordHash = await bcrypt.hash('admin123456', 10);
-      await this.user.upsert({
-        where: { email: 'admin@camerasmart.vn' },
-        update: {},
-        create: {
-          email: 'admin@camerasmart.vn',
-          fullName: 'Quản Trị Viên Pro Camera & Film Gear',
-          passwordHash,
-          role: Role.ADMIN,
-          phone: '0988888888',
-          address: 'Hà Nội, Việt Nam',
-        },
-      });
 
       // 2. Brands
       const brands = await Promise.all([

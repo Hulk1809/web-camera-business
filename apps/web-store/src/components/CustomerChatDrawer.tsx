@@ -31,6 +31,12 @@ export const CustomerChatDrawer: React.FC<CustomerChatDrawerProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Customer can sign in from the Store header while this drawer is mounted.
+  // Refresh the session whenever it opens so the chat does not show a second login form.
+  useEffect(() => {
+    if (isOpen) setCurrentUser(chatSyncService.getCustomerSession());
+  }, [isOpen]);
+
   // Sync sessions
   useEffect(() => {
     if (!currentUser) return;

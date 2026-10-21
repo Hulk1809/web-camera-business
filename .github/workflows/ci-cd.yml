@@ -107,6 +107,12 @@ jobs:
             --docker-password=${{ secrets.GITHUB_TOKEN }} \
             --dry-run=client -o yaml | kubectl apply -f -
 
+          # JWT production được quản lý bằng GitHub Secret, không lưu khóa trong Git.
+          kubectl create secret generic backend-jwt-secret \
+            --namespace=camera-shop \
+            --from-literal=JWT_SECRET='${{ secrets.JWT_SECRET }}' \
+            --dry-run=client -o yaml | kubectl apply -f -
+
           # Áp dụng cơ sở dữ liệu Postgres & Redis
           kubectl apply -f deploy/k8s/01-postgres/
           kubectl apply -f deploy/k8s/02-redis/

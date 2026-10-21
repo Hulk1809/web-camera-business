@@ -4,7 +4,7 @@ test.describe('Security Gate, Customer Auth with Real Name, & Category Mega Menu
   test('TC-SEC-01: Public Storefront Topbar does NOT expose internal "Trang Admin" link', async ({ page }) => {
     await page.goto('http://localhost:3000/');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify "Trang Admin" link is not visible in customer topbar
     await expect(page.locator('text=Trang Admin')).toBeHidden();
@@ -16,7 +16,7 @@ test.describe('Security Gate, Customer Auth with Real Name, & Category Mega Menu
   test('TC-SEC-02: Admin portal is protected by Enterprise Login Screen and blocks dashboard access', async ({ page }) => {
     await page.goto('http://localhost:3001/admin/');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
 
     // Must show Admin Login Screen
     await expect(page.getByTestId('admin-login-screen')).toBeVisible();
@@ -30,7 +30,7 @@ test.describe('Security Gate, Customer Auth with Real Name, & Category Mega Menu
   test('TC-SEC-03: Admin login validates credentials, grants access to dashboard, and logs out securely', async ({ page }) => {
     await page.goto('http://localhost:3001/admin/');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
 
     // 1. Test invalid password
     await page.getByTestId('input-admin-email').fill('admin@progear.vn');
@@ -59,7 +59,7 @@ test.describe('Security Gate, Customer Auth with Real Name, & Category Mega Menu
   test('TC-CUST-01: Customer logs in on Storefront header with custom name and manages account', async ({ page }) => {
     await page.goto('http://localhost:3000/');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
 
     // Click Login on Header
     await page.getByTestId('btn-customer-login-header').click();
@@ -83,7 +83,7 @@ test.describe('Security Gate, Customer Auth with Real Name, & Category Mega Menu
   test('TC-CUST-02: Customer connects via Facebook with custom display name in Live Chat', async ({ page }) => {
     await page.goto('http://localhost:3000/');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
 
     // Open Live Chat
     await page.getByTestId('btn-livechat-bubble').click();
@@ -110,7 +110,7 @@ test.describe('Security Gate, Customer Auth with Real Name, & Category Mega Menu
   test('TC-CAT-01: Category Mega Menu opens from Header, filters DJI Drone category, and scrolls smoothly', async ({ page }) => {
     await page.goto('http://localhost:3000/');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
 
     // Click the red "DANH MỤC" button in the sticky header
     const megaMenuBtn = page.getByTestId('btn-toggle-mega-menu');
@@ -138,7 +138,7 @@ test.describe('Security Gate, Customer Auth with Real Name, & Category Mega Menu
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('http://localhost:3000/');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded');
 
     // Sidebar should be visible on desktop
     const sidebar = page.getByTestId('hero-category-sidebar');
@@ -173,4 +173,3 @@ test.describe('Security Gate, Customer Auth with Real Name, & Category Mega Menu
     await expect(catalogTitle).toContainText('KHO MÁY ẢNH, FLYCAM, GIMBAL & PHỤ KIỆN CHÍNH HÃNG');
   });
 });
-

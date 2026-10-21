@@ -16,7 +16,6 @@ metadata:
 type: Opaque
 stringData:
   DATABASE_URL: "postgresql://camera_admin:camera_password_secure_2026@postgres-service:5432/camera_shop_db?schema=public"
-  JWT_SECRET: "camera_secret_jwt_key_2026_super_secure"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -55,6 +54,12 @@ spec:
                 name: backend-config
             - secretRef:
                 name: backend-secret
+          env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backend-jwt-secret
+                  key: JWT_SECRET
           resources:
             requests:
               cpu: 200m

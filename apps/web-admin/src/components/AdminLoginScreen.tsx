@@ -14,48 +14,33 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onLoginSucce
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Handle Form Submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const cleanEmail = email.trim().toLowerCase();
-      const cleanPass = password.trim();
-
-      // Check against configured accounts
-      if (cleanEmail === 'admin@progear.vn' || cleanEmail === 'admin@camerasmart.vn') {
-        if (cleanPass === 'admin123456') {
-          const staff = PRESET_STAFF_ACCOUNTS.find((s) => s.id === 'admin_root') || PRESET_STAFF_ACCOUNTS[0];
-          onLoginSuccess(staff);
-          return;
-        }
+    const cleanEmail = email.trim().toLowerCase();
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, password }),
+      });
+      if (!response.ok) throw new Error('Thông tin đăng nhập không hợp lệ');
+      const result = await response.json();
+      if (!['ADMIN', 'STAFF'].includes(result?.user?.role) || !result?.token) {
+        throw new Error('Tài khoản không có quyền truy cập cổng quản trị');
       }
-
-      if (cleanEmail === 'tuvan1@progear.vn') {
-        if (cleanPass === 'progear123') {
-          onLoginSuccess(PRESET_STAFF_ACCOUNTS[0]); // Hoàng Nam
-          return;
-        }
-      }
-
-      if (cleanEmail === 'tuvan2@progear.vn') {
-        if (cleanPass === 'progear123') {
-          onLoginSuccess(PRESET_STAFF_ACCOUNTS[1]); // Minh Thư
-          return;
-        }
-      }
-
-      if (cleanEmail === 'tuvan3@progear.vn') {
-        if (cleanPass === 'progear123') {
-          onLoginSuccess(PRESET_STAFF_ACCOUNTS[2]); // Quốc Anh
-          return;
-        }
-      }
-
+      sessionStorage.setItem('PROGEAR_ADMIN_TOKEN', result.token);
+      sessionStorage.setItem('PROGEAR_ADMIN_ROLE', result.user.role);
+      const staff = result.user.role === 'ADMIN'
+        ? PRESET_STAFF_ACCOUNTS.find((s) => s.id === 'admin_root')
+        : PRESET_STAFF_ACCOUNTS.find((s) => s.email === cleanEmail);
+      onLoginSuccess(staff || PRESET_STAFF_ACCOUNTS[0]);
+    } catch {
       setIsLoading(false);
       setErrorMessage('Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại thông tin đăng nhập!');
-    }, 400);
+    }
   };
 
   return (

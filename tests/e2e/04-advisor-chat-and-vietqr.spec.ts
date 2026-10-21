@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Live Advisor Chat, Multi-Staff Collision Locking & VietQR Payment Box', () => {
   test('TC-CHAT-01: Floating Contact Widget displays Zalo and Live Advisor bubbles', async ({ page }) => {
     await page.goto('http://localhost:3000/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check Floating Widget container
     const widget = page.getByTestId('floating-contact-widget');
@@ -21,7 +21,7 @@ test.describe('Live Advisor Chat, Multi-Staff Collision Locking & VietQR Payment
 
   test('TC-CHAT-02: Customer Logins via Facebook 1-Click and Sends Consultation Message', async ({ page }) => {
     await page.goto('http://localhost:3000/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click Livechat bubble
     await page.getByTestId('btn-livechat-bubble').click();
@@ -54,7 +54,7 @@ test.describe('Live Advisor Chat, Multi-Staff Collision Locking & VietQR Payment
 
   test('TC-CHAT-03: Admin Support Desk receives session, claims chat, and locks out other advisors', async ({ page }) => {
     await page.goto('http://localhost:3001/admin/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const loginScreen = page.getByTestId('admin-login-screen');
     if (await loginScreen.isVisible()) {
       await page.getByTestId('input-admin-email').fill('admin@progear.vn');
@@ -100,7 +100,7 @@ test.describe('Live Advisor Chat, Multi-Staff Collision Locking & VietQR Payment
 
   test('TC-INTERACTIVE-04: Verify interactive modals (Installment 0%, Trade-in, MegaMenu & VietQR)', async ({ page }) => {
     await page.goto('http://localhost:3000/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // 1. Test Mega Menu
     await page.getByTestId('btn-toggle-mega-menu').click();

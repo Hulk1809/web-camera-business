@@ -1,7 +1,10 @@
-import { Controller, Get, Post, Patch, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { OrderStatus, PaymentStatus } from '@prisma/client';
+import { OrderStatus, PaymentStatus, Role } from '@prisma/client';
+import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 
 @ApiTags('Orders')
 @Controller('orders')
@@ -15,6 +18,8 @@ export class OrdersController {
   }
 
   @Get()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN, Role.STAFF)
   @ApiOperation({ summary: 'Lấy danh sách tất cả đơn hàng cho Admin portal' })
   async findAll(@Query() query: any) {
     return this.ordersService.findAll(query);
@@ -26,7 +31,15 @@ export class OrdersController {
     return this.ordersService.findOne(id);
   }
 
+  @Post(':id/cancel')
+  @ApiOperation({ summary: 'Khách hàng hủy đơn đang chờ xử lý bằng số điện thoại đặt hàng' })
+  async cancel(@Param('id') id: string, @Body() body: { customerPhone: string }) {
+    return this.ordersService.cancelByCustomer(id, body.customerPhone);
+  }
+
   @Patch(':id/status')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN, Role.STAFF)
   @ApiOperation({ summary: 'Cập nhật trạng thái đơn hàng (Xác nhận, Đang giao, Đã giao...)' })
   async updateStatus(
     @Param('id') id: string,

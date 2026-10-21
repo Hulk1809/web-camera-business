@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -85,6 +85,10 @@ export class ProductsService {
   }
 
   async create(data: any) {
+    const stockQuantity = Number(data.stockQuantity ?? data.stock ?? 10);
+    if (!Number.isSafeInteger(stockQuantity) || stockQuantity < 0) {
+      throw new BadRequestException('Tồn kho phải là số nguyên không âm');
+    }
     let categoryId = data.categoryId ? Number(data.categoryId) : undefined;
     if (!categoryId && data.category) {
       const slug = String(data.category).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -133,7 +137,6 @@ export class ProductsService {
     const sku = data.sku || ('PRO-' + Math.floor(1000 + Math.random() * 9000));
     const price = Number(data.price) || 25000000;
     const originalPrice = Number(data.originalPrice) || Math.round(price * 1.15);
-    const stockQuantity = Number(data.stockQuantity || data.stock) || 10;
     const shortDesc = data.shortDesc || name;
     const description = data.description || shortDesc;
     const specifications = data.specifications || {
@@ -187,7 +190,35 @@ export class ProductsService {
   }
 
   async update(id: string, data: any) {
-    const { images, imageUrls, imageUrl, ...productData } = data;
+    const { images, imageUrls, imageUrl, ...rawData } = data;
+    const productData: any = {};
+    for (const key of ['name', 'slug', 'sku', 'shortDesc', 'description', 'isFeatured', 'isActive', 'specifications']) {
+      if (rawData[key] !== undefined) productData[key] = rawData[key];
+    }
+    for (const key of ['price', 'originalPrice']) {
+      if (rawData[key] !== undefined) productData[key] = Number(rawData[key]);
+    }
+    if (rawData.stockQuantity !== undefined) productData.stockQuantity = rawData.stockQuantity;
+
+    if (rawData.categoryId !== undefined) productData.categoryId = Number(rawData.categoryId);
+    else if (typeof rawData.category === 'string' && rawData.category.trim()) {
+      const name = rawData.category.trim();
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const category = await this.prisma.category.upsert({ where: { slug }, update: {}, create: { name, slug } });
+      productData.categoryId = category.id;
+    }
+    if (rawData.brandId !== undefined) productData.brandId = Number(rawData.brandId);
+    else if (typeof rawData.brand === 'string' && rawData.brand.trim()) {
+      const name = rawData.brand.trim();
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const brand = await this.prisma.brand.upsert({ where: { slug }, update: {}, create: { name, slug } });
+      productData.brandId = brand.id;
+    }
+
+    if (productData.stockQuantity !== undefined &&
+        (!Number.isSafeInteger(productData.stockQuantity) || productData.stockQuantity < 0)) {
+      throw new BadRequestException('Tồn kho phải là số nguyên không âm');
+    }
 
     const hasNewImages = images !== undefined || imageUrls !== undefined || imageUrl !== undefined;
     if (hasNewImages) {
@@ -229,7 +260,10 @@ export class ProductsService {
       await this.prisma.productImage.deleteMany({ where: { productId: id } });
       return await this.prisma.product.delete({ where: { id } });
     } catch (err) {
-      return { id, deleted: true };
+      return this.prisma.product.update({
+        where: { id },
+        data: { isActive: false },
+      });
     }
   }
 

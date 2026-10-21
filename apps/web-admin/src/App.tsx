@@ -408,8 +408,8 @@ export const normalizeAdminProduct = (p: any): Product => {
     id: p.id || defaultMatch?.id || `prod-${Date.now()}`,
     name: p.name || defaultMatch?.name || 'Sản phẩm máy ảnh',
     sku: p.sku || defaultMatch?.sku || `SKU-${Date.now()}`,
-    brand: p.brand || defaultMatch?.brand || 'Sony',
-    category: p.category || defaultMatch?.category || 'Máy Ảnh Mirrorless & DSLR',
+    brand: (typeof p.brand === 'object' ? p.brand?.name : p.brand) || defaultMatch?.brand || 'Sony',
+    category: (typeof p.category === 'object' ? p.category?.name : p.category) || defaultMatch?.category || 'Máy Ảnh Mirrorless & DSLR',
     price: Number(p.price) || defaultMatch?.price || 1000000,
     originalPrice: Number(p.originalPrice) || defaultMatch?.originalPrice || Math.round((Number(p.price) || 1000000) * 1.15),
     stock: finalStock,
@@ -656,6 +656,13 @@ export const PRESET_GEAR_IMAGES = [
   },
 ];
 
+const adminFetch = (input: RequestInfo | URL, init: RequestInit = {}) => {
+  const headers = new Headers(init.headers);
+  const token = sessionStorage.getItem('PROGEAR_ADMIN_TOKEN');
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  return fetch(input, { ...init, headers });
+};
+
 export function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'finance' | 'products' | 'categories' | 'warranty' | 'k8s' | 'chat'>('dashboard');
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -664,11 +671,15 @@ export function App() {
   // Enterprise Authentication Guard State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
-      return sessionStorage.getItem('PROGEAR_ADMIN_LOGGED_IN') === 'true';
+      return sessionStorage.getItem('PROGEAR_ADMIN_LOGGED_IN') === 'true' &&
+        !!sessionStorage.getItem('PROGEAR_ADMIN_TOKEN');
     } catch {
       return false;
     }
   });
+  const [authenticatedRole, setAuthenticatedRole] = useState<string>(() =>
+    sessionStorage.getItem('PROGEAR_ADMIN_ROLE') || '',
+  );
 
   // Unassigned chat sessions counter
   const [waitingChatCount, setWaitingChatCount] = useState<number>(() => {
@@ -851,7 +862,7 @@ export function App() {
   const fetchProducts = async () => {
     setIsProductsLoading(true);
     try {
-      const res = await fetch('/api/products?limit=100');
+      const res = await adminFetch('/api/products?limit=100');
       if (res.ok) {
         const data = await res.json();
         if (data && Array.isArray(data.items) && data.items.length > 0) {
@@ -874,7 +885,7 @@ export function App() {
     setIsOrdersLoading(true);
     let backendOrders: Order[] = [];
     try {
-      const res = await fetch('/api/orders?limit=100');
+      const res = await adminFetch('/api/orders?limit=100');
       if (res.ok) {
         const data = await res.json();
         if (data && Array.isArray(data.items)) {
@@ -934,9 +945,25 @@ export function App() {
     setIsOrdersLoading(false);
   };
 
+  const fetchSerials = async () => {
+    try {
+      const response = await adminFetch('/api/warranty');
+      if (!response.ok) return;
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setSerials(data);
+        localStorage.setItem('PROGEAR_SHARED_SERIALS', JSON.stringify(data));
+      }
+    } catch {
+      // Keep the last local snapshot when the backend is temporarily unavailable.
+    }
+  };
+
   useEffect(() => {
+    if (!isAuthenticated) return;
     fetchProducts();
     fetchOrders();
+    fetchSerials();
 
     const interval = setInterval(() => {
       fetchOrders();
@@ -968,7 +995,7 @@ export function App() {
       clearInterval(interval);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [isAuthenticated]);
 
   // Sync inputs whenever selectedOrderDetails modal is opened
   useEffect(() => {
@@ -1044,7 +1071,7 @@ export function App() {
 
     // Call backend API
     try {
-      await fetch(`/api/orders/${targetId}/status`, {
+      await adminFetch(`/api/orders/${targetId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1102,7 +1129,7 @@ export function App() {
     } catch {}
 
     try {
-      await fetch(`/api/products/${product.id}`, {
+      await adminFetch(`/api/products/${product.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stockQuantity: newStock }),
@@ -1155,7 +1182,7 @@ export function App() {
       message: 'Thiết bị đã được xóa khỏi hệ thống quản trị.',
     });
     try {
-      await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      await adminFetch(`/api/products/${id}`, { method: 'DELETE' });
     } catch {}
   };
 
@@ -1406,7 +1433,7 @@ export function App() {
       } catch {}
 
       try {
-        await fetch(`/api/products/${editingProductId}`, {
+        await adminFetch(`/api/products/${editingProductId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1455,15 +1482,9 @@ export function App() {
         specifications: specsObj,
       };
 
-      const updatedProdList = [newProdItem, ...products];
-      setProducts(updatedProdList);
+      let persistedProduct: Product;
       try {
-        localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(updatedProdList));
-        window.dispatchEvent(new CustomEvent('PROGEAR_PRODUCTS_UPDATED', { detail: updatedProdList }));
-      } catch {}
-
-      try {
-        await fetch('/api/products', {
+        const response = await adminFetch('/api/products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1481,6 +1502,19 @@ export function App() {
             specifications: specsObj,
           }),
         });
+        if (!response.ok) throw new Error('Không thể lưu sản phẩm vào hệ thống');
+        persistedProduct = normalizeAdminProduct(await response.json());
+      } catch (error) {
+        showToast({ id: String(Date.now()), type: 'error', title: 'Thêm thiết bị thất bại',
+          message: error instanceof Error ? error.message : 'Vui lòng thử lại.' });
+        return;
+      }
+
+      const updatedProdList = [persistedProduct, ...products];
+      setProducts(updatedProdList);
+      try {
+        localStorage.setItem('PROGEAR_SHARED_PRODUCTS', JSON.stringify(updatedProdList));
+        window.dispatchEvent(new CustomEvent('PROGEAR_PRODUCTS_UPDATED', { detail: updatedProdList }));
       } catch {}
 
       setShowAddProductModal(false);
@@ -1533,13 +1567,62 @@ export function App() {
     const qty = Math.max(1, posQuantity || 1);
     const totalAmount = unitPrice * qty;
 
+    if (qty !== 1) {
+      setIsPosSubmitting(false);
+      showToast({
+        id: String(Date.now()),
+        type: 'warning',
+        title: 'Mỗi hóa đơn serial chỉ bán 1 thiết bị',
+        message: 'Vui lòng tạo từng hóa đơn để mỗi máy được gắn đúng một serial bảo hành.',
+      });
+      return;
+    }
+
     // Resolve or generate Serial Item
     let serialSn = posSelectedSerialSn.trim() || posCustomSerialInput.trim();
     if (!serialSn) {
       serialSn = `${activeProduct.sku}-${Date.now().toString().slice(-4)}`;
     }
 
-    const existingSerial = serials.find((s) => s.serialNumber === serialSn);
+    let existingSerial = serials.find((s) => s.serialNumber === serialSn);
+    try {
+      if (!existingSerial) {
+        const createSerialResponse = await adminFetch('/api/warranty', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId: activeProduct.id, serialNumber: serialSn, warrantyMonths: 24 }),
+        });
+        if (!createSerialResponse.ok) throw new Error('Không thể tạo serial trên hệ thống');
+      }
+
+      const saleResponse = await adminFetch('/api/warranty/pos-sell', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serialNumber: serialSn,
+          customerName: posCustomerName.trim(),
+          customerPhone: posCustomerPhone.trim(),
+          paymentMethod: posPaymentMethod === 'CASH' ? 'COD' : 'VIETQR',
+          price: unitPrice,
+          orderNumber,
+        }),
+      });
+      if (!saleResponse.ok) {
+        const body = await saleResponse.json().catch(() => null);
+        throw new Error(body?.message || 'Không thể ghi nhận giao dịch POS');
+      }
+    } catch (error) {
+      setIsPosSubmitting(false);
+      showToast({
+        id: String(Date.now()),
+        type: 'error',
+        title: 'Xuất bán POS thất bại',
+        message: error instanceof Error ? error.message : 'Vui lòng thử lại sau.',
+      });
+      return;
+    }
+
+    existingSerial = serials.find((s) => s.serialNumber === serialSn);
     const updatedSerial: SerialItem = existingSerial
       ? {
           ...existingSerial,
@@ -1783,6 +1866,7 @@ export function App() {
             sessionStorage.setItem('PROGEAR_ADMIN_LOGGED_IN', 'true');
           } catch {}
           chatSyncService.setActiveStaff(staff);
+          setAuthenticatedRole(staff.id === 'admin_root' ? 'ADMIN' : 'STAFF');
           setIsAuthenticated(true);
         }}
       />
@@ -2018,7 +2102,10 @@ export function App() {
               onClick={() => {
                 try {
                   sessionStorage.removeItem('PROGEAR_ADMIN_LOGGED_IN');
+                  sessionStorage.removeItem('PROGEAR_ADMIN_TOKEN');
+                  sessionStorage.removeItem('PROGEAR_ADMIN_ROLE');
                 } catch {}
+                setAuthenticatedRole('');
                 setIsAuthenticated(false);
               }}
               title="Đăng xuất khỏi cổng quản trị"
@@ -2037,7 +2124,7 @@ export function App() {
               <span>Bán Tại Quầy (POS)</span>
             </button>
 
-            {activeTab === 'products' && (
+            {activeTab === 'products' && authenticatedRole === 'ADMIN' && (
               <button
                 data-testid="btn-open-add-product"
                 onClick={openAddProductModal}

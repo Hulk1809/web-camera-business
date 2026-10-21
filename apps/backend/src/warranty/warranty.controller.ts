@@ -1,7 +1,10 @@
-import { Controller, Get, Post, Body, Param, NotFoundException, Query } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Body, Param, NotFoundException, Query, UseGuards } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { SerialStatus, PaymentMethod, PaymentStatus, OrderStatus } from '@prisma/client';
+import { SerialStatus, PaymentMethod, PaymentStatus, OrderStatus, Role } from '@prisma/client';
+import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 
 @ApiTags('Warranty (Tra cứu & Quản lý Serial)')
 @Controller('warranty')
@@ -9,6 +12,8 @@ export class WarrantyController {
   constructor(private prisma: PrismaService) {}
 
   @Get()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN, Role.STAFF)
   @ApiOperation({ summary: 'Lấy toàn bộ danh sách mã Serial cho Admin' })
   async listAllSerials(@Query() query: any) {
     const serials = await this.prisma.cameraSerial.findMany({
@@ -42,6 +47,8 @@ export class WarrantyController {
   }
 
   @Post()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN, Role.STAFF)
   @ApiOperation({ summary: 'Thêm mới mã Serial Number vào kho' })
   async createSerial(
     @Body() body: { productId: string; serialNumber: string; warrantyMonths?: number },
@@ -58,6 +65,8 @@ export class WarrantyController {
   }
 
   @Post('pos-sell')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN, Role.STAFF)
   @ApiOperation({ summary: 'Bán tại quầy Showroom (POS) & Kích hoạt bảo hành điện tử' })
   async sellSerialAtCounter(
     @Body()
@@ -71,79 +80,54 @@ export class WarrantyController {
     },
   ) {
     const cleanSn = body.serialNumber.trim().toUpperCase();
-    const serial = await this.prisma.cameraSerial.findUnique({
-      where: { serialNumber: cleanSn },
-      include: { product: true },
-    });
-
-    if (!serial) {
-      throw new NotFoundException(`Không tìm thấy mã Serial ${cleanSn} trong kho.`);
-    }
-
     const now = new Date();
-    const expDate = new Date(now);
-    expDate.setMonth(expDate.getMonth() + (serial.warrantyMonths || 24));
-
     const finalOrderNumber =
       body.orderNumber ||
       `POS-${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now
         .getDate()
         .toString()
         .padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const finalPrice = body.price || serial.product.price;
+    return this.prisma.$transaction(async (tx) => {
+      const serial = await tx.cameraSerial.findUnique({
+        where: { serialNumber: cleanSn },
+        include: { product: true },
+      });
+      if (!serial) throw new NotFoundException(`Không tìm thấy mã Serial ${cleanSn} trong kho.`);
+      if (serial.status !== SerialStatus.IN_STOCK) {
+        throw new BadRequestException(`Serial ${cleanSn} đã được xuất bán hoặc không còn khả dụng.`);
+      }
 
-    // Create Order
-    const order = await this.prisma.order.create({
-      data: {
-        orderNumber: finalOrderNumber,
-        customerName: body.customerName.trim(),
-        customerPhone: body.customerPhone.trim(),
-        shippingAddress: 'Showroom Quầy Trực Tiếp (125 Điện Biên Phủ, P. Đa Kao, Q.1, TP.HCM)',
-        totalAmount: finalPrice,
-        paymentMethod: body.paymentMethod === 'COD' ? PaymentMethod.COD : PaymentMethod.VIETQR,
-        paymentStatus: PaymentStatus.PAID,
-        orderStatus: OrderStatus.COMPLETED,
-        note: `[BÁN TẠI QUẦY POS] Bàn giao trực tiếp tại showroom. Serial: ${cleanSn}`,
-        items: {
-          create: {
-            productId: serial.productId,
-            productName: serial.product.name,
-            productSku: serial.product.sku,
-            price: finalPrice,
-            quantity: 1,
-            subtotal: finalPrice,
-          },
+      const reserved = await tx.product.updateMany({
+        where: { id: serial.productId, isActive: true, stockQuantity: { gte: 1 } },
+        data: { stockQuantity: { decrement: 1 } },
+      });
+      if (reserved.count !== 1) throw new BadRequestException('Sản phẩm không còn tồn kho để xuất bán.');
+
+      const expDate = new Date(now);
+      expDate.setMonth(expDate.getMonth() + (serial.warrantyMonths || 24));
+      const finalPrice = body.price ?? serial.product.price;
+      const order = await tx.order.create({
+        data: {
+          orderNumber: finalOrderNumber,
+          customerName: body.customerName.trim(),
+          customerPhone: body.customerPhone.trim(),
+          shippingAddress: 'Showroom Quầy Trực Tiếp (125 Điện Biên Phủ, P. Đa Kao, Q.1, TP.HCM)',
+          totalAmount: finalPrice,
+          paymentMethod: body.paymentMethod === 'COD' ? PaymentMethod.COD : PaymentMethod.VIETQR,
+          paymentStatus: PaymentStatus.PAID,
+          orderStatus: OrderStatus.COMPLETED,
+          note: `[BÁN TẠI QUẦY POS] Bàn giao trực tiếp tại showroom. Serial: ${cleanSn}`,
+          items: { create: { productId: serial.productId, productName: serial.product.name,
+            productSku: serial.product.sku, price: finalPrice, quantity: 1, subtotal: finalPrice } },
         },
-      },
+      });
+      const updatedSerial = await tx.cameraSerial.update({
+        where: { id: serial.id },
+        data: { status: SerialStatus.SOLD, orderId: order.id, soldDate: now, warrantyExpires: expDate },
+        include: { product: true, order: true },
+      });
+      return { success: true, serial: updatedSerial, order };
     });
-
-    // Update Serial to SOLD & activate warranty
-    const updatedSerial = await this.prisma.cameraSerial.update({
-      where: { id: serial.id },
-      data: {
-        status: SerialStatus.SOLD,
-        orderId: order.id,
-        soldDate: now,
-        warrantyExpires: expDate,
-      },
-      include: { product: true, order: true },
-    });
-
-    // Decrement stock
-    await this.prisma.product.update({
-      where: { id: serial.productId },
-      data: {
-        stockQuantity: {
-          decrement: 1,
-        },
-      },
-    });
-
-    return {
-      success: true,
-      serial: updatedSerial,
-      order,
-    };
   }
 
   @Get(':query')
