@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: camera-platform
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/camera_platform}
+    username: ${DATABASE_USER:camera}
+    password: ${DATABASE_PASSWORD:camera}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: camera_platform
+        jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    default-schema: camera_platform
+    schemas: camera_platform
+    create-schemas: true
+  docker:
+    compose:
+      enabled: false
+server:
+  port: ${PORT:8080}
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: ${SESSION_COOKIE_SECURE:false}
+        same-site: lax
+      timeout: 30m
+  forward-headers-strategy: framework
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+vaadin:
+  launch-browser: false
+app:
+  bootstrap-admin:
+    enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
+    email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}

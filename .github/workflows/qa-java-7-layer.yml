@@ -1,0 +1,40 @@
+name: External Java QA - 7 Layers
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_run:
+    workflows: ['CI/CD Pipeline - Camera E-Commerce to Azure AKS']
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  production-read-only:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: qa-java
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Run seven read-only layers
+        env:
+          QA_BASE_URL: https://progear.74.176.156.158.nip.io
+          QA_ALLOW_WRITES: 'false'
+        run: mvn --batch-mode --no-transfer-progress -Pread-only test
+      - name: Upload JUnit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-java-seven-layer-reports
+          path: qa-java/target/reports/junit/
+          if-no-files-found: warn

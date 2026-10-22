@@ -1,6 +1,8 @@
 # 🎬 PRO GEAR — Hệ Thống Thương Mại Điện Tử Máy Ảnh, Máy Quay Cinema & Flycam DJI
 > **Nền tảng thương mại điện tử chuyên nghiệp cho ngành Nhiếp Ảnh & Điện Ảnh (Sony Alpha, Canon EOS, Fujifilm, Blackmagic Cinema, Flycam & Gimbal DJI). Tích hợp Monorepo NestJS API, PostgreSQL, React Vite & hạ tầng Kubernetes AKS.**
 
+> **Java migration đang thực hiện:** `java-platform/` chứa Spring Boot + Vaadin Flow Java 21 chạy shadow, chưa nhận production traffic. `qa-java/` là bộ QA 7 tầng Java độc lập kiểm thử website từ bên ngoài. Bản Java chỉ được cutover sau khi đạt feature parity và toàn bộ quality gate.
+
 ---
 
 ## 🌟 1. Tổng Quan Kiến Trúc & Luồng Thông API
@@ -120,4 +122,3 @@ npm run test:e2e:ui
 # Mở báo cáo HTML kết quả kiểm thử
 npm run test:report
 ```
-
