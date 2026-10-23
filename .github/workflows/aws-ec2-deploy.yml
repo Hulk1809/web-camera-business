@@ -98,12 +98,15 @@ jobs:
           } > /tmp/progear-aws/.env
           chmod 600 /tmp/progear-aws/.env
           cp deploy/aws/docker-compose.yml /tmp/progear-aws/docker-compose.yml
+          cp deploy/aws/deploy.sh /tmp/progear-aws/deploy.sh
+          chmod 700 /tmp/progear-aws/deploy.sh
 
       - name: Upload AWS Compose stack
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/aws-ec2 "$AWS_USER@$AWS_HOST" "mkdir -p '$DEPLOY_DIR' && chmod 700 '$DEPLOY_DIR'"
-          scp -i ~/.ssh/aws-ec2 /tmp/progear-aws/docker-compose.yml /tmp/progear-aws/.env \
+          scp -i ~/.ssh/aws-ec2 /tmp/progear-aws/docker-compose.yml /tmp/progear-aws/deploy.sh \
+            /tmp/progear-aws/.env \
             "$AWS_USER@$AWS_HOST:$DEPLOY_DIR/"
 
       - name: Authenticate EC2 to GHCR
@@ -117,23 +120,8 @@ jobs:
       - name: Deploy and verify
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/aws-ec2 "$AWS_USER@$AWS_HOST" "
-            set -euo pipefail
-            cd '$DEPLOY_DIR'
-            sudo docker compose pull
-            sudo docker compose up -d --remove-orphans
-            sudo docker compose ps
-            for attempt in \$(seq 1 30); do
-              if curl --fail --silent http://127.0.0.1:8090/actuator/health/readiness | grep -q UP; then
-                echo 'AWS Java health check passed'
-                exit 0
-              fi
-              sleep 5
-            done
-            echo 'AWS Java health check failed'
-            sudo docker compose logs --tail=150 java-platform database
-            exit 1
-          "
+          ssh -i ~/.ssh/aws-ec2 "$AWS_USER@$AWS_HOST" \
+            "'$DEPLOY_DIR/deploy.sh' '$DEPLOY_DIR'"
 
       - name: Verify public HTTPS
         run: |
@@ -148,8 +136,16 @@ jobs:
           done
           exit 1
 
+      - name: Verify public HTTP redirects to HTTPS
+        run: |
+          set -euo pipefail
+          headers="$(curl --silent --show-error --max-time 15 --output /dev/null --dump-header - \
+            http://java-aws.54.179.55.104.nip.io/)"
+          printf '%s' "$headers" | grep -Eq '^HTTP/[0-9.]+ 30[1278]'
+          printf '%s' "$headers" | grep -Eiq '^location: https://java-aws\.54\.179\.55\.104\.nip\.io/'
+
       - name: Deployment diagnostics
         if: failure()
         run: |
           ssh -i ~/.ssh/aws-ec2 "$AWS_USER@$AWS_HOST" \
-            "cd '$DEPLOY_DIR' && sudo docker compose ps && sudo docker compose logs --tail=100" || true
+            "cd '$DEPLOY_DIR' && sudo docker compose ps && sudo docker ps --format 'table {{.Names}}\\t{{.Image}}\\t{{.Ports}}' && sudo docker compose logs --tail=100" || true
