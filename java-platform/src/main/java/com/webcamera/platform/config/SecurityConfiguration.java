@@ -21,7 +21,7 @@ public class SecurityConfiguration {
         http.authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.FORWARD, jakarta.servlet.DispatcherType.ERROR).permitAll()
                 .requestMatchers("/api/orders/**", "/api/dashboard/**", "/api/warranty", "/api/warranty/").authenticated()
-                .requestMatchers("/error", "/actuator/health", "/actuator/health/**", "/api/health", "/api/products/**",
+                .requestMatchers("/error", "/progear.css", "/actuator/health", "/actuator/health/**", "/api/health", "/api/products/**",
                         "/api/categories", "/api/brands", "/api/warranty/**", "/api/**").permitAll());
         http.with(VaadinSecurityConfigurer.vaadin(), vaadin -> vaadin.loginView(LoginView.class));
         http.headers(headers -> headers
