@@ -49,16 +49,38 @@ class UiSmokeResponsiveTest {
 
     @Test
     void adminLoginRendersWithoutAuthenticating() {
-        open(new Dimension(1366, 768), "/admin/");
+        open(new Dimension(1366, 768), QaConfig.javaTarget() ? "/admin/login" : "/admin/");
         if (QaConfig.javaTarget()) {
-            visible(By.id("qa-login-screen"));
-            visible(By.id("qa-login-form"));
+            visible(By.xpath("//*[contains(normalize-space(.), 'Đăng nhập nhân viên')]"));
+            assertFalse(driver.getPageSource().contains("TẠO TÀI KHOẢN KHÁCH HÀNG"),
+                    "Staff portal must not expose customer registration");
         } else {
             visible(By.cssSelector("[data-testid='admin-login-screen']"));
             visible(By.cssSelector("[data-testid='input-admin-email']"));
             visible(By.cssSelector("[data-testid='btn-admin-login-submit']"));
         }
         assertNoHorizontalOverflow();
+    }
+
+    @Test
+    void customerLoginAndRegistrationRenderSeparately() {
+        if (!QaConfig.javaTarget()) return;
+        open(new Dimension(1366, 768), "/dang-nhap");
+        visible(By.id("qa-login-screen"));
+        visible(By.id("qa-login-form"));
+        visible(By.xpath("//*[contains(normalize-space(.), 'Đăng ký thành viên')]"));
+        assertFalse(driver.getPageSource().contains("Cổng nội bộ"),
+                "Customer portal must not contain staff-login copy");
+        assertNoHorizontalOverflow();
+    }
+
+    @Test
+    void protectedCustomerOrdersRedirectAnonymousUserToCustomerLogin() {
+        if (!QaConfig.javaTarget()) return;
+        open(new Dimension(1366, 768), "/my-orders");
+        new WebDriverWait(driver, QaConfig.timeout()).until(webDriver ->
+                webDriver.getCurrentUrl().contains("/dang-nhap"));
+        assertTrue(driver.getCurrentUrl().contains("/dang-nhap"), driver.getCurrentUrl());
     }
 
     private void open(Dimension size, String path) {
