@@ -3,24 +3,27 @@ package com.webcamera.platform.ui;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.details.Details;
-import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.webcamera.platform.domain.Order;
 import com.webcamera.platform.domain.Product;
@@ -29,8 +32,13 @@ import com.webcamera.platform.service.CatalogService;
 import com.webcamera.platform.service.OrderService;
 import com.webcamera.platform.service.PaymentService;
 import com.webcamera.platform.service.UserService;
+import com.webcamera.platform.ui.store.HeroSection;
+import com.webcamera.platform.ui.store.ProductCard;
+import com.webcamera.platform.ui.store.StoreFooter;
+import com.webcamera.platform.ui.store.StoreHeader;
+import com.webcamera.platform.ui.store.StorePresentation;
+import com.webcamera.platform.ui.theme.UiTokens;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,170 +49,165 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-@Route(value = "", layout = MainLayout.class)
-@PageTitle("Store | Camera Platform")
+@Route("")
+@PageTitle("PRO GEAR — Siêu Thị Máy Ảnh, Cinema & DJI Flagship")
 @AnonymousAllowed
 public class StoreView extends VerticalLayout {
-    private enum Availability { ALL, IN_STOCK, OUT_OF_STOCK }
+    private static final List<String> BRANDS = List.of("Tất Cả", "Sony", "DJI", "Canon", "Fujifilm", "Nikon", "Blackmagic Design");
 
     private final CatalogService catalog;
     private final OrderService orders;
     private final UserService users;
     private final PaymentService payments;
-    private final Grid<Product> productGrid = new Grid<>(Product.class, false);
-    private final Grid<CartLine> cartGrid = new Grid<>(CartLine.class, false);
     private final Map<UUID, CartLine> cart = new LinkedHashMap<>();
-    private final TextField search = new TextField("Search catalog");
-    private final ComboBox<Availability> availability = new ComboBox<>("Availability");
+    private final TextField search = new TextField();
+    private final FormLayout catalogCards = cardsLayout();
+    private final FormLayout flashCards = cardsLayout();
     private final Span resultCount = new Span();
-    private final Span cartSummary = new Span("Cart is empty");
-    private final VerticalLayout paymentPanel = new VerticalLayout();
+    private final Span cartCount = new Span();
+    private final Dialog cartDialog = new Dialog();
+    private final VerticalLayout cartLines = new VerticalLayout();
     private List<Product> products = List.of();
+    private String selectedBrand = "Tất Cả";
+    private String selectedCategory = "Tất Cả";
 
     public StoreView(CatalogService catalog, OrderService orders, UserService users, PaymentService payments) {
         this.catalog = catalog;
         this.orders = orders;
         this.users = users;
         this.payments = payments;
-
+        setPadding(false);
+        setSpacing(false);
         setSizeFull();
-        add(new H2("Camera store"), new Paragraph("Browse the live catalog, build a draft cart, and place an account order."));
-        configureFilters();
-        configureProductGrid();
-        configureCartGrid();
+        getStyle().set("background", UiTokens.PAGE).set("font-family", "Arial, Helvetica, sans-serif");
 
-        HorizontalLayout filters = new HorizontalLayout(search, availability, resultCount);
-        filters.setWidthFull();
-        filters.setAlignItems(Alignment.END);
-        filters.setFlexGrow(1, search);
+        configureSearch();
+        configureCartDialog();
+        add(new StoreHeader(search, cartDialog::open, () -> getUI().ifPresent(ui -> ui.navigate(WarrantyView.class)),
+                () -> getUI().ifPresent(ui -> ui.navigate(LoginView.class))));
 
-        Details checkout = new Details("Checkout", createCheckoutForm());
-        checkout.setWidthFull();
-        paymentPanel.setVisible(false);
-        add(filters, productGrid, new H3("Draft cart"), cartSummary, cartGrid, checkout, paymentPanel);
-        productGrid.setWidthFull();
-        cartGrid.setWidthFull();
+        VerticalLayout content = new VerticalLayout();
+        content.setPadding(true);
+        content.setSpacing(true);
+        content.setWidthFull();
+        content.setMaxWidth(UiTokens.CONTENT_WIDTH);
+        content.getStyle().set("margin", "0 auto").set("box-sizing", "border-box");
+        content.add(new HeroSection(this::selectCategory, this::showInstallmentDialog, this::showTradeInDialog),
+                createFlashDeal(), createCatalog(), createBenefits());
+        add(content, new StoreFooter());
         refreshCatalog();
     }
 
-    private void configureFilters() {
-        search.setId("qa-search-input");
-        search.setPlaceholder("Name, SKU, or description");
-        search.setClearButtonVisible(true);
+    private void configureSearch() {
         search.setValueChangeMode(ValueChangeMode.LAZY);
         search.addValueChangeListener(event -> applyFilters());
-        availability.setItems(Availability.values());
-        availability.setItemLabelGenerator(value -> switch (value) {
-            case ALL -> "All products";
-            case IN_STOCK -> "In stock";
-            case OUT_OF_STOCK -> "Out of stock";
-        });
-        availability.setValue(Availability.ALL);
-        availability.addValueChangeListener(event -> applyFilters());
     }
 
-    private void configureProductGrid() {
-        productGrid.setId("qa-product-grid");
-        productGrid.addColumn(Product::getName).setHeader("Product").setAutoWidth(true).setFlexGrow(1);
-        productGrid.addColumn(Product::getSku).setHeader("SKU").setAutoWidth(true);
-        productGrid.addColumn(product -> money(product.getPrice())).setHeader("Price").setAutoWidth(true);
-        productGrid.addColumn(product -> product.getStockQuantity() > 0 ? product.getStockQuantity() + " available" : "Out of stock")
-                .setHeader("Availability").setAutoWidth(true);
-        productGrid.addComponentColumn(product -> {
-            RouterLink details = new RouterLink("Details", ProductDetailView.class, product.getId().toString());
-            Button add = new Button("Add", event -> addToCart(product));
-            add.setEnabled(product.getStockQuantity() > quantityInCart(product));
-            return new HorizontalLayout(details, add);
-        }).setHeader("Actions").setAutoWidth(true);
-        productGrid.setEmptyStateText("No products match these filters.");
-        productGrid.setAllRowsVisible(true);
+    private VerticalLayout createFlashDeal() {
+        H2 title = new H2("🔥 GIÁ SỐC HÔM NAY");
+        title.getStyle().set("background", UiTokens.BRAND_RED).set("color", "white").set("font-size", "16px")
+                .set("padding", "8px 12px").set("border-radius", "5px").set("margin", "0");
+        Span countdown = new Span("Kết thúc trong: 05 : 42 : 18");
+        countdown.getStyle().set("background", "#111827").set("color", "#FBBF24").set("padding", "7px 10px")
+                .set("border-radius", "5px").set("font-family", "monospace").set("font-weight", "800");
+        HorizontalLayout header = new HorizontalLayout(title, countdown);
+        header.setAlignItems(Alignment.CENTER);
+        header.getStyle().set("flex-wrap", "wrap");
+        VerticalLayout box = new VerticalLayout(header, flashCards);
+        box.setWidthFull();
+        box.getStyle().set("background", "white").set("border", "2px solid " + UiTokens.BRAND_RED)
+                .set("border-radius", "8px").set("box-sizing", "border-box");
+        return box;
     }
 
-    private void configureCartGrid() {
-        cartGrid.addColumn(line -> line.product().getName()).setHeader("Product").setFlexGrow(1);
-        cartGrid.addColumn(CartLine::quantity).setHeader("Qty").setAutoWidth(true);
-        cartGrid.addColumn(line -> money(line.subtotal())).setHeader("Subtotal").setAutoWidth(true);
-        cartGrid.addComponentColumn(line -> {
-            Button decrease = new Button("−", event -> changeQuantity(line, -1));
-            decrease.setAriaLabel("Remove one " + line.product().getName());
-            Button increase = new Button("+", event -> changeQuantity(line, 1));
-            increase.setAriaLabel("Add one " + line.product().getName());
-            increase.setEnabled(line.quantity() < line.product().getStockQuantity());
-            Button remove = new Button("Remove", event -> removeFromCart(line));
-            return new HorizontalLayout(decrease, increase, remove);
-        }).setHeader("Actions").setAutoWidth(true);
-        cartGrid.setEmptyStateText("Add a product to start a draft order.");
-        cartGrid.setAllRowsVisible(true);
-        refreshCart();
+    private VerticalLayout createCatalog() {
+        H2 title = new H2("MÁY ẢNH, CINEMA & DJI CHÍNH HÃNG");
+        title.getStyle().set("font-size", "20px").set("margin", "0");
+        resultCount.getStyle().set("color", UiTokens.MUTED).set("font-size", "12px");
+
+        FlexLayout brandFilters = new FlexLayout();
+        brandFilters.getStyle().set("gap", "6px").set("flex-wrap", "wrap");
+        for (String brand : BRANDS) {
+            Button chip = new Button(brand, event -> {
+                selectedBrand = brand;
+                applyFilters();
+            });
+            chip.getStyle().set("font-size", "11px").set("border-radius", "6px");
+            if ("Tất Cả".equals(brand)) chip.getStyle().set("background", UiTokens.BRAND_RED).set("color", "white");
+            brandFilters.add(chip);
+        }
+        Button allPrices = new Button("Tất cả mức giá", new Icon(VaadinIcon.FILTER));
+        allPrices.getStyle().set("font-size", "11px");
+        HorizontalLayout filterBar = new HorizontalLayout(brandFilters, allPrices);
+        filterBar.setWidthFull();
+        filterBar.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        filterBar.getStyle().set("background", "white").set("border", "1px solid " + UiTokens.BORDER)
+                .set("padding", "10px").set("border-radius", "8px").set("box-sizing", "border-box")
+                .set("flex-wrap", "wrap");
+
+        catalogCards.setId("qa-product-grid");
+        catalogCards.getElement().setAttribute("data-testid", "product-grid");
+        VerticalLayout section = new VerticalLayout(new HorizontalLayout(title, resultCount), filterBar, catalogCards);
+        section.setPadding(false);
+        section.setWidthFull();
+        section.getElement().setAttribute("id", "product-catalog");
+        return section;
     }
 
-    private VerticalLayout createCheckoutForm() {
-        TextField name = new TextField("Contact name");
-        EmailField email = new EmailField("Contact email");
-        TextField phone = new TextField("Phone");
-        TextArea address = new TextArea("Shipping address");
-        Checkbox acknowledgement = new Checkbox("I confirm contact and shipping details are correct");
-        Button placeOrder = new Button("Place account order", event -> placeOrder(name, email, phone, address, acknowledgement));
-        placeOrder.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        Paragraph limitation = new Paragraph("Payment uses MB Bank transfer. Order remains pending until staff verifies bank transaction.");
-        VerticalLayout form = new VerticalLayout(limitation, name, email, phone, address, acknowledgement, placeOrder);
-        form.setPadding(false);
-        form.setSpacing(true);
-        form.setWidthFull();
-        return form;
+    private FlexLayout createBenefits() {
+        FlexLayout benefits = new FlexLayout(
+                benefit(VaadinIcon.TRUCK, "Giao Hàng Siêu Tốc 2H", "Nội thành Hà Nội & TP.HCM"),
+                benefit(VaadinIcon.REFRESH, "Đổi Mới Trong 30 Ngày", "Lỗi phần cứng đổi máy mới ngay"),
+                benefit(VaadinIcon.SHIELD, "Bảo Hành Điện Tử SN", "Minh bạch, tra cứu trực tuyến"),
+                benefit(VaadinIcon.HEADSET, "Tư Vấn Chuyên Gia", "Hỗ trợ kỹ thuật 8:00 - 21:30"));
+        benefits.setWidthFull();
+        benefits.getStyle().set("gap", "12px").set("flex-wrap", "wrap");
+        benefits.getChildren().forEach(component -> component.getElement().getStyle().set("flex", "1 1 250px"));
+        return benefits;
     }
 
-    private void placeOrder(TextField name, EmailField email, TextField phone, TextArea address,
-                            Checkbox acknowledgement) {
-        if (cart.isEmpty()) {
-            Notification.show("Your cart is empty.");
-            return;
-        }
-        if (name.isEmpty() || email.isEmpty() || phone.isEmpty() || address.isEmpty()) {
-            Notification.show("Complete the checkout contact form before placing the order.");
-            return;
-        }
-        if (!Boolean.TRUE.equals(acknowledgement.getValue())) {
-            Notification.show("Please acknowledge the current checkout limitation.");
-            return;
-        }
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            Notification.show("Sign in with a customer account to place this order.");
-            getUI().ifPresent(ui -> ui.navigate(LoginView.class));
-            return;
-        }
-        try {
-            User customer = users.requireDomainUser(authentication.getName());
-            List<OrderService.Line> lines = cart.values().stream()
-                    .map(line -> new OrderService.Line(line.product().getId(), line.quantity()))
-                    .toList();
-            Order order = orders.place(customer.getId(), lines);
-            PaymentService.Instructions payment = payments.toInstructions(payments.createForOrder(order.getId()));
-            cart.clear();
-            refreshCart();
-            refreshCatalog();
-            showPayment(payment, order.getOrderNumber());
-            Notification.show("Order " + order.getOrderNumber() + " placed. Transfer exact amount and content shown below.",
-                    7000, Notification.Position.MIDDLE);
-        } catch (RuntimeException ex) {
-            Notification.show("Order was not placed: " + safeMessage(ex), 6000, Notification.Position.MIDDLE);
-        }
+    private HorizontalLayout benefit(VaadinIcon iconType, String title, String copy) {
+        Icon icon = new Icon(iconType);
+        icon.setSize("24px");
+        icon.getStyle().set("color", UiTokens.BRAND_RED);
+        Span heading = new Span(title);
+        heading.getStyle().set("font-size", "12px").set("font-weight", "800");
+        Span description = new Span(copy);
+        description.getStyle().set("font-size", "11px").set("color", UiTokens.MUTED);
+        VerticalLayout text = new VerticalLayout(heading, description);
+        text.setPadding(false);
+        text.setSpacing(false);
+        HorizontalLayout card = new HorizontalLayout(icon, text);
+        card.setAlignItems(Alignment.CENTER);
+        card.getStyle().set("background", "white").set("border", "1px solid " + UiTokens.BORDER)
+                .set("padding", "14px").set("border-radius", "8px").set("box-sizing", "border-box");
+        return card;
     }
 
-    private void showPayment(PaymentService.Instructions payment, String orderNumber) {
-        Image qr = new Image(payment.qrUrl(), "VietQR for order " + orderNumber);
-        qr.setWidth("320px");
-        paymentPanel.removeAll();
-        paymentPanel.add(new H3("MB Bank transfer"), qr,
-                new Span("Account: " + payment.accountNumber()),
-                new Span("Name: " + payment.accountName()),
-                new Span("Amount: " + payment.amount().toPlainString()),
-                new Span("Transfer content: " + payment.transferContent()),
-                new Paragraph("Status: pending manual bank verification. Do not change transfer content."));
-        paymentPanel.setVisible(true);
+    private void configureCartDialog() {
+        cartDialog.setHeaderTitle("Giỏ Hàng Của Bạn");
+        cartDialog.setWidth("min(480px, 95vw)");
+        cartDialog.setHeight("min(780px, 92vh)");
+        cartLines.setPadding(false);
+        cartLines.setWidthFull();
+
+        TextField name = new TextField("Họ và tên");
+        EmailField email = new EmailField("Email");
+        TextField phone = new TextField("Số điện thoại");
+        TextArea address = new TextArea("Địa chỉ giao hàng");
+        RadioButtonGroup<String> method = new RadioButtonGroup<>("Thanh toán", "VietQR MB Bank", "COD");
+        method.setValue("VietQR MB Bank");
+        Checkbox confirm = new Checkbox("Tôi xác nhận thông tin nhận hàng chính xác");
+        Button checkout = new Button("ĐẶT HÀNG", event -> placeOrder(name, email, phone, address, method, confirm));
+        checkout.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        checkout.setWidthFull();
+        checkout.getStyle().set("background", UiTokens.BRAND_RED).set("font-weight", "900");
+
+        cartCount.getStyle().set("font-weight", "800").set("color", UiTokens.BRAND_RED);
+        VerticalLayout body = new VerticalLayout(cartCount, cartLines, name, email, phone, address, method, confirm, checkout);
+        body.setPadding(false);
+        body.setWidthFull();
+        cartDialog.add(body);
     }
 
     private void refreshCatalog() {
@@ -214,78 +217,154 @@ public class StoreView extends VerticalLayout {
 
     private void applyFilters() {
         String query = search.getValue() == null ? "" : search.getValue().trim().toLowerCase(Locale.ROOT);
-        Availability selected = availability.getValue() == null ? Availability.ALL : availability.getValue();
         List<Product> filtered = products.stream()
-                .filter(product -> query.isBlank()
-                        || product.getName().toLowerCase(Locale.ROOT).contains(query)
+                .filter(product -> query.isBlank() || product.getName().toLowerCase(Locale.ROOT).contains(query)
                         || product.getSku().toLowerCase(Locale.ROOT).contains(query)
-                        || text(product.getDescription()).toLowerCase(Locale.ROOT).contains(query))
-                .filter(product -> selected == Availability.ALL
-                        || selected == Availability.IN_STOCK && product.getStockQuantity() > 0
-                        || selected == Availability.OUT_OF_STOCK && product.getStockQuantity() == 0)
+                        || safe(product.getDescription()).toLowerCase(Locale.ROOT).contains(query))
+                .filter(product -> "Tất Cả".equals(selectedBrand) || StorePresentation.brand(product).equalsIgnoreCase(selectedBrand))
+                .filter(product -> "Tất Cả".equals(selectedCategory)
+                        || StorePresentation.category(product).toLowerCase(Locale.ROOT).contains(selectedCategory.toLowerCase(Locale.ROOT))
+                        || product.getName().toLowerCase(Locale.ROOT).contains(selectedCategory.toLowerCase(Locale.ROOT)))
                 .toList();
-        productGrid.setItems(filtered);
-        resultCount.setText(filtered.size() + (filtered.size() == 1 ? " result" : " results"));
+        catalogCards.removeAll();
+        filtered.forEach(product -> catalogCards.add(new ProductCard(product, this::addToCart, this::openProduct)));
+        flashCards.removeAll();
+        products.stream().limit(5).forEach(product -> flashCards.add(new ProductCard(product, this::addToCart, this::openProduct)));
+        resultCount.setText(filtered.size() + " sản phẩm");
+    }
+
+    private void selectCategory(String category) {
+        selectedCategory = category;
+        applyFilters();
+        Notification.show("Đang lọc danh mục: " + category);
+    }
+
+    private void openProduct(Product product) {
+        getUI().ifPresent(ui -> ui.navigate(ProductDetailView.class, product.getId().toString()));
     }
 
     private void addToCart(Product product) {
         CartLine current = cart.get(product.getId());
         int next = current == null ? 1 : current.quantity() + 1;
         if (next > product.getStockQuantity()) {
-            Notification.show("No more stock is available for " + product.getName() + ".");
+            Notification.show("Sản phẩm đã đạt số lượng tồn kho.");
             return;
         }
         cart.put(product.getId(), new CartLine(product, next));
         refreshCart();
-        productGrid.getDataProvider().refreshAll();
-    }
-
-    private void changeQuantity(CartLine line, int delta) {
-        int next = line.quantity() + delta;
-        if (next <= 0) {
-            cart.remove(line.product().getId());
-        } else if (next <= line.product().getStockQuantity()) {
-            cart.put(line.product().getId(), new CartLine(line.product(), next));
-        }
-        refreshCart();
-        productGrid.getDataProvider().refreshAll();
-    }
-
-    private void removeFromCart(CartLine line) {
-        cart.remove(line.product().getId());
-        refreshCart();
-        productGrid.getDataProvider().refreshAll();
+        Notification.show("Đã thêm " + product.getName() + " vào giỏ hàng");
     }
 
     private void refreshCart() {
-        List<CartLine> lines = new ArrayList<>(cart.values());
-        cartGrid.setItems(lines);
-        int itemCount = lines.stream().mapToInt(CartLine::quantity).sum();
-        BigDecimal total = lines.stream().map(CartLine::subtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
-        cartSummary.setText(itemCount == 0 ? "Cart is empty" : itemCount + " item(s) · Draft total " + money(total));
+        cartLines.removeAll();
+        int count = cart.values().stream().mapToInt(CartLine::quantity).sum();
+        BigDecimal total = cart.values().stream().map(CartLine::subtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        cartCount.setText(count == 0 ? "Giỏ hàng đang trống" : count + " sản phẩm • " + StorePresentation.money(total));
+        for (CartLine line : new ArrayList<>(cart.values())) {
+            Image image = new Image(StorePresentation.image(line.product()), line.product().getName());
+            image.setWidth("64px");
+            image.setHeight("64px");
+            image.getStyle().set("object-fit", "contain");
+            Span name = new Span(line.product().getName());
+            name.getStyle().set("font-size", "12px").set("font-weight", "700");
+            Span quantity = new Span("SL: " + line.quantity() + " • " + StorePresentation.money(line.subtotal()));
+            quantity.getStyle().set("font-size", "11px").set("color", UiTokens.BRAND_RED);
+            VerticalLayout text = new VerticalLayout(name, quantity);
+            text.setPadding(false);
+            text.setSpacing(false);
+            Button remove = new Button(new Icon(VaadinIcon.TRASH), event -> {
+                cart.remove(line.product().getId());
+                refreshCart();
+            });
+            HorizontalLayout row = new HorizontalLayout(image, text, remove);
+            row.setWidthFull();
+            row.setAlignItems(Alignment.CENTER);
+            row.setFlexGrow(1, text);
+            row.getStyle().set("border-bottom", "1px solid " + UiTokens.BORDER).set("padding", "8px 0");
+            cartLines.add(row);
+        }
     }
 
-    private int quantityInCart(Product product) {
-        CartLine line = cart.get(product.getId());
-        return line == null ? 0 : line.quantity();
+    private void placeOrder(TextField name, EmailField email, TextField phone, TextArea address,
+                            RadioButtonGroup<String> method, Checkbox confirmation) {
+        if (cart.isEmpty() || name.isEmpty() || email.isEmpty() || phone.isEmpty() || address.isEmpty()
+                || !Boolean.TRUE.equals(confirmation.getValue())) {
+            Notification.show("Vui lòng hoàn tất giỏ hàng và thông tin nhận hàng.");
+            return;
+        }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
+            Notification.show("Vui lòng đăng nhập tài khoản khách hàng để đặt hàng.");
+            getUI().ifPresent(ui -> ui.navigate(LoginView.class));
+            return;
+        }
+        try {
+            User customer = users.requireDomainUser(authentication.getName());
+            List<OrderService.Line> lines = cart.values().stream()
+                    .map(line -> new OrderService.Line(line.product().getId(), line.quantity())).toList();
+            Order order = orders.place(customer.getId(), lines);
+            PaymentService.Instructions payment = payments.toInstructions(payments.createForOrder(order.getId()));
+            cart.clear();
+            refreshCart();
+            cartDialog.close();
+            showPayment(order, payment, method.getValue());
+            refreshCatalog();
+        } catch (RuntimeException ex) {
+            Notification.show("Không thể đặt hàng: " + safe(ex), 6000, Notification.Position.MIDDLE);
+        }
     }
 
-    private static String money(BigDecimal amount) {
-        return NumberFormat.getCurrencyInstance(Locale.US).format(amount);
+    private void showPayment(Order order, PaymentService.Instructions payment, String method) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Đặt hàng thành công — " + order.getOrderNumber());
+        VerticalLayout body = new VerticalLayout(new Paragraph("Cảm ơn bạn đã mua hàng tại PRO GEAR."));
+        if ("VietQR MB Bank".equals(method)) {
+            Image qr = new Image(payment.qrUrl(), "VietQR MB Bank");
+            qr.setWidth("260px");
+            body.add(qr, new Span("MB Bank • " + payment.accountNumber()),
+                    new Span(payment.accountName()), new Span("Số tiền: " + StorePresentation.money(payment.amount())),
+                    new Span("Nội dung: " + payment.transferContent()));
+        } else {
+            body.add(new Span("Thanh toán COD khi nhận hàng."));
+        }
+        Button close = new Button("Đóng", event -> dialog.close());
+        dialog.add(body);
+        dialog.getFooter().add(close);
+        dialog.open();
     }
 
-    private static String text(String value) {
-        return value == null ? "" : value;
+    private void showInstallmentDialog() {
+        infoDialog("Trả góp 0% lãi suất", "Hỗ trợ Visa/Mastercard và hồ sơ online. Nhân viên PRO GEAR sẽ xác nhận phương án phù hợp trong 5 phút.");
     }
 
-    private static String safeMessage(RuntimeException exception) {
-        return exception.getMessage() == null || exception.getMessage().isBlank()
-                ? exception.getClass().getSimpleName() : exception.getMessage();
+    private void showTradeInDialog() {
+        infoDialog("Thu cũ lên đời", "Định giá máy ảnh cũ minh bạch, trợ giá đến 3.000.000đ khi nâng cấp thiết bị mới.");
+    }
+
+    private void infoDialog(String title, String message) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle(title);
+        dialog.add(new Paragraph(message));
+        dialog.getFooter().add(new Button("Đóng", event -> dialog.close()));
+        dialog.open();
+    }
+
+    private static FormLayout cardsLayout() {
+        FormLayout layout = new FormLayout();
+        layout.setWidthFull();
+        layout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 2),
+                new FormLayout.ResponsiveStep("680px", 3), new FormLayout.ResponsiveStep("940px", 4),
+                new FormLayout.ResponsiveStep("1180px", 5));
+        layout.getStyle().set("gap", "12px");
+        return layout;
+    }
+
+    private static String safe(String value) { return value == null ? "" : value; }
+    private static String safe(RuntimeException exception) {
+        return exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
     }
 
     private record CartLine(Product product, int quantity) {
-        private BigDecimal subtotal() {
-            return product.getPrice().multiply(BigDecimal.valueOf(quantity));
-        }
+        BigDecimal subtotal() { return product.getPrice().multiply(BigDecimal.valueOf(quantity)); }
     }
 }

@@ -29,8 +29,9 @@ class UiSmokeResponsiveTest {
         open(new Dimension(1440, 900), "/");
         if (QaConfig.javaTarget()) {
             visible(By.id("qa-search-input"));
-            WebElement grid = visible(By.id("qa-product-grid"));
-            assertTrue(grid.getText().contains("Java Preview Camera"), "No preview product rendered");
+            visible(By.id("qa-product-grid"));
+            List<WebElement> products = driver.findElements(By.cssSelector("[data-testid='product-card']"));
+            assertFalse(products.isEmpty(), "No Java storefront product cards rendered");
         } else {
             visible(By.cssSelector("[data-testid='search-input']"));
             List<WebElement> products = driver.findElements(By.cssSelector("[data-testid='product-card']"));
