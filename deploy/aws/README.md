@@ -4,7 +4,7 @@ Target: Amazon Linux 2023 ARM64 with Docker Compose.
 
 ## Safety model
 
-- The Java application binds to `127.0.0.1:8090`; Caddy exposes it through `https://java-aws.54.179.55.104.nip.io`.
+- The Java application binds to `127.0.0.1:8090`; Caddy owns ports `80` and `443`, redirects HTTP to HTTPS, and exposes `https://java-aws.54.179.55.104.nip.io`.
 - PostgreSQL is reachable only on the private Compose network.
 - Runtime credentials live in `.env` on EC2 and must never be committed.
 - The container image is published for both `linux/amd64` and `linux/arm64`.
