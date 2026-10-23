@@ -34,4 +34,13 @@ public class OrderService {
         order.place();
         return orders.save(order);
     }
+    @Transactional(readOnly = true)
+    public List<Order> allOrders() { return orders.findAllByOrderByCreatedAtDesc(); }
+
+    @Transactional
+    public Order changeStatus(UUID orderId, Order.Status status) {
+        Order order = orders.findById(orderId).orElseThrow(() -> new IllegalArgumentException("Unknown order"));
+        order.changeStatus(status);
+        return order;
+    }
 }

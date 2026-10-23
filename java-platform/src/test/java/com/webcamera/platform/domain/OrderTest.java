@@ -27,4 +27,21 @@ class OrderTest {
         assertThatThrownBy(() -> product.reserve(2)).isInstanceOf(IllegalStateException.class);
         assertThat(product.getStockQuantity()).isOne();
     }
+
+    @Test
+    void enforcesForwardOnlyOrderStatusTransitions() {
+        User customer = new User("state@example.com", "State QA", "hash", User.Role.CUSTOMER);
+        Product product = new Product("STATE-CAM", "Camera", BigDecimal.TEN, 1);
+        Order order = new Order(customer);
+        order.addItem(product, 1);
+        order.place();
+
+        assertThatThrownBy(() -> order.changeStatus(Order.Status.COMPLETED))
+                .isInstanceOf(IllegalStateException.class);
+        order.changeStatus(Order.Status.CONFIRMED);
+        order.changeStatus(Order.Status.SHIPPED);
+        order.changeStatus(Order.Status.COMPLETED);
+        assertThat(order.getStatus()).isEqualTo(Order.Status.COMPLETED);
+        assertThat(order.getPaymentStatus()).isEqualTo(Order.PaymentStatus.PAID);
+    }
 }

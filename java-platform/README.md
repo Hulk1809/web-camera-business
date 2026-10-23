@@ -38,15 +38,15 @@ Disable `BOOTSTRAP_ADMIN_ENABLED` after first startup. In TLS environments set `
 
 | Area | Scaffold status | Notes |
 |---|---|---|
-| Store view | Basic | Public read-only product grid |
-| Admin view | Basic | Role-protected product listing/create form |
+| Store view | Partial | Catalog search/filter, product detail, draft cart and authenticated order placement |
+| Admin view | Partial | Dashboard catalog KPIs and role-protected product create/update form; unsupported tabs are explicitly disabled |
 | Login | Implemented | Spring Security server-side cookie session, BCrypt |
-| Product | Implemented | JPA repository/service and read-only REST endpoint |
+| Product | Partial | Product CRUD foundation plus Category, Brand, ProductImage and JSON specifications domain |
 | Order / OrderItem | Domain service | Transactional placement, stock locking and price snapshot |
 | User | Basic | Roles and optional explicit admin bootstrap |
 | ChatSession / Message | Domain service/API | Persistence plus authenticated chat-start endpoint; no chat UI yet |
 | Order API | Basic | Authenticated, CSRF-protected order placement endpoint |
-| Database | Implemented | PostgreSQL, dedicated schema, Flyway V1, Hibernate validation |
+| Database | Implemented | PostgreSQL, dedicated schema, additive Flyway V1/V2, Hibernate validation |
 | Operations | Basic | Actuator probes, container image, Compose development stack |
 | Tests | Basic | Domain unit test and H2 repository slice test |
 

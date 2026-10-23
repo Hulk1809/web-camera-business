@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "app_user", schema = "camera_platform")
 public class User extends BaseEntity {
-    public enum Role { CUSTOMER, ADMIN }
+    public enum Role { CUSTOMER, STAFF, ADMIN }
     @Column(nullable = false, unique = true, length = 254)
     private String email;
     @Column(nullable = false, length = 100)
