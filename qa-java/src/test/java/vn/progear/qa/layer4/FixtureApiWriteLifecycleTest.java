@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import vn.progear.qa.support.QaConfig;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,7 +25,7 @@ class FixtureApiWriteLifecycleTest {
         Response create = RestAssured.given().baseUri(fixtureApi.toString())
                 .header("Authorization", "Bearer " + token)
                 .contentType("application/json")
-                .body(Map.of("scenario", "order-readback", "ttlSeconds", 300))
+                .body("{\"scenario\":\"order-readback\",\"ttlSeconds\":300}")
                 .post("/qa/fixtures");
         assertEquals(201, create.statusCode(), create.asString());
         String fixtureId = create.jsonPath().getString("id");
