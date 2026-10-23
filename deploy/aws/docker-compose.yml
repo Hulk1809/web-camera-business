@@ -33,7 +33,7 @@ services:
       DATABASE_USER: ${POSTGRES_USER}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       DB_POOL_SIZE: 4
-      SESSION_COOKIE_SECURE: "false"
+      SESSION_COOKIE_SECURE: "true"
       BOOTSTRAP_ADMIN_ENABLED: "true"
       BOOTSTRAP_ADMIN_EMAIL: ${JAVA_ADMIN_EMAIL}
       BOOTSTRAP_ADMIN_PASSWORD: ${JAVA_ADMIN_PASSWORD}
@@ -60,9 +60,35 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  public-proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      java-platform:
+        condition: service_healthy
+    command:
+      - caddy
+      - reverse-proxy
+      - --from
+      - ${PUBLIC_HOSTNAME}
+      - --to
+      - java-platform:8080
+    ports:
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - progear_caddy_data:/data
+      - progear_caddy_config:/config
+    networks:
+      - progear_internal
+    security_opt:
+      - no-new-privileges:true
+
 networks:
   progear_internal:
     driver: bridge
 
 volumes:
   progear_postgres:
+  progear_caddy_data:
+  progear_caddy_config:
