@@ -22,9 +22,7 @@ public class SecurityConfiguration {
                 .requestMatchers("/api/orders/**", "/api/dashboard/**", "/api/warranty", "/api/warranty/").authenticated()
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/api/health", "/api/products/**",
                         "/api/categories", "/api/brands", "/api/warranty/**", "/api/**").permitAll());
-        http.exceptionHandling(exceptions -> exceptions
-                .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                        new AntPathRequestMatcher("/api/**")));
+        http.with(VaadinSecurityConfigurer.vaadin(), vaadin -> vaadin.loginView(LoginView.class));
         http.headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp.policyDirectives(
                         "default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; "
@@ -35,7 +33,9 @@ public class SecurityConfiguration {
                         org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
                 .permissionsPolicy(permissions -> permissions.policy(
                         "camera=(), microphone=(), geolocation=(), payment=()")));
-        http.with(VaadinSecurityConfigurer.vaadin(), vaadin -> vaadin.loginView(LoginView.class));
+        http.exceptionHandling(exceptions -> exceptions
+                .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
+                        new AntPathRequestMatcher("/api/**")));
         return http.build();
     }
 
