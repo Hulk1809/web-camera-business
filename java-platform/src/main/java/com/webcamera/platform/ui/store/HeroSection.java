@@ -22,7 +22,7 @@ public final class HeroSection extends HorizontalLayout {
     public HeroSection(Consumer<String> categorySelected, Runnable openInstallment, Runnable openTradeIn) {
         setWidthFull();
         setAlignItems(Alignment.STRETCH);
-        getStyle().set("gap", "12px").set("flex-wrap", "wrap");
+        addClassName("store-hero");
 
         VerticalLayout categories = new VerticalLayout();
         categories.setPadding(true);
@@ -47,6 +47,7 @@ public final class HeroSection extends HorizontalLayout {
         categories.add(installment);
 
         VerticalLayout banner = new VerticalLayout();
+        banner.addClassName("store-hero-banner");
         banner.setPadding(true);
         banner.setJustifyContentMode(JustifyContentMode.CENTER);
         banner.setMinHeight("340px");

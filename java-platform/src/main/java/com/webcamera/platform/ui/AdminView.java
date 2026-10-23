@@ -41,8 +41,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-@Route(value = "admin", layout = MainLayout.class)
-@PageTitle("Admin | Camera Platform")
+@Route(value = "admin", layout = AdminLayout.class)
+@PageTitle("Quản trị | PRO GEAR")
 @RolesAllowed("ADMIN")
 public class AdminView extends VerticalLayout {
     private final CatalogService catalog;
@@ -75,19 +75,24 @@ public class AdminView extends VerticalLayout {
         this.inventory = inventory;
         this.chats = chats;
         setSizeFull();
-        add(new H2("Administration"));
+        addClassName("admin-view");
+        H2 heading = new H2("Tổng quan vận hành");
+        heading.addClassName("admin-page-title");
+        add(heading);
 
         Tabs tabs = new Tabs();
-        addPage(tabs, "Dashboard", createDashboard());
-        addPage(tabs, "Products", createProductsPage());
-        addPage(tabs, "Orders", createOrdersPage());
-        addPage(tabs, "Payments", createPaymentsPage());
-        addPage(tabs, "Warranty", createWarrantyPage());
-        addPage(tabs, "Chat", createChatPage());
+        tabs.addClassName("admin-tabs");
+        addPage(tabs, "Tổng quan", createDashboard());
+        addPage(tabs, "Sản phẩm", createProductsPage());
+        addPage(tabs, "Đơn hàng", createOrdersPage());
+        addPage(tabs, "Thanh toán", createPaymentsPage());
+        addPage(tabs, "Bảo hành", createWarrantyPage());
+        addPage(tabs, "CSKH", createChatPage());
         tabs.addSelectedChangeListener(event -> showPage(event.getSelectedTab()));
 
         content.setSizeFull();
-        content.setPadding(false);
+        content.setPadding(true);
+        content.addClassName("admin-content");
         add(tabs, content);
         expand(content);
         showPage(tabs.getSelectedTab());
@@ -159,16 +164,23 @@ public class AdminView extends VerticalLayout {
         BigDecimal inventoryValue = products.stream()
                 .map(product -> product.getPrice().multiply(BigDecimal.valueOf(product.getStockQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal orderValue = orderList.stream().map(Order::total).reduce(BigDecimal.ZERO, BigDecimal::add);
+        HorizontalLayout kpis = new HorizontalLayout(kpi("Tổng giá trị đơn hàng", money(orderValue)),
+                kpi("Đơn hàng", String.valueOf(orderList.size())), kpi("Sản phẩm đang bán", String.valueOf(activeProducts)),
+                kpi("Sắp hết hàng", String.valueOf(lowStock)));
+        kpis.setWidthFull();
+        kpis.addClassName("admin-kpis");
         dashboard.removeAll();
-        dashboard.add(new H3("Catalog overview"),
-                new Span("Products: " + products.size()),
-                new Span("Active products: " + activeProducts),
-                new Span("Low-stock active products: " + lowStock),
-                new Span("Units in inventory: " + units),
-                new Span("Inventory value at catalog price: " + money(inventoryValue)),
-                new Span("Orders: " + orderList.size()),
-                new Span("Order value: " + money(orderList.stream().map(Order::total).reduce(BigDecimal.ZERO, BigDecimal::add))),
-                new Paragraph("Warranty and chat totals remain unavailable until those Java services expose list operations."));
+        dashboard.add(new H3("Tình hình kinh doanh"), kpis,
+                new Paragraph("Tồn kho: " + units + " sản phẩm · Giá trị niêm yết: " + money(inventoryValue)));
+    }
+
+    private static VerticalLayout kpi(String label, String value) {
+        Span labelText = new Span(label); labelText.addClassName("admin-kpi-label");
+        Span valueText = new Span(value); valueText.addClassName("admin-kpi-value");
+        VerticalLayout card = new VerticalLayout(labelText, valueText);
+        card.setPadding(false); card.setSpacing(false); card.addClassName("admin-kpi");
+        return card;
     }
 
     private VerticalLayout createProductsPage() {
@@ -419,7 +431,7 @@ public class AdminView extends VerticalLayout {
     }
 
     private static String money(BigDecimal amount) {
-        return NumberFormat.getCurrencyInstance(Locale.US).format(amount);
+        return NumberFormat.getCurrencyInstance(Locale.forLanguageTag("vi-VN")).format(amount);
     }
 
     private static String value(String value) {

@@ -1,0 +1,23 @@
+:root { --progear-red:#e30019; --progear-ink:#111827; --progear-page:#f1f5f9; --progear-border:#e2e8f0; }
+html,body { margin:0; background:var(--progear-page); }
+.store-hero { display:grid!important; grid-template-columns:250px minmax(0,1fr) 270px; align-items:stretch; gap:12px; }
+.store-hero-banner h2 { color:#fff!important; }
+.store-hero-banner p { color:#d1d5db!important; }
+.admin-shell::part(drawer) { background:#0f172a; }
+.admin-shell::part(navbar) { background:#fff; border-bottom:1px solid var(--progear-border); }
+.admin-brand { color:#fff; padding:22px 20px 16px; }
+.admin-brand-name { font-size:20px; font-weight:900; letter-spacing:.04em; }
+.admin-brand-copy { color:#94a3b8; font-size:11px; font-weight:700; }
+.admin-nav { display:flex; flex-direction:column; gap:4px; padding:8px 12px 20px; }
+.admin-nav a { color:#cbd5e1; text-decoration:none; padding:11px 12px; border-radius:8px; font-size:14px; font-weight:650; }
+.admin-nav a:hover,.admin-nav a[highlight] { color:#fff; background:#334155; }
+.admin-view { background:var(--progear-page); padding:24px!important; }
+.admin-page-title { margin:0; color:var(--progear-ink); font-size:28px; }
+.admin-tabs { background:#fff; border:1px solid var(--progear-border); border-radius:10px; padding:4px 8px; box-shadow:0 1px 2px rgba(15,23,42,.05); }
+.admin-content { background:#fff; border:1px solid var(--progear-border); border-radius:12px; padding:20px!important; box-sizing:border-box; box-shadow:0 1px 3px rgba(15,23,42,.06); }
+.admin-kpis { display:grid!important; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+.admin-kpi { min-width:0; padding:18px; border:1px solid var(--progear-border); border-radius:10px; background:#fff; }
+.admin-kpi-label { display:block; color:#64748b; font-size:12px; font-weight:700; }
+.admin-kpi-value { display:block; color:var(--progear-ink); font-size:25px; font-weight:900; margin-top:8px; }
+@media(max-width:1023px){.store-hero{grid-template-columns:220px minmax(0,1fr)}.store-hero>:last-child{display:none}.admin-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:767px){.store-hero{display:flex!important;flex-direction:column}.store-hero>:first-child{display:none}.store-hero-banner{min-height:300px!important;padding:22px!important}.admin-view{padding:14px!important}.admin-kpis{grid-template-columns:1fr}.admin-content{padding:12px!important}}
