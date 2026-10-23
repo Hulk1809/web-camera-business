@@ -17,23 +17,21 @@ import com.webcamera.platform.domain.Warranty;
 import com.webcamera.platform.service.InventoryService;
 
 @Route(value = "warranty-check", layout = MainLayout.class)
-@PageTitle("Warranty Check & Claim | Camera Platform")
+@PageTitle("Tra cứu bảo hành | PRO GEAR")
 @AnonymousAllowed
 public class WarrantyView extends VerticalLayout {
     private final InventoryService inventory;
-    private final TextField serialField = new TextField("Camera Serial Number");
-    private final Button checkBtn = new Button("Lookup Warranty");
+    private final TextField serialField = new TextField("Số serial sản phẩm");
+    private final Button checkBtn = new Button("Tra cứu bảo hành");
     private final VerticalLayout resultCard = new VerticalLayout();
-    private final Button claimBtn = new Button("Submit Warranty Claim");
-    private Warranty currentWarranty;
 
     public WarrantyView(InventoryService inventory) {
         this.inventory = inventory;
         setSizeFull();
         setMaxWidth("800px");
 
-        add(new H2("Warranty Verification & Claims"),
-                new Paragraph("Enter your camera body or lens serial number to verify coverage or initiate a warranty service claim."));
+        add(new H2("Tra cứu bảo hành PRO GEAR"),
+                new Paragraph("Nhập serial máy ảnh, ống kính hoặc phụ kiện để kiểm tra thời hạn bảo hành."));
 
         serialField.setPlaceholder("e.g. SN-A7M4-001");
         serialField.setWidth("350px");
@@ -51,27 +49,23 @@ public class WarrantyView extends VerticalLayout {
                 .set("padding", "20px")
                 .set("background", "var(--lumo-base-color)");
 
-        claimBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
-        claimBtn.addClickListener(event -> submitClaim());
-
         add(inputRow, resultCard);
     }
 
     private void lookupWarranty() {
         String serial = serialField.getValue();
         if (serial == null || serial.isBlank()) {
-            Notification.show("Please enter a serial number.");
+            Notification.show("Vui lòng nhập số serial.");
             return;
         }
 
         try {
-            currentWarranty = inventory.warrantyBySerial(serial.trim());
-            displayWarranty(currentWarranty);
+            displayWarranty(inventory.warrantyBySerial(serial.trim()));
         } catch (IllegalArgumentException ex) {
             resultCard.setVisible(true);
             resultCard.removeAll();
-            resultCard.add(new H3("No Warranty Found"),
-                    new Span("No active warranty record found for serial: " + serial.trim()));
+            resultCard.add(new H3("Không tìm thấy bảo hành"),
+                    new Span("Kiểm tra lại serial hoặc liên hệ trung tâm bảo hành PRO GEAR."));
         }
     }
 
@@ -79,13 +73,12 @@ public class WarrantyView extends VerticalLayout {
         resultCard.setVisible(true);
         resultCard.removeAll();
 
-        resultCard.add(new H3("Warranty Details"));
-        resultCard.add(new Span("Product: " + w.getCameraSerial().getProduct().getName()));
-        resultCard.add(new Span("Serial Number: " + w.getCameraSerial().getSerialNumber()));
-        resultCard.add(new Span("Order Number: " + w.getOrder().getOrderNumber()));
-        resultCard.add(new Span("Coverage Period: " + w.getStartsOn() + " to " + w.getExpiresOn()));
+        resultCard.add(new H3("Thông tin bảo hành"));
+        resultCard.add(new Span("Sản phẩm: " + w.getCameraSerial().getProduct().getName()));
+        resultCard.add(new Span("Serial: " + maskSerial(w.getCameraSerial().getSerialNumber())));
+        resultCard.add(new Span("Thời hạn: " + w.getStartsOn() + " đến " + w.getExpiresOn()));
 
-        Span statusSpan = new Span("Status: " + w.getStatus());
+        Span statusSpan = new Span("Trạng thái: " + statusLabel(w.getStatus()));
         statusSpan.getStyle().set("font-weight", "bold");
         if (w.getStatus() == Warranty.Status.ACTIVE) {
             statusSpan.getStyle().set("color", "var(--lumo-success-text-color)");
@@ -94,19 +87,19 @@ public class WarrantyView extends VerticalLayout {
         }
         resultCard.add(statusSpan);
 
-        claimBtn.setEnabled(w.getStatus() == Warranty.Status.ACTIVE);
-        resultCard.add(claimBtn);
+        resultCard.add(new Paragraph("Yêu cầu bảo hành cần xác minh chủ sở hữu. Vui lòng đăng nhập hoặc liên hệ trung tâm PRO GEAR."));
     }
 
-    private void submitClaim() {
-        if (currentWarranty == null) return;
-        try {
-            inventory.claimWarranty(currentWarranty.getCameraSerial().getSerialNumber());
-            currentWarranty = inventory.warrantyBySerial(currentWarranty.getCameraSerial().getSerialNumber());
-            displayWarranty(currentWarranty);
-            Notification.show("Warranty claim submitted successfully. Service center will review your camera.");
-        } catch (RuntimeException ex) {
-            Notification.show("Cannot submit claim: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
-        }
+    private static String maskSerial(String serial) {
+        return serial.length() <= 4 ? "••••" : "••••" + serial.substring(serial.length() - 4);
+    }
+
+    private static String statusLabel(Warranty.Status status) {
+        return switch (status) {
+            case ACTIVE -> "Còn hiệu lực";
+            case EXPIRED -> "Hết hạn";
+            case VOIDED -> "Đã hủy";
+            case CLAIMED -> "Đang xử lý";
+        };
     }
 }
