@@ -18,29 +18,11 @@ spec:
     - host: progear.74.176.156.158.nip.io
       http:
         paths:
-          # Backend API
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: backend-service
-                port:
-                  number: 4000
-
-          # Admin Portal Dashboard
-          - path: /admin
-            pathType: Prefix
-            backend:
-              service:
-                name: web-admin-service
-                port:
-                  number: 80
-
-          # Customer Web Storefront
+          # Primary Java Platform (cutover from React/NestJS)
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: web-store-service
+                name: java-preview-service
                 port:
-                  number: 3000
+                  number: 8080

@@ -29,6 +29,7 @@ jobs:
       - name: Run seven read-only layers
         env:
           QA_BASE_URL: https://progear.74.176.156.158.nip.io
+          QA_TARGET: java
           QA_ALLOW_WRITES: 'false'
         run: mvn --batch-mode --no-transfer-progress -Pread-only test
       - name: Upload JUnit reports
