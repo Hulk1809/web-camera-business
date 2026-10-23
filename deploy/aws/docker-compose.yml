@@ -1,0 +1,68 @@
+name: progear-java
+
+services:
+  database:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - progear_postgres:/var/lib/postgresql/data
+    networks:
+      - progear_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    mem_limit: 192m
+    cpus: 0.40
+    security_opt:
+      - no-new-privileges:true
+
+  java-platform:
+    image: ${JAVA_IMAGE:-ghcr.io/hulk1809/camera-java-platform:latest}
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://database:5432/${POSTGRES_DB}
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_POOL_SIZE: 4
+      SESSION_COOKIE_SECURE: "false"
+      BOOTSTRAP_ADMIN_ENABLED: "true"
+      BOOTSTRAP_ADMIN_EMAIL: ${JAVA_ADMIN_EMAIL}
+      BOOTSTRAP_ADMIN_PASSWORD: ${JAVA_ADMIN_PASSWORD}
+      BOOTSTRAP_SAMPLE_CATALOG_ENABLED: "true"
+      BANK_TRANSFER_ACCOUNT_NUMBER: ${BANK_TRANSFER_ACCOUNT_NUMBER}
+      BANK_TRANSFER_ACCOUNT_NAME: ${BANK_TRANSFER_ACCOUNT_NAME}
+      JAVA_OPTS: >-
+        -XX:MaxRAMPercentage=70.0
+        -XX:InitialRAMPercentage=25.0
+        -XX:+UseSerialGC
+        -XX:ActiveProcessorCount=1
+    ports:
+      - "127.0.0.1:${PUBLIC_PORT:-8090}:8080"
+    networks:
+      - progear_internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health/readiness | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      start_period: 90s
+      retries: 12
+    mem_limit: 448m
+    cpus: 0.75
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  progear_internal:
+    driver: bridge
+
+volumes:
+  progear_postgres:

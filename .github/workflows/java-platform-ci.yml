@@ -50,6 +50,7 @@ jobs:
           context: ./java-platform
           file: ./java-platform/Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/hulk1809/camera-java-platform:${{ github.sha }}
             ghcr.io/hulk1809/camera-java-platform:latest
