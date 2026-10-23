@@ -55,3 +55,6 @@ app:
   bank-transfer:
     account-number: ${BANK_TRANSFER_ACCOUNT_NUMBER:}
     account-name: ${BANK_TRANSFER_ACCOUNT_NAME:}
+  qa-fixtures:
+    enabled: ${QA_FIXTURE_ENABLED:false}
+    token: ${QA_FIXTURE_TOKEN:}
