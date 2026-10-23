@@ -1,7 +1,9 @@
 :root { --progear-red:#e30019; --progear-ink:#111827; --progear-page:#f1f5f9; --progear-border:#e2e8f0; }
 html,body { margin:0; background:var(--progear-page); }
+.store-header-main { flex-wrap:nowrap!important; overflow:visible!important; }
+.store-header-main vaadin-text-field { min-width:260px; }
 .store-hero { display:grid!important; grid-template-columns:250px minmax(0,1fr) 270px; align-items:stretch; gap:12px; }
-.store-hero-banner h2 { color:#fff!important; }
+.store-hero-banner,.store-hero-banner h2 { color:#fff!important; }
 .store-hero-banner p { color:#d1d5db!important; }
 .admin-shell::part(drawer) { background:#0f172a; }
 .admin-shell::part(navbar) { background:#fff; border-bottom:1px solid var(--progear-border); }
@@ -19,5 +21,5 @@ html,body { margin:0; background:var(--progear-page); }
 .admin-kpi { min-width:0; padding:18px; border:1px solid var(--progear-border); border-radius:10px; background:#fff; }
 .admin-kpi-label { display:block; color:#64748b; font-size:12px; font-weight:700; }
 .admin-kpi-value { display:block; color:var(--progear-ink); font-size:25px; font-weight:900; margin-top:8px; }
-@media(max-width:1023px){.store-hero{grid-template-columns:220px minmax(0,1fr)}.store-hero>:last-child{display:none}.admin-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:767px){.store-hero{display:flex!important;flex-direction:column}.store-hero>:first-child{display:none}.store-hero-banner{min-height:300px!important;padding:22px!important}.admin-view{padding:14px!important}.admin-kpis{grid-template-columns:1fr}.admin-content{padding:12px!important}}
+@media(max-width:1023px){.store-header-main{flex-wrap:wrap!important}.store-header-main vaadin-text-field{order:5;flex-basis:100%}.store-hero{grid-template-columns:220px minmax(0,1fr)}.store-hero>:last-child{display:none}.admin-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:767px){.store-utility>:first-child,.store-utility>:nth-child(2),.store-ticker{display:none!important}.store-header-main{gap:8px!important}.store-header-main vaadin-button:nth-of-type(1){display:none}.store-header-main vaadin-text-field{min-width:100%}.store-hero{display:flex!important;flex-direction:column}.store-hero>:first-child{display:none}.store-hero-banner{min-height:300px!important;padding:22px!important}.admin-view{padding:14px!important}.admin-kpis{grid-template-columns:1fr}.admin-content{padding:12px!important}}
