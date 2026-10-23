@@ -21,14 +21,15 @@ public class WarrantyController {
     public WarrantyController(InventoryService inventory) { this.inventory = inventory; }
 
     @GetMapping("/{serialNumber}")
-    public WarrantyResponse lookup(@PathVariable String serialNumber) {
+    public org.springframework.http.ResponseEntity<?> lookup(@PathVariable String serialNumber) {
         try {
             Warranty warranty = inventory.warrantyBySerial(serialNumber);
-            return new WarrantyResponse(warranty.getId(), warranty.getCameraSerial().getSerialNumber(),
+            return org.springframework.http.ResponseEntity.ok(new WarrantyResponse(warranty.getId(), warranty.getCameraSerial().getSerialNumber(),
                     warranty.getCameraSerial().getProduct().getName(), warranty.getOrder().getOrderNumber(),
-                    warranty.getStartsOn(), warranty.getExpiresOn(), warranty.getStatus());
+                    warranty.getStartsOn(), warranty.getExpiresOn(), warranty.getStatus()));
         } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Warranty not found");
+            return org.springframework.http.ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(java.util.Map.of("error", "Not Found", "message", "Warranty not found for serial: " + serialNumber));
         }
     }
 }
