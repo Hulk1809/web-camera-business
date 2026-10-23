@@ -81,7 +81,8 @@ public final class StoreHeader extends VerticalLayout {
         main.setAlignItems(Alignment.CENTER);
         main.setFlexGrow(1, search);
         main.getStyle().set("padding", "10px 16px").set("box-sizing", "border-box")
-                .set("margin", "0 auto").set("flex-wrap", "wrap");
+                .set("margin", "0 auto").set("flex-wrap", "wrap").set("max-width", "100vw")
+                .set("overflow", "hidden");
 
         Div mainShell = new Div(main);
         mainShell.setWidthFull();

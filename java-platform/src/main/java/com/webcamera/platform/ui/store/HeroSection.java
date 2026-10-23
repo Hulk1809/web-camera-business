@@ -52,7 +52,7 @@ public final class HeroSection extends HorizontalLayout {
         banner.setMinHeight("340px");
         banner.getStyle().set("background", "linear-gradient(110deg,#030712 0%,#111827 55%,#7F1D1D 100%)")
                 .set("color", "white").set("border-radius", "8px").set("padding", "30px")
-                .set("box-sizing", "border-box");
+                .set("box-sizing", "border-box").set("min-width", "0").set("max-width", "100%");
         Span campaign = new Span("FESTIVAL MÁY ẢNH & CINEMA 2026");
         campaign.getStyle().set("background", UiTokens.BRAND_RED).set("padding", "4px 8px")
                 .set("border-radius", "4px").set("font-size", "10px").set("font-weight", "900");

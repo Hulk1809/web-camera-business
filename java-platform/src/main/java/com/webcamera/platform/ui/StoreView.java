@@ -79,7 +79,8 @@ public class StoreView extends VerticalLayout {
         setPadding(false);
         setSpacing(false);
         setSizeFull();
-        getStyle().set("background", UiTokens.PAGE).set("font-family", "Arial, Helvetica, sans-serif");
+        getStyle().set("background", UiTokens.PAGE).set("font-family", "Arial, Helvetica, sans-serif")
+                .set("max-width", "100vw").set("overflow-x", "hidden").set("box-sizing", "border-box");
 
         configureSearch();
         configureCartDialog();
@@ -352,8 +353,9 @@ public class StoreView extends VerticalLayout {
     private static FormLayout cardsLayout() {
         FormLayout layout = new FormLayout();
         layout.setWidthFull();
-        layout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 2),
-                new FormLayout.ResponsiveStep("680px", 3), new FormLayout.ResponsiveStep("940px", 4),
+        layout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("440px", 2), new FormLayout.ResponsiveStep("680px", 3),
+                new FormLayout.ResponsiveStep("940px", 4),
                 new FormLayout.ResponsiveStep("1180px", 5));
         layout.getStyle().set("gap", "12px");
         return layout;
