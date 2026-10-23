@@ -121,8 +121,8 @@ jobs:
             set -euo pipefail
             cd '$DEPLOY_DIR'
             port_80_listener=\$(sudo ss -ltnp '( sport = :80 )' | tail -n +2)
-            if test -n "\$port_80_listener" &&
-              ! sudo docker compose ps --services --status running | grep -Fx 'public-proxy' >/dev/null; then
+            port_80_container=\$(sudo docker ps --filter publish=80 --format '{{.Names}}' | head -n 1)
+            if test -n "\$port_80_listener" && test "\$port_80_container" != 'progear-java-public-proxy-1'; then
               echo 'Port 80 is occupied outside the PRO GEAR Java stack'
               printf '%s\n' "\$port_80_listener"
               sudo docker ps --format 'table {{.Names}}\t{{.Ports}}'
