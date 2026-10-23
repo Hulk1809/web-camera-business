@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -59,6 +60,7 @@ public class InventoryService {
                 .orElseThrow(() -> new IllegalArgumentException("Warranty not found"));
     }
     @Transactional
+    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
     public Warranty claimWarranty(String serialNumber) {
         Warranty warranty = warrantyBySerial(serialNumber);
         warranty.claim();
