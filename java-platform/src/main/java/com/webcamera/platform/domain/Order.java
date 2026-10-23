@@ -42,6 +42,16 @@ public class Order extends BaseEntity {
     private String cancellationReason;
     @Column(name = "cancelled_at")
     private Instant cancelledAt;
+    @Column(name = "recipient_name", length = 120)
+    private String recipientName;
+    @Column(name = "recipient_email", length = 254)
+    private String recipientEmail;
+    @Column(name = "recipient_phone", length = 30)
+    private String recipientPhone;
+    @Column(name = "shipping_address", length = 1000)
+    private String shippingAddress;
+    @Column(name = "payment_method", length = 30)
+    private String paymentMethod;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
@@ -62,7 +72,20 @@ public class Order extends BaseEntity {
     public PaymentStatus getPaymentStatus() { return paymentStatus; }
     public SalesChannel getSalesChannel() { return salesChannel; }
     public String getCancellationReason() { return cancellationReason; }
+    public Instant getCancelledAt() { return cancelledAt; }
+    public String getRecipientName() { return recipientName; }
+    public String getRecipientEmail() { return recipientEmail; }
+    public String getRecipientPhone() { return recipientPhone; }
+    public String getShippingAddress() { return shippingAddress; }
+    public String getPaymentMethod() { return paymentMethod; }
     public List<OrderItem> getItems() { return List.copyOf(items); }
+    public void snapshotDelivery(String name, String email, String phone, String address, String method) {
+        recipientName = clean(name);
+        recipientEmail = clean(email);
+        recipientPhone = clean(phone);
+        shippingAddress = clean(address);
+        paymentMethod = clean(method);
+    }
     public void place() { if (items.isEmpty()) throw new IllegalStateException("Cannot place an empty order"); status = Status.PLACED; }
     public void completePosSale() {
         if (items.isEmpty()) throw new IllegalStateException("Cannot place an empty order");
@@ -112,4 +135,5 @@ public class Order extends BaseEntity {
             case COMPLETED, CANCELLED -> EnumSet.noneOf(Status.class);
         };
     }
+    private static String clean(String value) { return value == null ? "" : value.trim(); }
 }

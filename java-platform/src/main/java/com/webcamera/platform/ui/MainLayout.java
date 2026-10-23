@@ -10,16 +10,16 @@ import com.vaadin.flow.server.auth.AccessAnnotationChecker;
 
 public class MainLayout extends AppLayout {
     public MainLayout(AccessAnnotationChecker accessChecker) {
-        H1 title = new H1("Camera Platform");
+        H1 title = new H1("PRO GEAR");
         title.getStyle().set("font-size", "var(--lumo-font-size-l)").set("margin", "0");
         addToNavbar(new DrawerToggle(), title);
         Nav nav = new Nav();
         nav.getStyle().set("display", "flex").set("flex-direction", "column").set("padding", "1rem").set("gap", "0.75rem");
-        nav.add(new RouterLink("Store", StoreView.class));
-        nav.add(new RouterLink("Warranty Check", WarrantyView.class));
-        if (accessChecker.hasAccess(CustomerOrdersView.class)) nav.add(new RouterLink("My Orders", CustomerOrdersView.class));
-        if (accessChecker.hasAccess(PosView.class)) nav.add(new RouterLink("POS Counter", PosView.class));
-        if (accessChecker.hasAccess(AdminView.class)) nav.add(new RouterLink("Admin", AdminView.class));
+        nav.add(new RouterLink("Cửa hàng", StoreView.class));
+        nav.add(new RouterLink("Tra cứu bảo hành", WarrantyView.class));
+        if (accessChecker.hasAccess(CustomerOrdersView.class)) nav.add(new RouterLink("Đơn hàng của tôi", CustomerOrdersView.class));
+        if (accessChecker.hasAccess(PosView.class)) nav.add(new RouterLink("Quầy POS", PosView.class));
+        if (accessChecker.hasAccess(AdminView.class)) nav.add(new RouterLink("Quản trị", AdminView.class));
         addToDrawer(new Scroller(nav));
     }
 }

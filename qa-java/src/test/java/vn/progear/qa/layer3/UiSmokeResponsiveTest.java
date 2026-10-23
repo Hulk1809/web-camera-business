@@ -83,6 +83,15 @@ class UiSmokeResponsiveTest {
         assertTrue(driver.getCurrentUrl().contains("/dang-nhap"), driver.getCurrentUrl());
     }
 
+    @Test
+    void protectedCustomerOrderDetailRedirectsAnonymousUserToCustomerLogin() {
+        if (!QaConfig.javaTarget()) return;
+        open(new Dimension(390, 844), "/tai-khoan/don-hang/QA-NOT-A-REAL-ORDER");
+        new WebDriverWait(driver, QaConfig.timeout()).until(webDriver ->
+                webDriver.getCurrentUrl().contains("/dang-nhap"));
+        assertTrue(driver.getCurrentUrl().contains("/dang-nhap"), driver.getCurrentUrl());
+    }
+
     private void open(Dimension size, String path) {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--window-size="

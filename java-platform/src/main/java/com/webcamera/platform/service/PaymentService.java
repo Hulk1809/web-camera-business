@@ -2,9 +2,11 @@ package com.webcamera.platform.service;
 
 import com.webcamera.platform.domain.Order;
 import com.webcamera.platform.domain.Payment;
+import com.webcamera.platform.domain.OrderStatusEvent;
 import com.webcamera.platform.domain.User;
 import com.webcamera.platform.repository.OrderRepository;
 import com.webcamera.platform.repository.PaymentRepository;
+import com.webcamera.platform.repository.OrderStatusEventRepository;
 import com.webcamera.platform.repository.UserRepository;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -22,13 +24,15 @@ public class PaymentService {
     private final PaymentRepository payments;
     private final OrderRepository orders;
     private final UserRepository users;
+    private final OrderStatusEventRepository statusEvents;
     private final String accountNumber;
     private final String accountName;
 
     public PaymentService(PaymentRepository payments, OrderRepository orders, UserRepository users,
+                          OrderStatusEventRepository statusEvents,
                           @Value("${app.bank-transfer.account-number:}") String accountNumber,
                           @Value("${app.bank-transfer.account-name:}") String accountName) {
-        this.payments = payments; this.orders = orders; this.users = users;
+        this.payments = payments; this.orders = orders; this.users = users; this.statusEvents = statusEvents;
         this.accountNumber = accountNumber.trim(); this.accountName = accountName.trim();
     }
 
@@ -38,6 +42,7 @@ public class PaymentService {
         return payments.findByOrderId(orderId).orElseGet(() -> {
             Order order = orders.findByIdForUpdate(orderId).orElseThrow(() -> new IllegalArgumentException("Unknown order"));
             order.awaitPayment();
+            statusEvents.save(new OrderStatusEvent(order, order.getStatus(), "Đang chờ thanh toán"));
             return payments.save(new Payment(order, order.total(), "TT " + order.getOrderNumber()));
         });
     }
@@ -57,7 +62,11 @@ public class PaymentService {
     public Payment confirm(UUID paymentId, UUID staffId, String bankReference) {
         Payment payment = payments.findByIdForUpdate(paymentId).orElseThrow(() -> new IllegalArgumentException("Unknown payment"));
         User staff = users.findById(staffId).orElseThrow(() -> new IllegalArgumentException("Unknown staff"));
+        boolean alreadyPaid = payment.getStatus() == Payment.Status.PAID;
         payment.confirm(staff, bankReference);
+        if (!alreadyPaid) {
+            statusEvents.save(new OrderStatusEvent(payment.getOrder(), payment.getOrder().getStatus(), "Đã xác nhận thanh toán"));
+        }
         return payment;
     }
 

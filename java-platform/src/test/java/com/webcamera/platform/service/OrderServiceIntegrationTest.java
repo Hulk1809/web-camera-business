@@ -12,6 +12,7 @@ import com.webcamera.platform.repository.UserRepository;
 import com.webcamera.platform.repository.CameraSerialRepository;
 import com.webcamera.platform.repository.WarrantyRepository;
 import com.webcamera.platform.repository.PaymentRepository;
+import com.webcamera.platform.repository.OrderStatusEventRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -44,10 +45,12 @@ class OrderServiceIntegrationTest {
     @Autowired WarrantyRepository warranties;
     @Autowired PaymentRepository payments;
     @Autowired PaymentService paymentService;
+    @Autowired OrderStatusEventRepository statusEvents;
 
     @AfterEach
     void clean() {
         payments.deleteAll();
+        statusEvents.deleteAll();
         warranties.deleteAll();
         serials.deleteAll();
         orders.deleteAll();
@@ -70,6 +73,9 @@ class OrderServiceIntegrationTest {
         assertThat(paid.getStatus()).isEqualTo(Order.Status.PAID);
         assertThat(paid.getPaymentStatus()).isEqualTo(Order.PaymentStatus.PAID);
         assertThat(payments.count()).isOne();
+        assertThat(statusEvents.findByOrderIdOrderByRecordedAtAsc(order.getId()))
+                .extracting(event -> event.getStatus())
+                .containsExactly(Order.Status.PLACED, Order.Status.PENDING_PAYMENT, Order.Status.PAID);
     }
 
     @Test
@@ -81,7 +87,48 @@ class OrderServiceIntegrationTest {
 
         assertThat(order.getOrderNumber()).startsWith("JAVA-");
         assertThat(order.total()).isEqualByComparingTo("99.90");
+        assertThat(order.getItems().getFirst().getProductSku()).isEqualTo("ORDER-CAM");
+        assertThat(order.getItems().getFirst().getProductName()).isEqualTo("Camera");
         assertThat(products.findById(camera.getId()).orElseThrow().getStockQuantity()).isOne();
+        assertThat(statusEvents.findByOrderIdOrderByRecordedAtAsc(order.getId()))
+                .extracting(event -> event.getStatus()).containsExactly(Order.Status.PLACED);
+    }
+
+    @Test
+    void trackingEnforcesOwnershipAndPersistsDeliverySnapshot() {
+        User owner = users.save(new User("owner@example.com", "Order Owner", "hash", User.Role.CUSTOMER));
+        User stranger = users.save(new User("stranger@example.com", "Stranger", "hash", User.Role.CUSTOMER));
+        Product camera = products.save(new Product("TRACK-CAM", "Tracking Camera", BigDecimal.TEN, 1));
+        Order order = service.place(owner.getId(), List.of(new OrderService.Line(camera.getId(), 1)),
+                new OrderService.DeliveryDetails("Nguyễn Văn A", "owner@example.com", "0900000000",
+                        "1 Nguyễn Huệ, TP.HCM", "COD"));
+
+        var details = service.customerOrder(owner.getId(), order.getOrderNumber());
+
+        assertThat(details.recipientName()).isEqualTo("Nguyễn Văn A");
+        assertThat(details.shippingAddress()).isEqualTo("1 Nguyễn Huệ, TP.HCM");
+        assertThat(details.items().getFirst().name()).isEqualTo("Tracking Camera");
+        assertThatThrownBy(() -> service.customerOrder(stranger.getId(), order.getOrderNumber()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Không tìm thấy đơn hàng");
+    }
+
+    @Test
+    void customerCanCancelOnlyOwnEarlyOrderAndStockIsRestored() {
+        User owner = users.save(new User("cancel-owner@example.com", "Cancel Owner", "hash", User.Role.CUSTOMER));
+        User stranger = users.save(new User("cancel-stranger@example.com", "Cancel Stranger", "hash", User.Role.CUSTOMER));
+        Product camera = products.save(new Product("CUSTOMER-CANCEL", "Camera", BigDecimal.TEN, 2));
+        Order order = service.place(owner.getId(), List.of(new OrderService.Line(camera.getId(), 1)));
+
+        assertThatThrownBy(() -> service.cancelForCustomer(stranger.getId(), order.getOrderNumber(), "IDOR"))
+                .isInstanceOf(IllegalArgumentException.class);
+        var cancelled = service.cancelForCustomer(owner.getId(), order.getOrderNumber(), "Đổi nhu cầu");
+
+        assertThat(cancelled.status()).isEqualTo(Order.Status.CANCELLED);
+        assertThat(products.findById(camera.getId()).orElseThrow().getStockQuantity()).isEqualTo(2);
+        assertThatThrownBy(() -> service.cancelForCustomer(owner.getId(), order.getOrderNumber(), "Lặp lại"))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(products.findById(camera.getId()).orElseThrow().getStockQuantity()).isEqualTo(2);
     }
 
     @Test
