@@ -1,5 +1,11 @@
 :root { --progear-red:#e30019; --progear-ink:#111827; --progear-page:#f1f5f9; --progear-border:#e2e8f0; }
 html,body { margin:0; background:var(--progear-page); }
+.admin-auth { box-sizing:border-box; padding:24px; background:linear-gradient(135deg,#020617,#0f172a 60%,#312e81); }
+.admin-auth-card { width:100%; max-width:430px; box-sizing:border-box; padding:30px!important; border:1px solid #334155; border-radius:14px; background:#fff; box-shadow:0 24px 70px rgba(0,0,0,.4); }
+.admin-auth-brand { color:#4f46e5; font-size:12px; font-weight:900; letter-spacing:.12em; }
+.admin-auth-card h1 { margin:6px 0 0; color:#0f172a; font-size:28px; }
+.admin-auth-copy { margin:4px 0 12px; color:#64748b; line-height:1.55; }
+.admin-auth-card vaadin-login-form { width:100%; }
 .store-header-main { flex-wrap:nowrap!important; overflow:visible!important; }
 .store-header-main vaadin-text-field { min-width:260px; }
 .store-hero { display:grid!important; grid-template-columns:250px minmax(0,1fr) 270px; align-items:stretch; gap:12px; }

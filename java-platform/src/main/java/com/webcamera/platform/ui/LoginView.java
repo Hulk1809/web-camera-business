@@ -21,8 +21,8 @@ import com.webcamera.platform.domain.User;
 import com.webcamera.platform.service.UserService;
 import com.webcamera.platform.ui.theme.UiTokens;
 
-@Route(value = "login", autoLayout = false)
-@PageTitle("Đăng nhập | PRO GEAR")
+@Route(value = "dang-nhap", autoLayout = false)
+@PageTitle("Đăng nhập khách hàng | PRO GEAR")
 @AnonymousAllowed
 public class LoginView extends VerticalLayout implements BeforeEnterObserver {
     private final LoginForm login = new LoginForm();
@@ -35,18 +35,20 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
         setId("qa-login-screen");
-        getStyle().set("background", "linear-gradient(135deg,#030712,#111827 55%,#7F1D1D)")
+        addClassName("customer-auth");
+        getStyle().set("background", "linear-gradient(135deg,#fff7f7,#ffffff 55%,#fee2e2)")
                 .set("font-family", "Arial, Helvetica, sans-serif");
 
         Span logo = new Span("PRO GEAR");
-        logo.getStyle().set("font-size", "30px").set("font-weight", "900").set("color", "white");
+        logo.getStyle().set("font-size", "30px").set("font-weight", "900").set("color", UiTokens.BRAND_RED);
         Paragraph subtitle = new Paragraph("Máy ảnh • Cinema • DJI Flagship");
-        subtitle.getStyle().set("color", "#D1D5DB").set("margin", "0 0 18px");
+        subtitle.getStyle().set("color", "#475569").set("margin", "0 0 18px");
 
         login.setId("qa-login-form");
         login.setAction("login");
         login.setForgotPasswordButtonVisible(false);
-        VerticalLayout signIn = panel(new H2("Đăng nhập"), new Paragraph("Sử dụng tài khoản khách hàng hoặc nhân viên PRO GEAR."), login);
+        VerticalLayout signIn = panel(new H2("Đăng nhập thành viên"),
+                new Paragraph("Theo dõi đơn hàng, thanh toán và quyền lợi bảo hành của bạn."), login);
 
         TextField name = new TextField("Họ và tên");
         EmailField email = new EmailField("Email");
