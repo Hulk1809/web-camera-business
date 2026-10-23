@@ -11,4 +11,6 @@ public interface WarrantyRepository extends JpaRepository<Warranty, UUID> {
     @EntityGraph(attributePaths = {"cameraSerial", "customer", "order"})
     List<Warranty> findAllByOrderByCreatedAtDesc();
     Optional<Warranty> findByCameraSerialId(UUID cameraSerialId);
+    @EntityGraph(attributePaths = {"cameraSerial", "cameraSerial.product", "order"})
+    Optional<Warranty> findByCameraSerialSerialNumberIgnoreCase(String serialNumber);
 }

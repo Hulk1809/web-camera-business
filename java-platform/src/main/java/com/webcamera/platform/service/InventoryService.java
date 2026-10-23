@@ -48,4 +48,10 @@ public class InventoryService {
     public List<CameraSerial> serials() { return serials.findAllByOrderByCreatedAtDesc(); }
     @Transactional(readOnly = true)
     public List<Warranty> warranties() { return warranties.findAllByOrderByCreatedAtDesc(); }
+    @Transactional(readOnly = true)
+    public Warranty warrantyBySerial(String serialNumber) {
+        if (serialNumber == null || serialNumber.isBlank()) throw new IllegalArgumentException("Serial number is required");
+        return warranties.findByCameraSerialSerialNumberIgnoreCase(serialNumber.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Warranty not found"));
+    }
 }
