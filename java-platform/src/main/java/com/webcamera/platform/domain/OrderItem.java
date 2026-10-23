@@ -28,6 +28,7 @@ public class OrderItem extends BaseEntity {
     }
     public BigDecimal subtotal() { return unitPrice.multiply(BigDecimal.valueOf(quantity)); }
     public Product getProduct() { return product; }
+    public Order getOrder() { return order; }
     public BigDecimal getUnitPrice() { return unitPrice; }
     public int getQuantity() { return quantity; }
 }

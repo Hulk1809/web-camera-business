@@ -69,4 +69,8 @@ public class Product extends BaseEntity {
         if (quantity < 1 || stockQuantity < quantity) throw new IllegalStateException("Insufficient stock for " + sku);
         stockQuantity -= quantity;
     }
+    public void release(int quantity) {
+        if (quantity < 1) throw new IllegalArgumentException("Quantity must be positive");
+        stockQuantity += quantity;
+    }
 }

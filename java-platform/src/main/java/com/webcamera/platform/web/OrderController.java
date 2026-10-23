@@ -31,6 +31,7 @@ public class OrderController {
     public record OrderResponse(UUID id, String orderNumber, Order.Status status,
                                 Order.PaymentStatus paymentStatus, BigDecimal total) {}
     public record StatusRequest(@NotNull Order.Status status) {}
+    public record CancelRequest(String reason) {}
 
     private final OrderService orders;
     private final UserService users;
@@ -55,6 +56,12 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public OrderResponse changeStatus(@PathVariable UUID id, @Valid @RequestBody StatusRequest request) {
         return toResponse(orders.changeStatus(id, request.status()));
+    }
+
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    public OrderResponse cancel(@PathVariable UUID id, @RequestBody CancelRequest request) {
+        return toResponse(orders.cancel(id, request.reason()));
     }
 
     private OrderResponse toResponse(Order order) {

@@ -43,4 +43,13 @@ public class OrderService {
         order.changeStatus(status);
         return order;
     }
+
+    @Transactional
+    public Order cancel(UUID orderId, String reason) {
+        Order order = orders.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown order"));
+        order.cancel(reason);
+        order.getItems().forEach(item -> item.getProduct().release(item.getQuantity()));
+        return order;
+    }
 }

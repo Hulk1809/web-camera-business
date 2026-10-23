@@ -9,6 +9,8 @@ import com.webcamera.platform.domain.User;
 import com.webcamera.platform.repository.OrderRepository;
 import com.webcamera.platform.repository.ProductRepository;
 import com.webcamera.platform.repository.UserRepository;
+import com.webcamera.platform.repository.CameraSerialRepository;
+import com.webcamera.platform.repository.WarrantyRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -26,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
         "spring.datasource.url=jdbc:h2:mem:order_service;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;INIT=CREATE SCHEMA IF NOT EXISTS camera_platform",
         "spring.flyway.enabled=false"
 })
-@Import(OrderService.class)
+@Import({OrderService.class, InventoryService.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class OrderServiceIntegrationTest {
@@ -34,9 +36,14 @@ class OrderServiceIntegrationTest {
     @Autowired OrderRepository orders;
     @Autowired ProductRepository products;
     @Autowired UserRepository users;
+    @Autowired InventoryService inventory;
+    @Autowired CameraSerialRepository serials;
+    @Autowired WarrantyRepository warranties;
 
     @AfterEach
     void clean() {
+        warranties.deleteAll();
+        serials.deleteAll();
         orders.deleteAll();
         products.deleteAll();
         users.deleteAll();
@@ -67,5 +74,45 @@ class OrderServiceIntegrationTest {
 
         assertThat(products.findById(available.getId()).orElseThrow().getStockQuantity()).isEqualTo(2);
         assertThat(orders.count()).isZero();
+    }
+
+    @Test
+    void cancellationRestoresStockExactlyOnce() {
+        User customer = users.save(new User("cancel@example.com", "Cancel QA", "hash", User.Role.CUSTOMER));
+        Product camera = products.save(new Product("CANCEL-CAM", "Camera", BigDecimal.TEN, 3));
+        Order order = service.place(customer.getId(), List.of(new OrderService.Line(camera.getId(), 2)));
+
+        service.cancel(order.getId(), "Customer request");
+
+        assertThat(products.findById(camera.getId()).orElseThrow().getStockQuantity()).isEqualTo(3);
+        assertThatThrownBy(() -> service.cancel(order.getId(), "Duplicate request"))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(products.findById(camera.getId()).orElseThrow().getStockQuantity()).isEqualTo(3);
+    }
+
+    @Test
+    void serialCanBeSoldOnceAndCreatesWarranty() {
+        User customer = users.save(new User("serial@example.com", "Serial QA", "hash", User.Role.CUSTOMER));
+        Product camera = products.save(new Product("SERIAL-CAM", "Camera", BigDecimal.TEN, 1));
+        Order order = service.place(customer.getId(), List.of(new OrderService.Line(camera.getId(), 1)));
+        var serial = inventory.register(camera.getId(), "sn-001");
+
+        var warranty = inventory.sell(serial.getId(), order.getItems().getFirst().getId(), 24);
+
+        assertThat(warranty.getCameraSerial().getSerialNumber()).isEqualTo("SN-001");
+        assertThat(warranty.getExpiresOn()).isEqualTo(warranty.getStartsOn().plusMonths(24));
+        assertThatThrownBy(() -> inventory.sell(serial.getId(), order.getItems().getFirst().getId(), 24))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(warranties.count()).isOne();
+    }
+
+    @Test
+    void serialRegistrationRejectsCaseInsensitiveDuplicate() {
+        Product camera = products.save(new Product("DUP-SERIAL-CAM", "Camera", BigDecimal.TEN, 1));
+        inventory.register(camera.getId(), "sn-duplicate");
+
+        assertThatThrownBy(() -> inventory.register(camera.getId(), "SN-DUPLICATE"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(serials.count()).isOne();
     }
 }
