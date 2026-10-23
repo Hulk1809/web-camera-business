@@ -33,7 +33,7 @@ if [[ -n "$listener" && -n "$owner" ]]; then
   owner_name=$(sudo docker inspect --format '{{.Name}}' "$owner" | sed 's#^/##')
   if [[ "$owner_name" != "progear-java-public-proxy-1" ]]; then
     headers=$(curl --silent --show-error --max-time 10 --head http://127.0.0.1/)
-    if ! grep -Eiq '^X-Powered-By: Express\r?$' <<<"$headers"; then
+    if ! grep -Eiq '^X-Powered-By: Express[[:space:]]*$' <<<"$headers"; then
       echo "Refusing to stop non-Express port 80 owner: $owner_name"
       sudo docker ps --filter "id=$owner" --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
       exit 1
