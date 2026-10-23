@@ -35,8 +35,10 @@ class PassiveSecurityTest {
     @Test
     void traceMethodIsDisabled() {
         Response response = RestSupport.request().request("TRACE", "/");
-        assertTrue(response.statusCode() == 405 || response.statusCode() == 501,
+        assertTrue(response.statusCode() == 400 || response.statusCode() == 403
+                        || response.statusCode() == 405 || response.statusCode() == 501,
                 () -> "TRACE must be disabled, got " + response.statusCode());
+        assertFalse(header(response, "Allow").contains("trace"), "TRACE must not be advertised in Allow");
     }
 
     @Test
