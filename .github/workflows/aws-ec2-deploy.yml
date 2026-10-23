@@ -120,6 +120,12 @@ jobs:
           ssh -i ~/.ssh/aws-ec2 "$AWS_USER@$AWS_HOST" "
             set -euo pipefail
             cd '$DEPLOY_DIR'
+            if sudo ss -ltnp '( sport = :80 )' | tail -n +2 | grep -q . &&
+              ! sudo docker compose ps --format json public-proxy | grep -q 'progear-java-public-proxy'; then
+              echo 'Port 80 is occupied outside the PRO GEAR Java stack'
+              sudo ss -ltnp '( sport = :80 )'
+              exit 1
+            fi
             sudo docker compose pull
             sudo docker compose up -d --remove-orphans
             sudo docker compose ps
@@ -147,6 +153,14 @@ jobs:
             sleep 5
           done
           exit 1
+
+      - name: Verify public HTTP redirects to HTTPS
+        run: |
+          set -euo pipefail
+          headers="$(curl --silent --show-error --max-time 15 --output /dev/null --dump-header - \
+            http://java-aws.54.179.55.104.nip.io/)"
+          printf '%s' "$headers" | grep -Eq '^HTTP/[0-9.]+ 30[1278]'
+          printf '%s' "$headers" | grep -Eiq '^location: https://java-aws\.54\.179\.55\.104\.nip\.io/'
 
       - name: Deployment diagnostics
         if: failure()
