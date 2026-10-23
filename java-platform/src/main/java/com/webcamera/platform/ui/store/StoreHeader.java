@@ -23,6 +23,7 @@ public final class StoreHeader extends VerticalLayout {
                 action("Tra cứu đơn hàng", VaadinIcon.FILE_TEXT_O, () -> {}),
                 action("Đăng nhập / Đăng ký", VaadinIcon.USER, openLogin));
         utility.setWidthFull();
+        utility.addClassName("store-utility");
         utility.setJustifyContentMode(JustifyContentMode.CENTER);
         utility.setAlignItems(Alignment.CENTER);
         utility.getStyle().set("background", UiTokens.CHARCOAL).set("color", "white")
@@ -32,6 +33,7 @@ public final class StoreHeader extends VerticalLayout {
         HorizontalLayout ticker = new HorizontalLayout(new Span("● ĐƠN HÀNG LIVE"),
                 new Span("Khách hàng tại TP.HCM vừa đặt Sony Alpha 7 IV • Bảo hành điện tử 24 tháng"));
         ticker.setWidthFull();
+        ticker.addClassName("store-ticker");
         ticker.setJustifyContentMode(JustifyContentMode.CENTER);
         ticker.getStyle().set("background", "#FFF7ED").set("color", "#7C2D12")
                 .set("padding", "6px 16px").set("box-sizing", "border-box").set("font-size", "11px");
@@ -76,6 +78,7 @@ public final class StoreHeader extends VerticalLayout {
         cart.getStyle().set("background", UiTokens.BRAND_RED).set("color", "white").set("font-weight", "800");
 
         HorizontalLayout main = new HorizontalLayout(brand, categories, search, warranty, cart);
+        main.addClassName("store-header-main");
         main.setWidthFull();
         main.setMaxWidth(UiTokens.CONTENT_WIDTH);
         main.setAlignItems(Alignment.CENTER);

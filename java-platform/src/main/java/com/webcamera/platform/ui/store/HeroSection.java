@@ -59,7 +59,7 @@ public final class HeroSection extends HorizontalLayout {
                 .set("border-radius", "4px").set("font-size", "10px").set("font-weight", "900");
         H2 headline = new H2("SONY CINEMA FX3 & A7M4 GIẢM ĐẾN 15 TRIỆU");
         headline.getStyle().set("font-size", "clamp(22px,3vw,34px)").set("line-height", "1.15")
-                .set("max-width", "620px").set("margin", "12px 0 4px");
+                .set("max-width", "620px").set("margin", "12px 0 4px").set("color", "white");
         Paragraph copy = new Paragraph("Tặng thẻ CFexpress Type A 160GB + pin chính hãng NP-FZ100 khi đặt mua hôm nay.");
         copy.getStyle().set("color", "#D1D5DB").set("font-size", "13px").set("max-width", "560px");
         Button explore = new Button("Khám Phá Ngay", new Icon(VaadinIcon.ARROW_RIGHT),
