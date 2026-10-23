@@ -19,16 +19,27 @@ public class OrderItem extends BaseEntity {
     private Product product;
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal unitPrice;
+    @Column(name = "product_sku", nullable = false, length = 80)
+    private String productSku;
+    @Column(name = "product_name", nullable = false, length = 180)
+    private String productName;
     @Column(nullable = false)
     private int quantity;
 
     protected OrderItem() {}
     OrderItem(Order order, Product product, BigDecimal unitPrice, int quantity) {
-        this.order = order; this.product = product; this.unitPrice = unitPrice; this.quantity = quantity;
+        this.order = order;
+        this.product = product;
+        this.unitPrice = unitPrice;
+        this.productSku = product.getSku();
+        this.productName = product.getName();
+        this.quantity = quantity;
     }
     public BigDecimal subtotal() { return unitPrice.multiply(BigDecimal.valueOf(quantity)); }
     public Product getProduct() { return product; }
     public Order getOrder() { return order; }
     public BigDecimal getUnitPrice() { return unitPrice; }
+    public String getProductSku() { return productSku; }
+    public String getProductName() { return productName; }
     public int getQuantity() { return quantity; }
 }

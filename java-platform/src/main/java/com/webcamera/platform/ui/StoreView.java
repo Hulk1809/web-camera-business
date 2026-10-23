@@ -303,8 +303,13 @@ public class StoreView extends VerticalLayout {
             User customer = users.requireDomainUser(authentication.getName());
             List<OrderService.Line> lines = cart.values().stream()
                     .map(line -> new OrderService.Line(line.product().getId(), line.quantity())).toList();
-            Order order = orders.place(customer.getId(), lines);
-            PaymentService.Instructions payment = payments.toInstructions(payments.createForOrder(order.getId()));
+            Order order = orders.place(customer.getId(), lines,
+                    new OrderService.DeliveryDetails(name.getValue(), email.getValue(), phone.getValue(),
+                            address.getValue(), method.getValue()));
+            PaymentService.Instructions payment = null;
+            if ("VietQR MB Bank".equals(method.getValue())) {
+                payment = payments.toInstructions(payments.createForOrder(order.getId()));
+            }
             cart.clear();
             refreshCart();
             cartDialog.close();
@@ -320,6 +325,7 @@ public class StoreView extends VerticalLayout {
         dialog.setHeaderTitle("Đặt hàng thành công — " + order.getOrderNumber());
         VerticalLayout body = new VerticalLayout(new Paragraph("Cảm ơn bạn đã mua hàng tại PRO GEAR."));
         if ("VietQR MB Bank".equals(method)) {
+            if (payment == null) throw new IllegalStateException("Missing VietQR instructions");
             Image qr = new Image(payment.qrUrl(), "VietQR MB Bank");
             qr.setWidth("260px");
             body.add(qr, new Span("MB Bank • " + payment.accountNumber()),
