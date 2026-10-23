@@ -5,7 +5,7 @@ on:
   schedule:
     - cron: '30 2 * * *'
   workflow_run:
-    workflows: ['CI/CD Pipeline - Camera E-Commerce to Azure AKS']
+    workflows: ['CI/CD Pipeline - Camera E-Commerce to Azure AKS', 'Java Platform Shadow CI']
     types: [completed]
 
 permissions:
@@ -36,5 +36,36 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: qa-java-seven-layer-reports
+          path: qa-java/target/reports/junit/
+          if-no-files-found: warn
+
+  java-preview-read-only:
+    if: >-
+      github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.name == 'Java Platform Shadow CI')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: qa-java
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Run seven read-only layers against Java preview
+        env:
+          QA_BASE_URL: https://java-preview.74.176.156.158.nip.io
+          QA_TARGET: java
+          QA_ALLOW_WRITES: 'false'
+        run: mvn --batch-mode --no-transfer-progress -Pread-only test
+      - name: Upload Java preview JUnit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-java-preview-seven-layer-reports
           path: qa-java/target/reports/junit/
           if-no-files-found: warn

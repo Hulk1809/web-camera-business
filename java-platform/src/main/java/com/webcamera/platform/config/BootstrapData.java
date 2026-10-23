@@ -3,6 +3,9 @@ package com.webcamera.platform.config;
 import com.webcamera.platform.domain.User;
 import com.webcamera.platform.repository.UserRepository;
 import com.webcamera.platform.service.UserService;
+import com.webcamera.platform.domain.Product;
+import com.webcamera.platform.repository.ProductRepository;
+import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -15,12 +18,17 @@ public class BootstrapData implements ApplicationRunner {
     private final boolean enabled;
     private final String email;
     private final String password;
+    private final ProductRepository products;
+    private final boolean sampleCatalogEnabled;
 
-    public BootstrapData(UserRepository users, UserService userService,
-                         @Value("${app.bootstrap-admin.enabled:false}") boolean enabled,
-                         @Value("${app.bootstrap-admin.email:}") String email,
-                         @Value("${app.bootstrap-admin.password:}") String password) {
-        this.users = users; this.userService = userService; this.enabled = enabled; this.email = email; this.password = password;
+    public BootstrapData(UserRepository users, UserService userService, ProductRepository products,
+                          @Value("${app.bootstrap-admin.enabled:false}") boolean enabled,
+                          @Value("${app.bootstrap-admin.email:}") String email,
+                          @Value("${app.bootstrap-admin.password:}") String password,
+                          @Value("${app.bootstrap-sample-catalog.enabled:false}") boolean sampleCatalogEnabled) {
+        this.users = users; this.userService = userService; this.products = products;
+        this.enabled = enabled; this.email = email; this.password = password;
+        this.sampleCatalogEnabled = sampleCatalogEnabled;
     }
 
     @Override
@@ -31,6 +39,11 @@ public class BootstrapData implements ApplicationRunner {
         }
         if (users.findByEmailIgnoreCase(email).isEmpty()) {
             userService.create(email, "Administrator", password, User.Role.ADMIN);
+        }
+        if (sampleCatalogEnabled && products.count() == 0) {
+            Product camera = new Product("JAVA-PREVIEW-CAM", "Java Preview Camera", new BigDecimal("1299.00"), 5);
+            camera.setDescription("Preview catalog fixture for external read-only QA.");
+            products.save(camera);
         }
     }
 }

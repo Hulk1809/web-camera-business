@@ -45,6 +45,10 @@ public final class QaConfig {
         return boolEnv("QA_ALLOW_WRITES", false) && fixtureApiUri().isPresent() && fixtureToken().isPresent();
     }
 
+    public static boolean javaTarget() {
+        return "java".equalsIgnoreCase(env("QA_TARGET", "legacy"));
+    }
+
     public static int intEnv(String name, int fallback) {
         String value = System.getenv(name);
         return value == null || value.isBlank() ? fallback : Integer.parseInt(value);

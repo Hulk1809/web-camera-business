@@ -50,3 +50,5 @@ app:
     enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
     email: ${BOOTSTRAP_ADMIN_EMAIL:}
     password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+  bootstrap-sample-catalog:
+    enabled: ${BOOTSTRAP_SAMPLE_CATALOG_ENABLED:false}

@@ -82,6 +82,7 @@ public class StoreView extends VerticalLayout {
     }
 
     private void configureFilters() {
+        search.setId("qa-search-input");
         search.setPlaceholder("Name, SKU, or description");
         search.setClearButtonVisible(true);
         search.setValueChangeMode(ValueChangeMode.LAZY);
@@ -97,6 +98,7 @@ public class StoreView extends VerticalLayout {
     }
 
     private void configureProductGrid() {
+        productGrid.setId("qa-product-grid");
         productGrid.addColumn(Product::getName).setHeader("Product").setAutoWidth(true).setFlexGrow(1);
         productGrid.addColumn(Product::getSku).setHeader("SKU").setAutoWidth(true);
         productGrid.addColumn(product -> money(product.getPrice())).setHeader("Price").setAutoWidth(true);

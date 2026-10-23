@@ -27,25 +27,36 @@ class UiSmokeResponsiveTest {
     @Test
     void storefrontRendersOnDesktop() {
         open(new Dimension(1440, 900), "/");
-        visible(By.cssSelector("[data-testid='search-input']"));
-        List<WebElement> products = driver.findElements(By.cssSelector("[data-testid='product-card']"));
-        assertFalse(products.isEmpty(), "No product cards rendered");
+        if (QaConfig.javaTarget()) {
+            visible(By.id("qa-search-input"));
+            WebElement grid = visible(By.id("qa-product-grid"));
+            assertTrue(grid.getText().contains("Java Preview Camera"), "No preview product rendered");
+        } else {
+            visible(By.cssSelector("[data-testid='search-input']"));
+            List<WebElement> products = driver.findElements(By.cssSelector("[data-testid='product-card']"));
+            assertFalse(products.isEmpty(), "No product cards rendered");
+        }
         assertNoHorizontalOverflow();
     }
 
     @Test
     void storefrontRendersResponsivelyOnMobile() {
         open(new Dimension(390, 844), "/");
-        visible(By.cssSelector("[data-testid='btn-cart-drawer']"));
+        visible(QaConfig.javaTarget() ? By.id("qa-search-input") : By.cssSelector("[data-testid='btn-cart-drawer']"));
         assertNoHorizontalOverflow();
     }
 
     @Test
     void adminLoginRendersWithoutAuthenticating() {
         open(new Dimension(1366, 768), "/admin/");
-        visible(By.cssSelector("[data-testid='admin-login-screen']"));
-        visible(By.cssSelector("[data-testid='input-admin-email']"));
-        visible(By.cssSelector("[data-testid='btn-admin-login-submit']"));
+        if (QaConfig.javaTarget()) {
+            visible(By.id("qa-login-screen"));
+            visible(By.id("qa-login-form"));
+        } else {
+            visible(By.cssSelector("[data-testid='admin-login-screen']"));
+            visible(By.cssSelector("[data-testid='input-admin-email']"));
+            visible(By.cssSelector("[data-testid='btn-admin-login-submit']"));
+        }
         assertNoHorizontalOverflow();
     }
 
@@ -64,8 +75,8 @@ class UiSmokeResponsiveTest {
                 "complete".equals(((JavascriptExecutor) webDriver).executeScript("return document.readyState")));
     }
 
-    private void visible(By locator) {
-        new WebDriverWait(driver, QaConfig.timeout()).until(ExpectedConditions.visibilityOfElementLocated(locator));
+    private WebElement visible(By locator) {
+        return new WebDriverWait(driver, QaConfig.timeout()).until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
 
     private void assertNoHorizontalOverflow() {

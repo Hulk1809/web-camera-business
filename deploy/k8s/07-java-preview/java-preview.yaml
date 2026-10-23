@@ -56,6 +56,8 @@ spec:
                 secretKeyRef:
                   name: java-preview-admin
                   key: password
+            - name: BOOTSTRAP_SAMPLE_CATALOG_ENABLED
+              value: "true"
           resources:
             requests:
               cpu: 100m

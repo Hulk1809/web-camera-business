@@ -16,6 +16,8 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
     private final LoginForm login = new LoginForm();
     public LoginView() {
         setSizeFull(); setAlignItems(Alignment.CENTER); setJustifyContentMode(JustifyContentMode.CENTER);
+        setId("qa-login-screen");
+        login.setId("qa-login-form");
         login.setAction("login");
         add(new H1("Camera Platform"), login);
     }

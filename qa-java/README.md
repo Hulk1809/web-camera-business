@@ -47,6 +47,7 @@ Selenium dùng Selenium Manager để lấy driver khớp trình duyệt. Docker
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
 | `QA_BASE_URL` | `https://progear.74.176.156.158.nip.io` | URL hệ thống từ bên ngoài |
+| `QA_TARGET` | `legacy` | Contract UI mục tiêu: `legacy` hoặc `java`; không thay đổi tính black-box |
 | `QA_TIMEOUT_SECONDS` | `20` | Timeout request/wait |
 | `QA_ALLOW_INSECURE_TLS` | `false` | Chỉ dùng ở môi trường test có cert self-signed |
 | `QA_PERF_REQUESTS` | `20` | Số health probes L6 (5..500) |
