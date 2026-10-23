@@ -120,10 +120,12 @@ jobs:
           ssh -i ~/.ssh/aws-ec2 "$AWS_USER@$AWS_HOST" "
             set -euo pipefail
             cd '$DEPLOY_DIR'
-            if sudo ss -ltnp '( sport = :80 )' | tail -n +2 | grep -q . &&
-              ! sudo docker compose ps --format json public-proxy | grep -q 'progear-java-public-proxy'; then
+            port_80_listener=\$(sudo ss -ltnp '( sport = :80 )' | tail -n +2)
+            if test -n "\$port_80_listener" &&
+              ! sudo docker compose ps --services --status running | grep -Fx 'public-proxy' >/dev/null; then
               echo 'Port 80 is occupied outside the PRO GEAR Java stack'
-              sudo ss -ltnp '( sport = :80 )'
+              printf '%s\n' "\$port_80_listener"
+              sudo docker ps --format 'table {{.Names}}\t{{.Ports}}'
               exit 1
             fi
             sudo docker compose pull
