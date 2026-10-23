@@ -34,8 +34,28 @@ public class OrderService {
         order.place();
         return orders.save(order);
     }
+
+    @Transactional
+    public Order placePos(UUID staffOrCustomerId, List<Line> lines) {
+        if (lines == null || lines.isEmpty()) throw new IllegalArgumentException("At least one line is required");
+        User user = users.findById(staffOrCustomerId).orElseThrow(() -> new IllegalArgumentException("Unknown customer or staff"));
+        Order order = new Order(user, Order.SalesChannel.POS);
+        for (Line line : lines) {
+            Product product = products.findByIdForUpdate(line.productId()).orElseThrow(() -> new IllegalArgumentException("Unknown product"));
+            if (!product.isActive()) throw new IllegalStateException("Product is inactive");
+            product.reserve(line.quantity());
+            order.addItem(product, line.quantity());
+        }
+        order.completePosSale();
+        return orders.save(order);
+    }
     @Transactional(readOnly = true)
     public List<Order> allOrders() { return orders.findAllByOrderByCreatedAtDesc(); }
+
+    @Transactional(readOnly = true)
+    public List<Order> customerOrders(UUID customerId) {
+        return orders.findByCustomerIdOrderByCreatedAtDesc(customerId);
+    }
 
     @Transactional
     public Order changeStatus(UUID orderId, Order.Status status) {

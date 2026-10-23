@@ -45,4 +45,12 @@ public class Warranty extends BaseEntity {
     public LocalDate getStartsOn() { return startsOn; }
     public LocalDate getExpiresOn() { return expiresOn; }
     public Status getStatus() { return status; }
+    public void claim() {
+        if (status != Status.ACTIVE) throw new IllegalStateException("Only active warranty can be claimed");
+        if (LocalDate.now().isAfter(expiresOn)) {
+            status = Status.EXPIRED;
+            throw new IllegalStateException("Warranty has expired");
+        }
+        status = Status.CLAIMED;
+    }
 }

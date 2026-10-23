@@ -47,11 +47,21 @@ public class InventoryService {
     @Transactional(readOnly = true)
     public List<CameraSerial> serials() { return serials.findAllByOrderByCreatedAtDesc(); }
     @Transactional(readOnly = true)
+    public List<CameraSerial> availableSerials(UUID productId) {
+        return serials.findByProductIdAndStatus(productId, CameraSerial.Status.IN_STOCK);
+    }
+    @Transactional(readOnly = true)
     public List<Warranty> warranties() { return warranties.findAllByOrderByCreatedAtDesc(); }
     @Transactional(readOnly = true)
     public Warranty warrantyBySerial(String serialNumber) {
         if (serialNumber == null || serialNumber.isBlank()) throw new IllegalArgumentException("Serial number is required");
         return warranties.findByCameraSerialSerialNumberIgnoreCase(serialNumber.trim())
                 .orElseThrow(() -> new IllegalArgumentException("Warranty not found"));
+    }
+    @Transactional
+    public Warranty claimWarranty(String serialNumber) {
+        Warranty warranty = warrantyBySerial(serialNumber);
+        warranty.claim();
+        return warranty;
     }
 }

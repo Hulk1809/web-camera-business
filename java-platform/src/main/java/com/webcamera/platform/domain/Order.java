@@ -46,7 +46,11 @@ public class Order extends BaseEntity {
     private List<OrderItem> items = new ArrayList<>();
 
     protected Order() {}
-    public Order(User customer) { this.customer = customer; }
+    public Order(User customer) { this(customer, SalesChannel.ONLINE); }
+    public Order(User customer, SalesChannel salesChannel) {
+        this.customer = customer;
+        this.salesChannel = salesChannel != null ? salesChannel : SalesChannel.ONLINE;
+    }
     public void addItem(Product product, int quantity) {
         if (quantity < 1) throw new IllegalArgumentException("Quantity must be positive");
         items.add(new OrderItem(this, product, product.getPrice(), quantity));
@@ -60,6 +64,11 @@ public class Order extends BaseEntity {
     public String getCancellationReason() { return cancellationReason; }
     public List<OrderItem> getItems() { return List.copyOf(items); }
     public void place() { if (items.isEmpty()) throw new IllegalStateException("Cannot place an empty order"); status = Status.PLACED; }
+    public void completePosSale() {
+        if (items.isEmpty()) throw new IllegalStateException("Cannot place an empty order");
+        status = Status.COMPLETED;
+        paymentStatus = PaymentStatus.PAID;
+    }
     public void awaitPayment() {
         if (status == Status.PENDING_PAYMENT && paymentStatus == PaymentStatus.PENDING) return;
         if (status != Status.PLACED) throw new IllegalStateException("Order cannot await payment from " + status);

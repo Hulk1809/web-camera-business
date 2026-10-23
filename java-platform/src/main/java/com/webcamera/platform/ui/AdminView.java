@@ -22,9 +22,14 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.webcamera.platform.domain.Product;
 import com.webcamera.platform.domain.Order;
+import com.webcamera.platform.domain.Warranty;
+import com.webcamera.platform.domain.ChatSession;
+import com.webcamera.platform.domain.Message;
 import com.webcamera.platform.service.CatalogService;
 import com.webcamera.platform.service.OrderService;
 import com.webcamera.platform.service.PaymentService;
+import com.webcamera.platform.service.InventoryService;
+import com.webcamera.platform.service.ChatService;
 import com.webcamera.platform.service.UserService;
 import com.webcamera.platform.domain.Payment;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -44,6 +49,8 @@ public class AdminView extends VerticalLayout {
     private final OrderService orders;
     private final PaymentService payments;
     private final UserService users;
+    private final InventoryService inventory;
+    private final ChatService chats;
     private final Grid<Product> productGrid = new Grid<>(Product.class, false);
     private final VerticalLayout content = new VerticalLayout();
     private final Map<Tab, Component> pages = new LinkedHashMap<>();
@@ -59,11 +66,14 @@ public class AdminView extends VerticalLayout {
     private final Button save = new Button("Create product");
     private final Button cancel = new Button("Clear selection");
 
-    public AdminView(CatalogService catalog, OrderService orders, PaymentService payments, UserService users) {
+    public AdminView(CatalogService catalog, OrderService orders, PaymentService payments, UserService users,
+                     InventoryService inventory, ChatService chats) {
         this.catalog = catalog;
         this.orders = orders;
         this.payments = payments;
         this.users = users;
+        this.inventory = inventory;
+        this.chats = chats;
         setSizeFull();
         add(new H2("Administration"));
 
@@ -72,10 +82,8 @@ public class AdminView extends VerticalLayout {
         addPage(tabs, "Products", createProductsPage());
         addPage(tabs, "Orders", createOrdersPage());
         addPage(tabs, "Payments", createPaymentsPage());
-        addPage(tabs, "Warranty", unavailablePage("Warranty administration",
-                "No warranty domain or service exists yet. Claims cannot be viewed or changed here."));
-        addPage(tabs, "Chat", unavailablePage("Chat administration",
-                "Chat can be started or replied to only when a session ID is already known; no service API lists sessions for agents."));
+        addPage(tabs, "Warranty", createWarrantyPage());
+        addPage(tabs, "Chat", createChatPage());
         tabs.addSelectedChangeListener(event -> showPage(event.getSelectedTab()));
 
         content.setSizeFull();
@@ -300,6 +308,107 @@ public class AdminView extends VerticalLayout {
         } catch (RuntimeException exception) {
             Notification.show("Order was not updated: " + safeMessage(exception));
         }
+    }
+
+    private VerticalLayout createWarrantyPage() {
+        Grid<Warranty> grid = new Grid<>(Warranty.class, false);
+        grid.addColumn(w -> w.getCameraSerial().getSerialNumber()).setHeader("Serial number").setAutoWidth(true);
+        grid.addColumn(w -> w.getCameraSerial().getProduct().getName()).setHeader("Product").setFlexGrow(1);
+        grid.addColumn(w -> w.getOrder().getOrderNumber()).setHeader("Order").setAutoWidth(true);
+        grid.addColumn(w -> w.getCustomer() != null ? w.getCustomer().getDisplayName() : "Anonymous").setHeader("Customer").setAutoWidth(true);
+        grid.addColumn(w -> w.getStartsOn() + " to " + w.getExpiresOn()).setHeader("Validity").setAutoWidth(true);
+        grid.addColumn(Warranty::getStatus).setHeader("Status").setAutoWidth(true);
+        grid.addComponentColumn(w -> {
+            Button claimBtn = new Button("Process Claim", event -> {
+                try {
+                    inventory.claimWarranty(w.getCameraSerial().getSerialNumber());
+                    grid.setItems(inventory.warranties());
+                    Notification.show("Warranty claim processed.");
+                } catch (RuntimeException ex) {
+                    Notification.show("Cannot process claim: " + safeMessage(ex));
+                }
+            });
+            claimBtn.setEnabled(w.getStatus() == Warranty.Status.ACTIVE);
+            return claimBtn;
+        }).setHeader("Action").setAutoWidth(true);
+
+        grid.setItems(inventory.warranties());
+        grid.setWidthFull();
+
+        VerticalLayout page = new VerticalLayout(new H3("Warranty administration"),
+                new Paragraph("Manage active warranties and process claims."), grid);
+        page.setPadding(false);
+        page.setSizeFull();
+        page.expand(grid);
+        return page;
+    }
+
+    private VerticalLayout createChatPage() {
+        Grid<ChatSession> sessionGrid = new Grid<>(ChatSession.class, false);
+        sessionGrid.addColumn(s -> s.getUser() != null ? s.getUser().getDisplayName() + " (" + s.getUser().getEmail() + ")" : "Guest")
+                .setHeader("User").setAutoWidth(true);
+        sessionGrid.addColumn(s -> s.getMessages().size() + " messages").setHeader("Messages").setAutoWidth(true);
+        sessionGrid.addColumn(s -> s.getCreatedAt().toString()).setHeader("Started").setAutoWidth(true);
+
+        VerticalLayout chatDetail = new VerticalLayout();
+        chatDetail.setVisible(false);
+        VerticalLayout messageThread = new VerticalLayout();
+        messageThread.setWidthFull();
+        TextArea replyInput = new TextArea("Reply to customer");
+        replyInput.setWidthFull();
+        Button sendReply = new Button("Send Reply");
+
+        chatDetail.add(new H3("Conversation"), messageThread, replyInput, sendReply);
+
+        sessionGrid.asSingleSelect().addValueChangeListener(event -> {
+            ChatSession session = event.getValue();
+            if (session == null) {
+                chatDetail.setVisible(false);
+                return;
+            }
+            chatDetail.setVisible(true);
+            messageThread.removeAll();
+            ChatSession fresh = chats.getSession(session.getId());
+            for (Message msg : fresh.getMessages()) {
+                Span bubble = new Span(msg.getSender() + ": " + msg.getContent());
+                bubble.getStyle().set("padding", "6px 12px").set("border-radius", "8px")
+                        .set("background", msg.getSender() == Message.Sender.AGENT ? "var(--lumo-primary-color-10pct)" : "var(--lumo-contrast-10pct)");
+                messageThread.add(bubble);
+            }
+            sendReply.addClickListener(e -> {
+                if (replyInput.isEmpty()) return;
+                try {
+                    chats.reply(session.getId(), Message.Sender.AGENT, replyInput.getValue().trim());
+                    replyInput.clear();
+                    messageThread.removeAll();
+                    ChatSession reloaded = chats.getSession(session.getId());
+                    for (Message msg : reloaded.getMessages()) {
+                        Span bubble = new Span(msg.getSender() + ": " + msg.getContent());
+                        bubble.getStyle().set("padding", "6px 12px").set("border-radius", "8px")
+                                .set("background", msg.getSender() == Message.Sender.AGENT ? "var(--lumo-primary-color-10pct)" : "var(--lumo-contrast-10pct)");
+                        messageThread.add(bubble);
+                    }
+                    sessionGrid.setItems(chats.allSessions());
+                    Notification.show("Reply sent.");
+                } catch (RuntimeException ex) {
+                    Notification.show("Failed to send reply: " + safeMessage(ex));
+                }
+            });
+        });
+
+        sessionGrid.setItems(chats.allSessions());
+        sessionGrid.setWidthFull();
+
+        HorizontalLayout split = new HorizontalLayout(sessionGrid, chatDetail);
+        split.setSizeFull();
+        split.setFlexGrow(1, sessionGrid);
+        split.setFlexGrow(1, chatDetail);
+
+        VerticalLayout page = new VerticalLayout(new H3("Customer Chat Support"), split);
+        page.setPadding(false);
+        page.setSizeFull();
+        page.expand(split);
+        return page;
     }
 
     private static VerticalLayout unavailablePage(String heading, String reason) {

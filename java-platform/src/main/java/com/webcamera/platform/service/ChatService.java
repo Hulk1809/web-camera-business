@@ -5,6 +5,7 @@ import com.webcamera.platform.domain.Message;
 import com.webcamera.platform.domain.User;
 import com.webcamera.platform.repository.ChatSessionRepository;
 import com.webcamera.platform.repository.UserRepository;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,5 +27,11 @@ public class ChatService {
         ChatSession session = sessions.findById(sessionId).orElseThrow(() -> new IllegalArgumentException("Unknown session"));
         session.addMessage(sender, message);
         return session;
+    }
+    @Transactional(readOnly = true)
+    public List<ChatSession> allSessions() { return sessions.findAllByOrderByCreatedAtDesc(); }
+    @Transactional(readOnly = true)
+    public ChatSession getSession(UUID id) {
+        return sessions.findById(id).orElseThrow(() -> new IllegalArgumentException("Unknown session"));
     }
 }
