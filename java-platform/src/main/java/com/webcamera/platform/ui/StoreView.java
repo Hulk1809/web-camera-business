@@ -8,6 +8,7 @@ import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
@@ -26,6 +27,7 @@ import com.webcamera.platform.domain.Product;
 import com.webcamera.platform.domain.User;
 import com.webcamera.platform.service.CatalogService;
 import com.webcamera.platform.service.OrderService;
+import com.webcamera.platform.service.PaymentService;
 import com.webcamera.platform.service.UserService;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -48,6 +50,7 @@ public class StoreView extends VerticalLayout {
     private final CatalogService catalog;
     private final OrderService orders;
     private final UserService users;
+    private final PaymentService payments;
     private final Grid<Product> productGrid = new Grid<>(Product.class, false);
     private final Grid<CartLine> cartGrid = new Grid<>(CartLine.class, false);
     private final Map<UUID, CartLine> cart = new LinkedHashMap<>();
@@ -55,12 +58,14 @@ public class StoreView extends VerticalLayout {
     private final ComboBox<Availability> availability = new ComboBox<>("Availability");
     private final Span resultCount = new Span();
     private final Span cartSummary = new Span("Cart is empty");
+    private final VerticalLayout paymentPanel = new VerticalLayout();
     private List<Product> products = List.of();
 
-    public StoreView(CatalogService catalog, OrderService orders, UserService users) {
+    public StoreView(CatalogService catalog, OrderService orders, UserService users, PaymentService payments) {
         this.catalog = catalog;
         this.orders = orders;
         this.users = users;
+        this.payments = payments;
 
         setSizeFull();
         add(new H2("Camera store"), new Paragraph("Browse the live catalog, build a draft cart, and place an account order."));
@@ -75,7 +80,8 @@ public class StoreView extends VerticalLayout {
 
         Details checkout = new Details("Checkout", createCheckoutForm());
         checkout.setWidthFull();
-        add(filters, productGrid, new H3("Draft cart"), cartSummary, cartGrid, checkout);
+        paymentPanel.setVisible(false);
+        add(filters, productGrid, new H3("Draft cart"), cartSummary, cartGrid, checkout, paymentPanel);
         productGrid.setWidthFull();
         cartGrid.setWidthFull();
         refreshCatalog();
@@ -137,13 +143,11 @@ public class StoreView extends VerticalLayout {
         EmailField email = new EmailField("Contact email");
         TextField phone = new TextField("Phone");
         TextArea address = new TextArea("Shipping address");
-        Checkbox acknowledgement = new Checkbox("I understand shipping and payment details are not stored yet");
+        Checkbox acknowledgement = new Checkbox("I confirm contact and shipping details are correct");
         Button placeOrder = new Button("Place account order", event -> placeOrder(name, email, phone, address, acknowledgement));
         placeOrder.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        Paragraph limitation = new Paragraph(
-                "Current backend support stores only the signed-in customer and product lines. "
-                        + "Contact, shipping, payment, tracking, and warranty registration are not yet persisted.");
+        Paragraph limitation = new Paragraph("Payment uses MB Bank transfer. Order remains pending until staff verifies bank transaction.");
         VerticalLayout form = new VerticalLayout(limitation, name, email, phone, address, acknowledgement, placeOrder);
         form.setPadding(false);
         form.setSpacing(true);
@@ -178,14 +182,29 @@ public class StoreView extends VerticalLayout {
                     .map(line -> new OrderService.Line(line.product().getId(), line.quantity()))
                     .toList();
             Order order = orders.place(customer.getId(), lines);
+            PaymentService.Instructions payment = payments.toInstructions(payments.createForOrder(order.getId()));
             cart.clear();
             refreshCart();
             refreshCatalog();
-            Notification.show("Order " + order.getId() + " was placed. Shipping and payment still require staff follow-up.",
+            showPayment(payment, order.getOrderNumber());
+            Notification.show("Order " + order.getOrderNumber() + " placed. Transfer exact amount and content shown below.",
                     7000, Notification.Position.MIDDLE);
         } catch (RuntimeException ex) {
             Notification.show("Order was not placed: " + safeMessage(ex), 6000, Notification.Position.MIDDLE);
         }
+    }
+
+    private void showPayment(PaymentService.Instructions payment, String orderNumber) {
+        Image qr = new Image(payment.qrUrl(), "VietQR for order " + orderNumber);
+        qr.setWidth("320px");
+        paymentPanel.removeAll();
+        paymentPanel.add(new H3("MB Bank transfer"), qr,
+                new Span("Account: " + payment.accountNumber()),
+                new Span("Name: " + payment.accountName()),
+                new Span("Amount: " + payment.amount().toPlainString()),
+                new Span("Transfer content: " + payment.transferContent()),
+                new Paragraph("Status: pending manual bank verification. Do not change transfer content."));
+        paymentPanel.setVisible(true);
     }
 
     private void refreshCatalog() {

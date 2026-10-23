@@ -4,6 +4,7 @@ import com.webcamera.platform.domain.Order;
 import com.webcamera.platform.domain.User;
 import com.webcamera.platform.service.OrderService;
 import com.webcamera.platform.service.UserService;
+import com.webcamera.platform.service.PaymentService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -35,15 +36,24 @@ public class OrderController {
 
     private final OrderService orders;
     private final UserService users;
-    public OrderController(OrderService orders, UserService users) { this.orders = orders; this.users = users; }
+    private final PaymentService payments;
+    public OrderController(OrderService orders, UserService users, PaymentService payments) {
+        this.orders = orders; this.users = users; this.payments = payments;
+    }
 
     @PostMapping
     public ResponseEntity<OrderResponse> place(@Valid @RequestBody PlaceOrderRequest request, Principal principal) {
         User customer = users.requireDomainUser(principal.getName());
         Order order = orders.place(customer.getId(), request.lines().stream()
                 .map(line -> new OrderService.Line(line.productId(), line.quantity())).toList());
+        payments.createForOrder(order.getId());
         return ResponseEntity.created(URI.create("/api/orders/" + order.getId()))
                 .body(toResponse(order));
+    }
+
+    @GetMapping("/{id}/payment")
+    public PaymentService.Instructions payment(@PathVariable UUID id, Principal principal) {
+        return payments.instructions(id, principal.getName());
     }
 
     @GetMapping

@@ -52,3 +52,6 @@ app:
     password: ${BOOTSTRAP_ADMIN_PASSWORD:}
   bootstrap-sample-catalog:
     enabled: ${BOOTSTRAP_SAMPLE_CATALOG_ENABLED:false}
+  bank-transfer:
+    account-number: ${BANK_TRANSFER_ACCOUNT_NUMBER:}
+    account-name: ${BANK_TRANSFER_ACCOUNT_NAME:}

@@ -11,6 +11,7 @@ import com.webcamera.platform.repository.ProductRepository;
 import com.webcamera.platform.repository.UserRepository;
 import com.webcamera.platform.repository.CameraSerialRepository;
 import com.webcamera.platform.repository.WarrantyRepository;
+import com.webcamera.platform.repository.PaymentRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -26,9 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.properties.hibernate.default_schema=camera_platform",
         "spring.datasource.url=jdbc:h2:mem:order_service;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;INIT=CREATE SCHEMA IF NOT EXISTS camera_platform",
-        "spring.flyway.enabled=false"
+        "spring.flyway.enabled=false",
+        "app.bank-transfer.account-number=0000000000",
+        "app.bank-transfer.account-name=TEST ACCOUNT"
 })
-@Import({OrderService.class, InventoryService.class})
+@Import({OrderService.class, InventoryService.class, PaymentService.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class OrderServiceIntegrationTest {
@@ -39,14 +42,34 @@ class OrderServiceIntegrationTest {
     @Autowired InventoryService inventory;
     @Autowired CameraSerialRepository serials;
     @Autowired WarrantyRepository warranties;
+    @Autowired PaymentRepository payments;
+    @Autowired PaymentService paymentService;
 
     @AfterEach
     void clean() {
+        payments.deleteAll();
         warranties.deleteAll();
         serials.deleteAll();
         orders.deleteAll();
         products.deleteAll();
         users.deleteAll();
+    }
+
+    @Test
+    void bankTransferConfirmationIsIdempotentAndMarksOrderPaid() {
+        User customer = users.save(new User("payment@example.com", "Payment QA", "hash", User.Role.CUSTOMER));
+        User admin = users.save(new User("payment-admin@example.com", "Admin QA", "hash", User.Role.ADMIN));
+        Product camera = products.save(new Product("PAY-CAM", "Camera", new BigDecimal("100000"), 1));
+        Order order = service.place(customer.getId(), List.of(new OrderService.Line(camera.getId(), 1)));
+
+        var payment = paymentService.createForOrder(order.getId());
+        paymentService.confirm(payment.getId(), admin.getId(), "MB-TRANSACTION-1");
+        paymentService.confirm(payment.getId(), admin.getId(), "MB-TRANSACTION-1");
+
+        Order paid = orders.findById(order.getId()).orElseThrow();
+        assertThat(paid.getStatus()).isEqualTo(Order.Status.PAID);
+        assertThat(paid.getPaymentStatus()).isEqualTo(Order.PaymentStatus.PAID);
+        assertThat(payments.count()).isOne();
     }
 
     @Test

@@ -60,6 +60,19 @@ public class Order extends BaseEntity {
     public String getCancellationReason() { return cancellationReason; }
     public List<OrderItem> getItems() { return List.copyOf(items); }
     public void place() { if (items.isEmpty()) throw new IllegalStateException("Cannot place an empty order"); status = Status.PLACED; }
+    public void awaitPayment() {
+        if (status == Status.PENDING_PAYMENT && paymentStatus == PaymentStatus.PENDING) return;
+        if (status != Status.PLACED) throw new IllegalStateException("Order cannot await payment from " + status);
+        status = Status.PENDING_PAYMENT;
+        paymentStatus = PaymentStatus.PENDING;
+    }
+    public void markPaid() {
+        if (paymentStatus == PaymentStatus.PAID) return;
+        if (status != Status.PENDING_PAYMENT || paymentStatus != PaymentStatus.PENDING)
+            throw new IllegalStateException("Order cannot be paid from " + status);
+        status = Status.PAID;
+        paymentStatus = PaymentStatus.PAID;
+    }
     public void changeStatus(Status next) {
         if (next == null || !allowedTransitions(status).contains(next))
             throw new IllegalStateException("Invalid order status transition: " + status + " -> " + next);

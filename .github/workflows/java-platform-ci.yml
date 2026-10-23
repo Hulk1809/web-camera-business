@@ -80,6 +80,11 @@ jobs:
             --from-literal=email="$PREVIEW_ADMIN_EMAIL" \
             --from-literal=password="$PREVIEW_ADMIN_PASSWORD" \
             --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret generic java-preview-bank-transfer \
+            --namespace=camera-shop \
+            --from-literal=account-number="${{ secrets.BANK_TRANSFER_ACCOUNT_NUMBER }}" \
+            --from-literal=account-name="${{ secrets.BANK_TRANSFER_ACCOUNT_NAME }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
           sed -i "s|ghcr.io/hulk1809/camera-java-platform:latest|ghcr.io/hulk1809/camera-java-platform:${{ github.sha }}|" \
             deploy/k8s/07-java-preview/java-preview.yaml
           kubectl apply -f deploy/k8s/07-java-preview/java-preview.yaml

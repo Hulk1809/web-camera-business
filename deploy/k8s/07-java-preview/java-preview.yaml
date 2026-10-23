@@ -58,6 +58,16 @@ spec:
                   key: password
             - name: BOOTSTRAP_SAMPLE_CATALOG_ENABLED
               value: "true"
+            - name: BANK_TRANSFER_ACCOUNT_NUMBER
+              valueFrom:
+                secretKeyRef:
+                  name: java-preview-bank-transfer
+                  key: account-number
+            - name: BANK_TRANSFER_ACCOUNT_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: java-preview-bank-transfer
+                  key: account-name
           resources:
             requests:
               cpu: 100m

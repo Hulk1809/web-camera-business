@@ -24,6 +24,10 @@ import com.webcamera.platform.domain.Product;
 import com.webcamera.platform.domain.Order;
 import com.webcamera.platform.service.CatalogService;
 import com.webcamera.platform.service.OrderService;
+import com.webcamera.platform.service.PaymentService;
+import com.webcamera.platform.service.UserService;
+import com.webcamera.platform.domain.Payment;
+import org.springframework.security.core.context.SecurityContextHolder;
 import jakarta.annotation.security.RolesAllowed;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -38,6 +42,8 @@ import java.util.Map;
 public class AdminView extends VerticalLayout {
     private final CatalogService catalog;
     private final OrderService orders;
+    private final PaymentService payments;
+    private final UserService users;
     private final Grid<Product> productGrid = new Grid<>(Product.class, false);
     private final VerticalLayout content = new VerticalLayout();
     private final Map<Tab, Component> pages = new LinkedHashMap<>();
@@ -53,9 +59,11 @@ public class AdminView extends VerticalLayout {
     private final Button save = new Button("Create product");
     private final Button cancel = new Button("Clear selection");
 
-    public AdminView(CatalogService catalog, OrderService orders) {
+    public AdminView(CatalogService catalog, OrderService orders, PaymentService payments, UserService users) {
         this.catalog = catalog;
         this.orders = orders;
+        this.payments = payments;
+        this.users = users;
         setSizeFull();
         add(new H2("Administration"));
 
@@ -63,6 +71,7 @@ public class AdminView extends VerticalLayout {
         addPage(tabs, "Dashboard", createDashboard());
         addPage(tabs, "Products", createProductsPage());
         addPage(tabs, "Orders", createOrdersPage());
+        addPage(tabs, "Payments", createPaymentsPage());
         addPage(tabs, "Warranty", unavailablePage("Warranty administration",
                 "No warranty domain or service exists yet. Claims cannot be viewed or changed here."));
         addPage(tabs, "Chat", unavailablePage("Chat administration",
@@ -74,6 +83,39 @@ public class AdminView extends VerticalLayout {
         add(tabs, content);
         expand(content);
         showPage(tabs.getSelectedTab());
+    }
+
+    private VerticalLayout createPaymentsPage() {
+        Grid<Payment> grid = new Grid<>(Payment.class, false);
+        grid.addColumn(payment -> payment.getOrder().getOrderNumber()).setHeader("Order").setAutoWidth(true);
+        grid.addColumn(Payment::getTransferContent).setHeader("Transfer content").setAutoWidth(true);
+        grid.addColumn(payment -> money(payment.getAmount())).setHeader("Amount").setAutoWidth(true);
+        grid.addColumn(Payment::getStatus).setHeader("Status").setAutoWidth(true);
+        grid.addColumn(Payment::getProviderReference).setHeader("Bank reference").setAutoWidth(true);
+        grid.addComponentColumn(payment -> {
+            TextField reference = new TextField();
+            reference.setPlaceholder("Bank transaction ID");
+            Button confirm = new Button("Confirm paid", event -> confirmPayment(payment, reference, grid));
+            confirm.setEnabled(payment.getStatus() == Payment.Status.PENDING);
+            return new HorizontalLayout(reference, confirm);
+        }).setHeader("Manual verification").setFlexGrow(1);
+        grid.setItems(payments.all());
+        grid.setWidthFull();
+        VerticalLayout page = new VerticalLayout(new H3("MB Bank payments"),
+                new Paragraph("Verify amount, transfer content, and transaction in MB Bank before confirming."), grid);
+        page.setPadding(false); page.setSizeFull(); page.expand(grid);
+        return page;
+    }
+
+    private void confirmPayment(Payment payment, TextField reference, Grid<Payment> grid) {
+        try {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            payments.confirm(payment.getId(), users.requireDomainUser(email).getId(), reference.getValue());
+            grid.setItems(payments.all());
+            Notification.show("Payment confirmed.");
+        } catch (RuntimeException exception) {
+            Notification.show("Payment was not confirmed: " + safeMessage(exception));
+        }
     }
 
     private void addPage(Tabs tabs, String label, Component page) {
