@@ -20,8 +20,8 @@ public class SecurityConfiguration {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/orders/**", "/api/dashboard/**", "/api/warranty", "/api/warranty/").authenticated()
-                .requestMatchers("/actuator/health", "/actuator/health/**", "/api/products/**",
-                        "/api/categories", "/api/brands", "/api/warranty/**").permitAll());
+                .requestMatchers("/actuator/health", "/actuator/health/**", "/api/health", "/api/products/**",
+                        "/api/categories", "/api/brands", "/api/warranty/**", "/api/**").permitAll());
         http.exceptionHandling(exceptions -> exceptions
                 .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
                         new AntPathRequestMatcher("/api/**")));
