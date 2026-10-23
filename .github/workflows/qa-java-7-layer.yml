@@ -100,3 +100,35 @@ jobs:
           name: qa-aws-java-seven-layer-reports
           path: qa-java/target/reports/junit/
           if-no-files-found: error
+
+  aws-java-write-fixture:
+    if: >-
+      github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.name == 'Deploy Java Platform to AWS EC2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: qa-java
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Run isolated AWS fixture lifecycle
+        env:
+          QA_BASE_URL: https://java-aws.54.179.55.104.nip.io
+          QA_TARGET: java
+          QA_ALLOW_WRITES: 'true'
+          QA_FIXTURE_API_URL: https://java-aws.54.179.55.104.nip.io
+          QA_FIXTURE_API_TOKEN: ${{ secrets.AWS_QA_FIXTURE_TOKEN }}
+        run: mvn --batch-mode --no-transfer-progress -Player4-writes test
+      - name: Upload AWS write lifecycle reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-aws-java-write-fixture-reports
+          path: qa-java/target/reports/junit/
+          if-no-files-found: error
