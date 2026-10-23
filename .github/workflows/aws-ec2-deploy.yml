@@ -36,7 +36,6 @@ jobs:
       JAVA_ADMIN_PASSWORD: ${{ secrets.JAVA_PREVIEW_ADMIN_PASSWORD }}
       BANK_ACCOUNT_NUMBER: ${{ secrets.BANK_TRANSFER_ACCOUNT_NUMBER }}
       BANK_ACCOUNT_NAME: ${{ secrets.BANK_TRANSFER_ACCOUNT_NAME }}
-      QA_FIXTURE_TOKEN: ${{ secrets.AWS_QA_FIXTURE_TOKEN }}
     steps:
       - name: Resolve deployment revision
         id: revision
@@ -68,7 +67,6 @@ jobs:
           test ${#JAVA_ADMIN_PASSWORD} -ge 12
           test -n "$BANK_ACCOUNT_NUMBER"
           test -n "$BANK_ACCOUNT_NAME"
-          test ${#QA_FIXTURE_TOKEN} -ge 32
 
       - name: Configure SSH
         env:
@@ -94,8 +92,6 @@ jobs:
             printf 'JAVA_ADMIN_PASSWORD=%s\n' "$JAVA_ADMIN_PASSWORD"
             printf 'BANK_TRANSFER_ACCOUNT_NUMBER=%s\n' "$BANK_ACCOUNT_NUMBER"
             printf 'BANK_TRANSFER_ACCOUNT_NAME=%s\n' "$BANK_ACCOUNT_NAME"
-            printf 'QA_FIXTURE_ENABLED=%s\n' 'true'
-            printf 'QA_FIXTURE_TOKEN=%s\n' "$QA_FIXTURE_TOKEN"
             printf 'PUBLIC_PORT=%s\n' '8090'
             printf 'PUBLIC_HOSTNAME=%s\n' 'java-aws.54.179.55.104.nip.io'
             printf 'JAVA_IMAGE=%s:%s\n' "$IMAGE_REPOSITORY" "$IMAGE_TAG"

@@ -66,11 +66,10 @@
     <profile><id>layer1</id><properties><qa.tags>layer1</qa.tags></properties></profile>
     <profile><id>layer2</id><properties><qa.tags>layer2</qa.tags></properties></profile>
     <profile><id>layer3</id><properties><qa.tags>layer3</qa.tags></properties></profile>
-    <profile><id>layer4</id><properties><qa.tags>layer4 &amp; !writes</qa.tags></properties></profile>
-    <profile><id>layer4-writes</id><properties><qa.tags>layer4 &amp; writes</qa.tags></properties></profile>
+    <profile><id>layer4</id><properties><qa.tags>layer4</qa.tags></properties></profile>
     <profile><id>layer5</id><properties><qa.tags>layer5</qa.tags></properties></profile>
     <profile><id>layer6</id><properties><qa.tags>layer6</qa.tags></properties></profile>
     <profile><id>layer7</id><properties><qa.tags>layer7</qa.tags></properties></profile>
-    <profile><id>read-only</id><properties><qa.tags>!writes</qa.tags></properties></profile>
+    <profile><id>read-only</id><properties><qa.tags>layer1 | layer2 | layer3 | layer4 | layer5 | layer6 | layer7</qa.tags></properties></profile>
   </profiles>
 </project>

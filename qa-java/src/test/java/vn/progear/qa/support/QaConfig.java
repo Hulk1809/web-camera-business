@@ -3,7 +3,6 @@ package vn.progear.qa.support;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Locale;
-import java.util.Optional;
 
 public final class QaConfig {
     public static final String PRODUCTION_URL = "https://progear.74.176.156.158.nip.io";
@@ -30,19 +29,6 @@ public final class QaConfig {
 
     public static boolean allowInsecureTls() {
         return boolEnv("QA_ALLOW_INSECURE_TLS", false);
-    }
-
-    public static Optional<URI> fixtureApiUri() {
-        String value = System.getenv("QA_FIXTURE_API_URL");
-        return value == null || value.isBlank() ? Optional.empty() : Optional.of(cleanUri(value));
-    }
-
-    public static Optional<String> fixtureToken() {
-        return Optional.ofNullable(System.getenv("QA_FIXTURE_API_TOKEN")).filter(v -> !v.isBlank());
-    }
-
-    public static boolean writesEnabled() {
-        return boolEnv("QA_ALLOW_WRITES", false) && fixtureApiUri().isPresent() && fixtureToken().isPresent();
     }
 
     public static boolean javaTarget() {
