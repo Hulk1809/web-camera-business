@@ -3,13 +3,14 @@ name: Java Platform Shadow CI
 on:
   workflow_dispatch:
   pull_request:
-    paths: ['java-platform/**', '.github/workflows/java-platform-ci.yml']
+    paths: ['java-platform/**', 'deploy/k8s/07-java-preview/**', '.github/workflows/java-platform-ci.yml']
   push:
     branches: [main]
-    paths: ['java-platform/**', '.github/workflows/java-platform-ci.yml']
+    paths: ['java-platform/**', 'deploy/k8s/07-java-preview/**', '.github/workflows/java-platform-ci.yml']
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   build-and-test:
@@ -29,3 +30,60 @@ jobs:
         run: mvn --batch-mode --no-transfer-progress test
       - name: Build Vaadin production artifact
         run: mvn --batch-mode --no-transfer-progress -Pproduction -DskipTests package
+
+  deploy-preview:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push Java preview image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./java-platform
+          file: ./java-platform/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/hulk1809/camera-java-platform:${{ github.sha }}
+            ghcr.io/hulk1809/camera-java-platform:latest
+          cache-from: type=gha,scope=java-platform
+          cache-to: type=gha,mode=max,scope=java-platform
+      - name: Set AKS context
+        uses: azure/k8s-set-context@v4
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG || secrets.KUBECONFIG }}
+      - name: Deploy Java preview
+        env:
+          PREVIEW_ADMIN_EMAIL: ${{ secrets.JAVA_PREVIEW_ADMIN_EMAIL }}
+          PREVIEW_ADMIN_PASSWORD: ${{ secrets.JAVA_PREVIEW_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$PREVIEW_ADMIN_EMAIL"
+          test ${#PREVIEW_ADMIN_PASSWORD} -ge 12
+          kubectl apply -f deploy/k8s/00-namespace.yaml
+          kubectl create secret docker-registry ghcr-secret \
+            --namespace=camera-shop \
+            --docker-server=ghcr.io \
+            --docker-username=${{ github.actor }} \
+            --docker-password=${{ secrets.GITHUB_TOKEN }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret generic java-preview-admin \
+            --namespace=camera-shop \
+            --from-literal=email="$PREVIEW_ADMIN_EMAIL" \
+            --from-literal=password="$PREVIEW_ADMIN_PASSWORD" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          sed -i "s|ghcr.io/hulk1809/camera-java-platform:latest|ghcr.io/hulk1809/camera-java-platform:${{ github.sha }}|" \
+            deploy/k8s/07-java-preview/java-preview.yaml
+          kubectl apply -f deploy/k8s/07-java-preview/java-preview.yaml
+          kubectl rollout status deployment/java-preview -n camera-shop --timeout=5m
+          kubectl wait --for=condition=Ready certificate/java-preview-tls -n camera-shop --timeout=5m
+          curl --fail --show-error --silent --retry 12 --retry-delay 5 \
+            https://java-preview.74.176.156.158.nip.io/actuator/health
