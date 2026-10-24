@@ -31,6 +31,7 @@ import com.webcamera.platform.domain.User;
 import com.webcamera.platform.service.CatalogService;
 import com.webcamera.platform.service.OrderService;
 import com.webcamera.platform.service.PaymentService;
+import com.webcamera.platform.service.CheckoutService;
 import com.webcamera.platform.service.UserService;
 import com.webcamera.platform.ui.store.HeroSection;
 import com.webcamera.platform.ui.store.ProductCard;
@@ -56,9 +57,9 @@ public class StoreView extends VerticalLayout {
     private static final List<String> BRANDS = List.of("Tất Cả", "Sony", "DJI", "Canon", "Fujifilm", "Nikon", "Blackmagic Design");
 
     private final CatalogService catalog;
-    private final OrderService orders;
     private final UserService users;
     private final PaymentService payments;
+    private final CheckoutService checkout;
     private final Map<UUID, CartLine> cart = new LinkedHashMap<>();
     private final TextField search = new TextField();
     private final FormLayout catalogCards = cardsLayout();
@@ -71,11 +72,12 @@ public class StoreView extends VerticalLayout {
     private String selectedBrand = "Tất Cả";
     private String selectedCategory = "Tất Cả";
 
-    public StoreView(CatalogService catalog, OrderService orders, UserService users, PaymentService payments) {
+    public StoreView(CatalogService catalog, UserService users, PaymentService payments,
+                     CheckoutService checkout) {
         this.catalog = catalog;
-        this.orders = orders;
         this.users = users;
         this.payments = payments;
+        this.checkout = checkout;
         setPadding(false);
         setSpacing(false);
         setSizeFull();
@@ -303,12 +305,12 @@ public class StoreView extends VerticalLayout {
             User customer = users.requireDomainUser(authentication.getName());
             List<OrderService.Line> lines = cart.values().stream()
                     .map(line -> new OrderService.Line(line.product().getId(), line.quantity())).toList();
-            Order order = orders.place(customer.getId(), lines,
+            Order order = checkout.checkout(customer.getId(), UUID.randomUUID().toString(), lines,
                     new OrderService.DeliveryDetails(name.getValue(), email.getValue(), phone.getValue(),
                             address.getValue(), method.getValue()));
             PaymentService.Instructions payment = null;
             if ("VietQR MB Bank".equals(method.getValue())) {
-                payment = payments.toInstructions(payments.createForOrder(order.getId()));
+                payment = payments.instructions(order.getId(), customer.getEmail());
             }
             cart.clear();
             refreshCart();

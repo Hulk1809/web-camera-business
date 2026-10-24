@@ -10,7 +10,16 @@ import com.webcamera.platform.repository.ProductRepository;
 import com.webcamera.platform.repository.UserRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +58,23 @@ public class OrderService {
         User customer = users.findById(customerId).orElseThrow(() -> new IllegalArgumentException("Unknown customer"));
         requireDelivery(delivery);
         return place(customer, lines, delivery);
+    }
+
+    @Transactional
+    public Order checkout(UUID customerId, String idempotencyKey, List<Line> lines, DeliveryDetails delivery) {
+        String key = requireIdempotencyKey(idempotencyKey);
+        requireDelivery(delivery);
+        List<Line> normalizedLines = normalizeLines(lines);
+        String fingerprint = fingerprint(normalizedLines, delivery);
+        User customer = users.findByIdForUpdate(customerId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown customer"));
+        return orders.findByCustomerIdAndIdempotencyKey(customerId, key)
+                .map(existing -> requireMatchingCheckout(existing, fingerprint))
+                .orElseGet(() -> {
+                    Order created = place(customer, normalizedLines, delivery);
+                    created.identifyCheckout(key, fingerprint);
+                    return created;
+                });
     }
 
     private Order place(User customer, List<Line> lines, DeliveryDetails delivery) {
@@ -172,4 +198,54 @@ public class OrderService {
     }
 
     private static boolean blank(String value) { return value == null || value.isBlank(); }
+
+    private static Order requireMatchingCheckout(Order order, String fingerprint) {
+        if (!fingerprint.equals(order.getCheckoutFingerprint())) {
+            throw new IllegalStateException("Idempotency key was already used for another checkout");
+        }
+        return order;
+    }
+
+    private static String requireIdempotencyKey(String value) {
+        if (blank(value)) throw new IllegalArgumentException("Idempotency-Key is required");
+        String key = value.trim();
+        if (key.length() > 100) throw new IllegalArgumentException("Idempotency-Key is too long");
+        return key;
+    }
+
+    private static List<Line> normalizeLines(List<Line> lines) {
+        if (lines == null || lines.isEmpty()) throw new IllegalArgumentException("At least one line is required");
+        Map<UUID, Integer> quantities = new LinkedHashMap<>();
+        for (Line line : lines) {
+            if (line == null || line.productId() == null || line.quantity() < 1) {
+                throw new IllegalArgumentException("Product and positive quantity are required");
+            }
+            quantities.merge(line.productId(), line.quantity(), Math::addExact);
+        }
+        return quantities.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> new Line(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    private static String fingerprint(List<Line> lines, DeliveryDetails delivery) {
+        List<String> values = new ArrayList<>();
+        lines.stream().sorted(Comparator.comparing(Line::productId)).forEach(line -> {
+            values.add(line.productId().toString());
+            values.add(Integer.toString(line.quantity()));
+        });
+        values.add(cleanFingerprintValue(delivery.recipientName()));
+        values.add(cleanFingerprintValue(delivery.email()).toLowerCase(Locale.ROOT));
+        values.add(cleanFingerprintValue(delivery.phone()));
+        values.add(cleanFingerprintValue(delivery.address()));
+        values.add(cleanFingerprintValue(delivery.paymentMethod()));
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(String.join("\u001f", values).getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA-256 unavailable", impossible);
+        }
+    }
+
+    private static String cleanFingerprintValue(String value) { return value.trim(); }
 }
