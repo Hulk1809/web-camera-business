@@ -45,6 +45,7 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
         subtitle.getStyle().set("color", "#475569").set("margin", "0 0 18px");
 
         login.setId("qa-login-form");
+        login.setI18n(VietnameseLoginI18n.create("Tài khoản khách hàng"));
         login.setAction("login");
         login.setForgotPasswordButtonVisible(false);
         VerticalLayout signIn = panel(new H2("Đăng nhập thành viên"),
