@@ -52,6 +52,8 @@ class UiSmokeResponsiveTest {
         open(new Dimension(1366, 768), QaConfig.javaTarget() ? "/admin/login" : "/admin/");
         if (QaConfig.javaTarget()) {
             visible(By.xpath("//*[contains(normalize-space(.), 'Đăng nhập nhân viên')]"));
+            WebElement form = visible(By.cssSelector("vaadin-login-form"));
+            assertEquals("Tài khoản nhân viên", form.getAttribute("title"));
             assertFalse(driver.getPageSource().contains("TẠO TÀI KHOẢN KHÁCH HÀNG"),
                     "Staff portal must not expose customer registration");
         } else {
@@ -68,6 +70,8 @@ class UiSmokeResponsiveTest {
         open(new Dimension(1366, 768), "/dang-nhap");
         visible(By.id("qa-login-screen"));
         visible(By.id("qa-login-form"));
+        WebElement form = driver.findElement(By.id("qa-login-form"));
+        assertEquals("Tài khoản khách hàng", form.getAttribute("title"));
         visible(By.xpath("//*[contains(normalize-space(.), 'Đăng ký thành viên')]"));
         assertFalse(driver.getPageSource().contains("Cổng nội bộ"),
                 "Customer portal must not contain staff-login copy");
