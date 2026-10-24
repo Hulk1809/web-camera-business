@@ -5,6 +5,7 @@ import com.webcamera.platform.domain.User;
 import com.webcamera.platform.service.OrderService;
 import com.webcamera.platform.service.UserService;
 import com.webcamera.platform.service.PaymentService;
+import com.webcamera.platform.service.CheckoutService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -45,19 +47,25 @@ public class OrderController {
     private final OrderService orders;
     private final UserService users;
     private final PaymentService payments;
-    public OrderController(OrderService orders, UserService users, PaymentService payments) {
-        this.orders = orders; this.users = users; this.payments = payments;
+    private final CheckoutService checkout;
+    public OrderController(OrderService orders, UserService users, PaymentService payments, CheckoutService checkout) {
+        this.orders = orders; this.users = users; this.payments = payments; this.checkout = checkout;
     }
 
     @PostMapping
-    public ResponseEntity<OrderResponse> place(@Valid @RequestBody PlaceOrderRequest request, Principal principal) {
+    public ResponseEntity<OrderResponse> place(@RequestHeader("Idempotency-Key") String idempotencyKey,
+                                               @Valid @RequestBody PlaceOrderRequest request, Principal principal) {
         User customer = users.requireDomainUser(principal.getName());
         DeliveryRequest delivery = request.delivery();
-        Order order = orders.place(customer.getId(), request.lines().stream()
-                        .map(line -> new OrderService.Line(line.productId(), line.quantity())).toList(),
-                new OrderService.DeliveryDetails(delivery.recipientName(), delivery.email(), delivery.phone(),
-                        delivery.address(), delivery.paymentMethod()));
-        if ("VietQR MB Bank".equals(delivery.paymentMethod())) payments.createForOrder(order.getId());
+        Order order;
+        try {
+            order = checkout.checkout(customer.getId(), idempotencyKey, request.lines().stream()
+                            .map(line -> new OrderService.Line(line.productId(), line.quantity())).toList(),
+                    new OrderService.DeliveryDetails(delivery.recipientName(), delivery.email(), delivery.phone(),
+                            delivery.address(), delivery.paymentMethod()));
+        } catch (IllegalStateException exception) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, exception.getMessage());
+        }
         return ResponseEntity.created(URI.create("/api/orders/" + order.getId()))
                 .body(toResponse(order));
     }

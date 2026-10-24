@@ -15,6 +15,10 @@ import com.webcamera.platform.repository.PaymentRepository;
 import com.webcamera.platform.repository.OrderStatusEventRepository;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 @DataJpaTest(properties = {
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.properties.hibernate.default_schema=camera_platform",
-        "spring.datasource.url=jdbc:h2:mem:order_service;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;INIT=CREATE SCHEMA IF NOT EXISTS camera_platform",
+        "spring.datasource.url=${TEST_DATABASE_URL:jdbc:h2:mem:order_service;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;INIT=CREATE SCHEMA IF NOT EXISTS camera_platform}",
+        "spring.datasource.username=${TEST_DATABASE_USER:sa}",
+        "spring.datasource.password=${TEST_DATABASE_PASSWORD:}",
         "spring.flyway.enabled=false",
         "app.bank-transfer.account-number=0000000000",
         "app.bank-transfer.account-name=TEST ACCOUNT"
@@ -92,6 +98,85 @@ class OrderServiceIntegrationTest {
         assertThat(products.findById(camera.getId()).orElseThrow().getStockQuantity()).isOne();
         assertThat(statusEvents.findByOrderIdOrderByRecordedAtAsc(order.getId()))
                 .extracting(event -> event.getStatus()).containsExactly(Order.Status.PLACED);
+    }
+
+    @Test
+    void checkoutReturnsSameOrderAndReservesStockOnceForRepeatedKey() {
+        User customer = users.save(new User("idempotent@example.com", "Idempotent QA", "hash", User.Role.CUSTOMER));
+        Product camera = products.save(new Product("IDEMPOTENT-CAM", "Camera", BigDecimal.TEN, 2));
+        var delivery = new OrderService.DeliveryDetails("Nguyễn Văn A", customer.getEmail(), "0900000000",
+                "1 Nguyễn Huệ", "COD");
+
+        Order first = service.checkout(customer.getId(), "checkout-123", List.of(
+                new OrderService.Line(camera.getId(), 1)), delivery);
+        Order retry = service.checkout(customer.getId(), "checkout-123", List.of(
+                new OrderService.Line(camera.getId(), 1)), delivery);
+
+        assertThat(retry.getId()).isEqualTo(first.getId());
+        assertThat(orders.count()).isOne();
+        assertThat(products.findById(camera.getId()).orElseThrow().getStockQuantity()).isOne();
+        assertThat(statusEvents.findByOrderIdOrderByRecordedAtAsc(first.getId())).hasSize(1);
+    }
+
+    @Test
+    void checkoutRejectsReusingKeyForDifferentPayload() {
+        User customer = users.save(new User("idempotency-conflict@example.com", "Conflict QA", "hash", User.Role.CUSTOMER));
+        Product camera = products.save(new Product("IDEMPOTENCY-CONFLICT", "Camera", BigDecimal.TEN, 3));
+        var delivery = new OrderService.DeliveryDetails("Nguyễn Văn A", customer.getEmail(), "0900000000",
+                "1 Nguyễn Huệ", "COD");
+        service.checkout(customer.getId(), "checkout-conflict", List.of(
+                new OrderService.Line(camera.getId(), 1)), delivery);
+
+        assertThatThrownBy(() -> service.checkout(customer.getId(), "checkout-conflict", List.of(
+                new OrderService.Line(camera.getId(), 2)), delivery))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Idempotency key");
+        assertThat(orders.count()).isOne();
+        assertThat(products.findById(camera.getId()).orElseThrow().getStockQuantity()).isEqualTo(2);
+    }
+
+    @Test
+    void checkoutMergesDuplicateProductLinesBeforeReservation() {
+        User customer = users.save(new User("merged-lines@example.com", "Merged QA", "hash", User.Role.CUSTOMER));
+        Product camera = products.save(new Product("MERGED-LINES", "Camera", BigDecimal.TEN, 3));
+        var delivery = new OrderService.DeliveryDetails("Nguyễn Văn A", customer.getEmail(), "0900000000",
+                "1 Nguyễn Huệ", "COD");
+
+        Order order = service.checkout(customer.getId(), "checkout-merged", List.of(
+                new OrderService.Line(camera.getId(), 1), new OrderService.Line(camera.getId(), 1)), delivery);
+
+        assertThat(order.getItems()).hasSize(1);
+        assertThat(order.getItems().getFirst().getQuantity()).isEqualTo(2);
+        assertThat(products.findById(camera.getId()).orElseThrow().getStockQuantity()).isOne();
+    }
+
+    @Test
+    void concurrentCheckoutWithSameKeyCreatesOneOrderAndOneReservation() throws Exception {
+        User customer = users.save(new User("concurrent@example.com", "Concurrent QA", "hash", User.Role.CUSTOMER));
+        Product camera = products.save(new Product("CONCURRENT-CAM", "Camera", BigDecimal.TEN, 2));
+        var delivery = new OrderService.DeliveryDetails("Nguyễn Văn A", customer.getEmail(), "0900000000",
+                "1 Nguyễn Huệ", "COD");
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> concurrentCheckout(ready, start, customer, camera, delivery));
+            var second = executor.submit(() -> concurrentCheckout(ready, start, customer, camera, delivery));
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+
+            assertThat(first.get(10, TimeUnit.SECONDS)).isEqualTo(second.get(10, TimeUnit.SECONDS));
+        }
+        assertThat(orders.count()).isOne();
+        assertThat(products.findById(camera.getId()).orElseThrow().getStockQuantity()).isOne();
+    }
+
+    private UUID concurrentCheckout(CountDownLatch ready, CountDownLatch start, User customer, Product camera,
+                                    OrderService.DeliveryDetails delivery) throws Exception {
+        ready.countDown();
+        if (!start.await(5, TimeUnit.SECONDS)) throw new IllegalStateException("Concurrent test did not start");
+        return service.checkout(customer.getId(), "concurrent-key", List.of(
+                new OrderService.Line(camera.getId(), 1)), delivery).getId();
     }
 
     @Test
