@@ -53,7 +53,7 @@ class UiSmokeResponsiveTest {
         if (QaConfig.javaTarget()) {
             visible(By.xpath("//*[contains(normalize-space(.), 'Đăng nhập nhân viên')]"));
             WebElement form = visible(By.cssSelector("vaadin-login-form"));
-            assertEquals("Tài khoản nhân viên", form.getAttribute("title"));
+            assertLoginI18n(form, "Tài khoản nhân viên");
             assertFalse(driver.getPageSource().contains("TẠO TÀI KHOẢN KHÁCH HÀNG"),
                     "Staff portal must not expose customer registration");
         } else {
@@ -71,7 +71,7 @@ class UiSmokeResponsiveTest {
         visible(By.id("qa-login-screen"));
         visible(By.id("qa-login-form"));
         WebElement form = driver.findElement(By.id("qa-login-form"));
-        assertEquals("Tài khoản khách hàng", form.getAttribute("title"));
+        assertLoginI18n(form, "Tài khoản khách hàng");
         visible(By.xpath("//*[contains(normalize-space(.), 'Đăng ký thành viên')]"));
         assertFalse(driver.getPageSource().contains("Cổng nội bộ"),
                 "Customer portal must not contain staff-login copy");
@@ -113,6 +113,14 @@ class UiSmokeResponsiveTest {
 
     private WebElement visible(By locator) {
         return new WebDriverWait(driver, QaConfig.timeout()).until(ExpectedConditions.visibilityOfElementLocated(locator));
+    }
+
+    private void assertLoginI18n(WebElement form, String title) {
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        assertEquals(title, js.executeScript("return arguments[0].i18n.form.title", form));
+        assertEquals("Email", js.executeScript("return arguments[0].i18n.form.username", form));
+        assertEquals("Mật khẩu", js.executeScript("return arguments[0].i18n.form.password", form));
+        assertEquals("Đăng nhập", js.executeScript("return arguments[0].i18n.form.submit", form));
     }
 
     private void assertNoHorizontalOverflow() {
