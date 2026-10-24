@@ -17,6 +17,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findAllByOrderByCreatedAtDesc();
     Optional<Order> findByOrderNumber(String orderNumber);
     @EntityGraph(attributePaths = {"items"})
+    Optional<Order> findByCustomerIdAndIdempotencyKey(UUID customerId, String idempotencyKey);
+    @EntityGraph(attributePaths = {"items"})
     Optional<Order> findByOrderNumberAndCustomerId(String orderNumber, UUID customerId);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = {"items", "items.product"})

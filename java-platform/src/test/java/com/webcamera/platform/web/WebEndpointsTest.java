@@ -99,4 +99,26 @@ class WebEndpointsTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Không tìm thấy đơn hàng"));
     }
+
+    @Test
+    @Transactional
+    @WithMockUser(username = "checkout-owner@example.com", roles = "CUSTOMER")
+    void checkoutRequiresKeyAndRejectsKeyReuseWithDifferentPayload() throws Exception {
+        users.save(new User("checkout-owner@example.com", "Checkout Owner", "hash", User.Role.CUSTOMER));
+        Product product = products.save(new Product("API-IDEMPOTENCY", "Camera", BigDecimal.TEN, 3));
+        String oneItem = """
+                {"lines":[{"productId":"%s","quantity":1}],"delivery":{"recipientName":"QA","email":"checkout-owner@example.com","phone":"0900000000","address":"QA address","paymentMethod":"COD"}}
+                """.formatted(product.getId());
+        String twoItems = oneItem.replace("\"quantity\":1", "\"quantity\":2");
+
+        mvc.perform(post("/api/orders").with(csrf()).contentType("application/json").content(oneItem))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/orders").with(csrf()).header("Idempotency-Key", "api-checkout-1")
+                        .contentType("application/json").content(oneItem))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/orders").with(csrf()).header("Idempotency-Key", "api-checkout-1")
+                        .contentType("application/json").content(twoItems))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Idempotency key was already used for another checkout"));
+    }
 }

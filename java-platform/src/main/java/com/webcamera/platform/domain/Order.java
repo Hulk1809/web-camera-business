@@ -52,6 +52,10 @@ public class Order extends BaseEntity {
     private String shippingAddress;
     @Column(name = "payment_method", length = 30)
     private String paymentMethod;
+    @Column(name = "idempotency_key", length = 100)
+    private String idempotencyKey;
+    @Column(name = "checkout_fingerprint", length = 64)
+    private String checkoutFingerprint;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
@@ -78,6 +82,8 @@ public class Order extends BaseEntity {
     public String getRecipientPhone() { return recipientPhone; }
     public String getShippingAddress() { return shippingAddress; }
     public String getPaymentMethod() { return paymentMethod; }
+    public String getIdempotencyKey() { return idempotencyKey; }
+    public String getCheckoutFingerprint() { return checkoutFingerprint; }
     public List<OrderItem> getItems() { return List.copyOf(items); }
     public void snapshotDelivery(String name, String email, String phone, String address, String method) {
         recipientName = clean(name);
@@ -85,6 +91,11 @@ public class Order extends BaseEntity {
         recipientPhone = clean(phone);
         shippingAddress = clean(address);
         paymentMethod = clean(method);
+    }
+    public void identifyCheckout(String key, String fingerprint) {
+        if (salesChannel != SalesChannel.ONLINE) throw new IllegalStateException("Only online checkout is idempotent");
+        idempotencyKey = key;
+        checkoutFingerprint = fingerprint;
     }
     public void place() { if (items.isEmpty()) throw new IllegalStateException("Cannot place an empty order"); status = Status.PLACED; }
     public void completePosSale() {
