@@ -41,6 +41,23 @@ public class CameraSerial extends BaseEntity {
     public Status getStatus() { return status; }
     public OrderItem getOrderItem() { return orderItem; }
     public Instant getSoldAt() { return soldAt; }
+    public void reserve(OrderItem item) {
+        if (status != Status.IN_STOCK || item == null || !item.getProduct().getId().equals(product.getId()))
+            throw new IllegalStateException("Serial cannot be reserved for this order item");
+        status = Status.RESERVED;
+        orderItem = item;
+    }
+    public void completeReservedSale() {
+        if (status != Status.RESERVED || orderItem == null)
+            throw new IllegalStateException("Only a reserved serial can complete sale");
+        status = Status.SOLD;
+        soldAt = Instant.now();
+    }
+    public void releaseReservation() {
+        if (status != Status.RESERVED) throw new IllegalStateException("Only a reserved serial can be released");
+        status = Status.IN_STOCK;
+        orderItem = null;
+    }
     public void sell(OrderItem item) {
         if (status != Status.IN_STOCK || item == null || !item.getProduct().getId().equals(product.getId()))
             throw new IllegalStateException("Serial cannot be sold for this order item");

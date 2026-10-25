@@ -19,16 +19,15 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.webcamera.platform.domain.CameraSerial;
 import com.webcamera.platform.domain.Order;
 import com.webcamera.platform.domain.OrderItem;
 import com.webcamera.platform.domain.Payment;
 import com.webcamera.platform.domain.Product;
 import com.webcamera.platform.domain.User;
 import com.webcamera.platform.service.CatalogService;
-import com.webcamera.platform.service.InventoryService;
 import com.webcamera.platform.service.OrderService;
 import com.webcamera.platform.service.PaymentService;
+import com.webcamera.platform.service.PosCheckoutService;
 import com.webcamera.platform.service.UserService;
 import jakarta.annotation.security.RolesAllowed;
 import java.math.BigDecimal;
@@ -47,9 +46,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @RolesAllowed({"ADMIN", "STAFF"})
 public class PosView extends VerticalLayout {
     private final CatalogService catalog;
-    private final OrderService orders;
-    private final InventoryService inventory;
     private final PaymentService payments;
+    private final PosCheckoutService checkout;
     private final UserService users;
 
     private final ComboBox<Product> productSelect = new ComboBox<>("Select Product");
@@ -61,15 +59,14 @@ public class PosView extends VerticalLayout {
     private final Button checkoutBtn = new Button("Complete Sale & Print Receipt");
     private final List<CartItem> cartItems = new ArrayList<>();
 
-    public record CartItem(Product product, int quantity, CameraSerial assignedSerial) {}
+    public record CartItem(Product product, int quantity) {}
 
-    public PosView(CatalogService catalog, OrderService orders, InventoryService inventory,
-                   PaymentService payments, UserService users) {
+    public PosView(CatalogService catalog, PaymentService payments, UserService users,
+                   PosCheckoutService checkout) {
         this.catalog = catalog;
-        this.orders = orders;
-        this.inventory = inventory;
         this.payments = payments;
         this.users = users;
+        this.checkout = checkout;
 
         setSizeFull();
         setId("pos-view");
@@ -130,10 +127,7 @@ public class PosView extends VerticalLayout {
                 return;
             }
 
-            List<CameraSerial> available = inventory.availableSerials(product.getId());
-            CameraSerial serial = available.isEmpty() ? null : available.get(0);
-
-            cartItems.add(new CartItem(product, qty, serial));
+            cartItems.add(new CartItem(product, qty));
             refreshCart();
             productSelect.clear();
             quantityField.setValue(1);
@@ -148,8 +142,6 @@ public class PosView extends VerticalLayout {
         cartGrid.addColumn(item -> item.quantity).setHeader("Qty").setAutoWidth(true);
         cartGrid.addColumn(item -> money(item.product.getPrice().multiply(BigDecimal.valueOf(item.quantity))))
                 .setHeader("Subtotal").setAutoWidth(true);
-        cartGrid.addColumn(item -> item.assignedSerial != null ? item.assignedSerial.getSerialNumber() : "N/A")
-                .setHeader("Camera Serial").setAutoWidth(true);
         cartGrid.addComponentColumn(item -> new Button("Remove", e -> {
             cartItems.remove(item);
             refreshCart();
@@ -180,29 +172,14 @@ public class PosView extends VerticalLayout {
                     .map(item -> new OrderService.Line(item.product.getId(), item.quantity))
                     .toList();
 
-            Order order = orders.placePos(staff.getId(), lines);
-
-            for (CartItem item : cartItems) {
-                if (item.assignedSerial != null) {
-                    OrderItem orderItem = order.getItems().stream()
-                            .filter(oi -> oi.getProduct().getId().equals(item.product.getId()))
-                            .findFirst()
-                            .orElse(null);
-                    if (orderItem != null) {
-                        inventory.sell(item.assignedSerial.getId(), orderItem.getId(), 24);
-                    }
-                }
-            }
-
-            Payment payment = null;
-            if ("VietQR MB Bank".equals(paymentMethod.getValue())) {
-                payment = payments.createForOrder(order.getId());
-            }
+            PosCheckoutService.Result result = checkout.checkout(staff.getId(), lines, selectedMethod());
+            Order order = result.order();
+            Payment payment = result.payment();
 
             showReceiptDialog(order, payment);
             cartItems.clear();
             refreshCart();
-            Notification.show("POS sale completed successfully!");
+            Notification.show(payment == null ? "Đã hoàn tất giao dịch tại quầy." : "Đơn hàng đang chờ xác nhận VietQR.");
         } catch (Exception ex) {
             Notification.show("Checkout error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
         }
@@ -220,6 +197,7 @@ public class PosView extends VerticalLayout {
         layout.add(new Span("Order: " + order.getOrderNumber()));
         layout.add(new Span("Channel: POS In-Store"));
         layout.add(new Span("Payment Method: " + paymentMethod.getValue()));
+        layout.add(new Span("Status: " + order.getStatus()));
         layout.add(new Span("Date: " + DateTimeFormatter.ISO_INSTANT.format(order.getCreatedAt())));
 
         VerticalLayout itemsLayout = new VerticalLayout();
@@ -229,7 +207,7 @@ public class PosView extends VerticalLayout {
         }
         layout.add(itemsLayout);
 
-        Span totalSpan = new Span("TOTAL PAID: " + money(order.total()));
+        Span totalSpan = new Span((payment == null ? "TOTAL PAID: " : "TOTAL PENDING: ") + money(order.total()));
         totalSpan.getStyle().set("font-weight", "bold").set("font-size", "var(--lumo-font-size-l)");
         layout.add(totalSpan);
 
@@ -250,6 +228,15 @@ public class PosView extends VerticalLayout {
         dialog.add(layout);
         dialog.getFooter().add(printBtn, closeBtn);
         dialog.open();
+    }
+
+    private PosCheckoutService.Method selectedMethod() {
+        return switch (paymentMethod.getValue()) {
+            case "Cash" -> PosCheckoutService.Method.CASH;
+            case "VietQR MB Bank" -> PosCheckoutService.Method.VIETQR;
+            case "Credit Card" -> PosCheckoutService.Method.CREDIT_CARD;
+            default -> throw new IllegalArgumentException("Unsupported payment method");
+        };
     }
 
     private static String money(BigDecimal amount) {

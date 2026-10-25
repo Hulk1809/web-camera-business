@@ -45,6 +45,29 @@ public class InventoryService {
         LocalDate start = LocalDate.now();
         return warranties.save(new Warranty(serial, order.getCustomer(), order, start, start.plusMonths(warrantyMonths)));
     }
+    @Transactional
+    public void reserve(UUID serialId, UUID orderItemId) {
+        CameraSerial serial = serials.findByIdForUpdate(serialId).orElseThrow(() -> new IllegalArgumentException("Unknown serial"));
+        OrderItem item = items.findById(orderItemId).orElseThrow(() -> new IllegalArgumentException("Unknown order item"));
+        serial.reserve(item);
+    }
+    @Transactional
+    public void completeReservedSales(UUID orderId, int warrantyMonths) {
+        if (warrantyMonths < 1) throw new IllegalArgumentException("Warranty months must be positive");
+        List<CameraSerial> reserved = serials.findByOrderItemOrderIdAndStatus(orderId, CameraSerial.Status.RESERVED);
+        LocalDate start = LocalDate.now();
+        for (CameraSerial serial : reserved) {
+            CameraSerial locked = serials.findByIdForUpdate(serial.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown serial"));
+            Order order = locked.getOrderItem().getOrder();
+            locked.completeReservedSale();
+            warranties.save(new Warranty(locked, order.getCustomer(), order, start, start.plusMonths(warrantyMonths)));
+        }
+    }
+    @Transactional
+    public void releaseReservations(UUID orderId) {
+        serials.findByOrderItemOrderIdAndStatus(orderId, CameraSerial.Status.RESERVED).forEach(CameraSerial::releaseReservation);
+    }
     @Transactional(readOnly = true)
     public List<CameraSerial> serials() { return serials.findAllByOrderByCreatedAtDesc(); }
     @Transactional(readOnly = true)

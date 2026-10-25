@@ -25,14 +25,16 @@ public class PaymentService {
     private final OrderRepository orders;
     private final UserRepository users;
     private final OrderStatusEventRepository statusEvents;
+    private final InventoryService inventory;
     private final String accountNumber;
     private final String accountName;
 
     public PaymentService(PaymentRepository payments, OrderRepository orders, UserRepository users,
-                          OrderStatusEventRepository statusEvents,
+                          OrderStatusEventRepository statusEvents, InventoryService inventory,
                           @Value("${app.bank-transfer.account-number:}") String accountNumber,
                           @Value("${app.bank-transfer.account-name:}") String accountName) {
         this.payments = payments; this.orders = orders; this.users = users; this.statusEvents = statusEvents;
+        this.inventory = inventory;
         this.accountNumber = accountNumber.trim(); this.accountName = accountName.trim();
     }
 
@@ -65,6 +67,10 @@ public class PaymentService {
         boolean alreadyPaid = payment.getStatus() == Payment.Status.PAID;
         payment.confirm(staff, bankReference);
         if (!alreadyPaid) {
+            if (payment.getOrder().getSalesChannel() == Order.SalesChannel.POS) {
+                inventory.completeReservedSales(payment.getOrder().getId(), 24);
+                payment.getOrder().completePosPayment();
+            }
             statusEvents.save(new OrderStatusEvent(payment.getOrder(), payment.getOrder().getStatus(), "Đã xác nhận thanh toán"));
         }
         return payment;

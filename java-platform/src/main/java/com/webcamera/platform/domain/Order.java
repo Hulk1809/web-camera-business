@@ -103,6 +103,11 @@ public class Order extends BaseEntity {
         status = Status.COMPLETED;
         paymentStatus = PaymentStatus.PAID;
     }
+    public void completePosPayment() {
+        if (salesChannel != SalesChannel.POS || status != Status.PAID || paymentStatus != PaymentStatus.PAID)
+            throw new IllegalStateException("POS order cannot complete payment from " + status);
+        status = Status.COMPLETED;
+    }
     public void awaitPayment() {
         if (status == Status.PENDING_PAYMENT && paymentStatus == PaymentStatus.PENDING) return;
         if (status != Status.PLACED) throw new IllegalStateException("Order cannot await payment from " + status);

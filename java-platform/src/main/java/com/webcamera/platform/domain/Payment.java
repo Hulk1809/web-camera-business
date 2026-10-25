@@ -59,6 +59,11 @@ public class Payment extends BaseEntity {
         confirmedAt = paidAt = Instant.now();
         order.markPaid();
     }
+    public void cancel() {
+        if (status == Status.CANCELLED) return;
+        if (status != Status.PENDING) throw new IllegalStateException("Payment cannot be cancelled from " + status);
+        status = Status.CANCELLED;
+    }
     public Order getOrder() { return order; }
     public String getProviderReference() { return providerReference; }
     public Status getStatus() { return status; }
