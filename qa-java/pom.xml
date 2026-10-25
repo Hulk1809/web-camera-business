@@ -71,5 +71,6 @@
     <profile><id>layer6</id><properties><qa.tags>layer6</qa.tags></properties></profile>
     <profile><id>layer7</id><properties><qa.tags>layer7</qa.tags></properties></profile>
     <profile><id>read-only</id><properties><qa.tags>layer1 | layer2 | layer3 | layer4 | layer5 | layer6 | layer7</qa.tags></properties></profile>
+    <profile><id>ephemeral-browser</id><properties><qa.tags>ephemeral-writes</qa.tags></properties></profile>
   </profiles>
 </project>
