@@ -10,6 +10,7 @@ import com.vaadin.flow.router.RouterLink;
 
 public final class AdminLayout extends AppLayout {
     public AdminLayout() {
+        setId("admin-shell");
         addClassName("admin-shell");
         setPrimarySection(Section.DRAWER);
         Div brand = new Div();
@@ -20,6 +21,7 @@ public final class AdminLayout extends AppLayout {
         copy.addClassName("admin-brand-copy");
         brand.add(name, new Div(copy));
         Nav nav = new Nav();
+        nav.setId("admin-navigation");
         nav.addClassName("admin-nav");
         nav.add(new RouterLink("Tổng quan", AdminView.class),
                 new RouterLink("Bán hàng tại quầy", PosView.class), new RouterLink("Xem cửa hàng", StoreView.class));

@@ -72,6 +72,7 @@ public class PosView extends VerticalLayout {
         this.users = users;
 
         setSizeFull();
+        setId("pos-view");
         add(new H2("POS - Point of Sale Counter"),
                 new Paragraph("In-store counter sales with instant VietQR / Cash checkout and receipt printing."));
 
@@ -82,14 +83,17 @@ public class PosView extends VerticalLayout {
         addRow.setAlignItems(Alignment.END);
 
         paymentMethod.setLabel("Payment Method");
+        paymentMethod.setId("pos-payment-method");
         paymentMethod.setItems("Cash", "VietQR MB Bank", "Credit Card");
         paymentMethod.setValue("VietQR MB Bank");
 
         totalLabel.getStyle().set("font-size", "var(--lumo-font-size-xl)")
                 .set("font-weight", "bold")
                 .set("color", "var(--lumo-primary-text-color)");
+        totalLabel.setId("pos-total");
 
         checkoutBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
+        checkoutBtn.setId("pos-checkout");
         checkoutBtn.addClickListener(event -> processCheckout());
 
         HorizontalLayout actionRow = new HorizontalLayout(paymentMethod, totalLabel, checkoutBtn);
@@ -103,14 +107,17 @@ public class PosView extends VerticalLayout {
 
     private void configureCatalogInputs() {
         productSelect.setItems(catalog.activeProducts());
+        productSelect.setId("pos-product-select");
         productSelect.setItemLabelGenerator(p -> p.getName() + " (" + money(p.getPrice()) + ", Stock: " + p.getStockQuantity() + ")");
         productSelect.setWidth("400px");
 
         quantityField.setValue(1);
+        quantityField.setId("pos-quantity");
         quantityField.setMin(1);
         quantityField.setStepButtonsVisible(true);
 
         addToOrderBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        addToOrderBtn.setId("pos-add-item");
         addToOrderBtn.addClickListener(e -> {
             Product product = productSelect.getValue();
             if (product == null) {
@@ -135,6 +142,7 @@ public class PosView extends VerticalLayout {
 
     private void configureCartGrid() {
         cartGrid.addColumn(item -> item.product.getName()).setHeader("Product").setFlexGrow(1);
+        cartGrid.setId("pos-cart-grid");
         cartGrid.addColumn(item -> item.product.getSku()).setHeader("SKU").setAutoWidth(true);
         cartGrid.addColumn(item -> money(item.product.getPrice())).setHeader("Unit Price").setAutoWidth(true);
         cartGrid.addColumn(item -> item.quantity).setHeader("Qty").setAutoWidth(true);

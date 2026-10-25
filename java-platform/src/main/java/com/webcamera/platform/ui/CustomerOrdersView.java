@@ -47,6 +47,7 @@ public class CustomerOrdersView extends VerticalLayout implements HasUrlParamete
         this.users = users;
         this.payments = payments;
         setSizeFull();
+        setId("customer-orders-view");
         addClassName("customer-orders");
     }
 
@@ -62,6 +63,7 @@ public class CustomerOrdersView extends VerticalLayout implements HasUrlParamete
                 new Paragraph("Theo dõi trạng thái xử lý, thanh toán và giao nhận thiết bị PRO GEAR."));
 
         Grid<OrderService.OrderSummary> grid = new Grid<>(OrderService.OrderSummary.class, false);
+        grid.setId("customer-orders-grid");
         grid.addColumn(OrderService.OrderSummary::orderNumber).setHeader("Mã đơn").setAutoWidth(true);
         grid.addColumn(order -> date(order.createdAt())).setHeader("Ngày đặt").setAutoWidth(true);
         grid.addColumn(order -> StorePresentation.money(order.total())).setHeader("Tổng tiền").setAutoWidth(true);
@@ -69,6 +71,7 @@ public class CustomerOrdersView extends VerticalLayout implements HasUrlParamete
         grid.addColumn(order -> paymentLabel(order.paymentStatus())).setHeader("Thanh toán").setAutoWidth(true);
         grid.addComponentColumn(order -> {
             Button details = new Button("Xem chi tiết", click -> navigate(order.orderNumber()));
+            details.getElement().setAttribute("data-testid", "customer-order-details");
             details.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
             return details;
         }).setHeader("Thao tác").setAutoWidth(true);
@@ -83,6 +86,7 @@ public class CustomerOrdersView extends VerticalLayout implements HasUrlParamete
         try {
             OrderService.TrackingDetails order = orders.customerOrder(currentCustomerId(), orderNumber);
             Button back = new Button("← Tất cả đơn hàng", click -> getUI().ifPresent(ui -> ui.navigate(CustomerOrdersView.class)));
+            back.setId("customer-order-back");
             back.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
             add(back, new H2("Đơn hàng " + order.orderNumber()));
 
@@ -92,6 +96,7 @@ public class CustomerOrdersView extends VerticalLayout implements HasUrlParamete
                     metric("Thanh toán", paymentLabel(order.paymentStatus())),
                     metric("Tổng tiền", StorePresentation.money(order.total())));
             summary.setWidthFull();
+            summary.setId("customer-order-summary");
             summary.addClassName("order-summary-cards");
             add(summary);
 
@@ -106,16 +111,19 @@ public class CustomerOrdersView extends VerticalLayout implements HasUrlParamete
                     new Span("Địa chỉ: " + fallback(order.shippingAddress())),
                     new Span("Phương thức: " + paymentMethodLabel(order.paymentMethod())));
             delivery.setPadding(false);
+            delivery.setId("customer-order-delivery");
             add(new H3("Thông tin nhận hàng"), delivery);
 
             HorizontalLayout actions = new HorizontalLayout();
             if (order.paymentStatus() == Order.PaymentStatus.PENDING) {
                 Button payment = new Button("Xem VietQR", click -> showPayment(order));
+                payment.setId("customer-order-payment");
                 payment.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
                 actions.add(payment);
             }
             if (order.cancellable()) {
                 Button cancel = new Button("Yêu cầu hủy đơn", click -> confirmCancellation(order));
+                cancel.setId("customer-order-cancel");
                 cancel.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
                 actions.add(cancel);
             }
@@ -130,6 +138,7 @@ public class CustomerOrdersView extends VerticalLayout implements HasUrlParamete
     private Div timeline(OrderService.TrackingDetails order) {
         Div timeline = new Div();
         timeline.addClassName("order-timeline");
+        timeline.setId("customer-order-timeline");
         order.timeline().forEach(event -> {
             Div step = new Div(new Span(statusLabel(event.status())),
                     new Span(date(event.recordedAt())), new Paragraph(event.note()));
@@ -182,6 +191,7 @@ public class CustomerOrdersView extends VerticalLayout implements HasUrlParamete
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Hủy đơn " + order.orderNumber());
         TextArea reason = new TextArea("Lý do hủy");
+        reason.setId("customer-order-cancel-reason");
         reason.setWidthFull();
         reason.setMaxLength(500);
         Button confirm = new Button("Xác nhận hủy", click -> {
@@ -194,6 +204,7 @@ public class CustomerOrdersView extends VerticalLayout implements HasUrlParamete
                 Notification.show("Không thể hủy đơn hàng: " + exception.getMessage(), 5000, Notification.Position.MIDDLE);
             }
         });
+        confirm.setId("customer-order-cancel-confirm");
         confirm.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
         dialog.add(new Paragraph("Tồn kho sẽ được hoàn lại sau khi hủy thành công."), reason);
         dialog.getFooter().add(new Button("Đóng", click -> dialog.close()), confirm);

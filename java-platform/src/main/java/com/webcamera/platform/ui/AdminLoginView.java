@@ -19,6 +19,7 @@ public final class AdminLoginView extends VerticalLayout implements BeforeEnterO
 
     public AdminLoginView() {
         setSizeFull();
+        setId("admin-login-view");
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
         addClassName("admin-auth");
@@ -30,6 +31,7 @@ public final class AdminLoginView extends VerticalLayout implements BeforeEnterO
         copy.addClassName("admin-auth-copy");
 
         login.setAction("login");
+        login.setId("admin-login-form");
         login.setI18n(VietnameseLoginI18n.create("Tài khoản nhân viên"));
         login.setForgotPasswordButtonVisible(false);
         VerticalLayout card = new VerticalLayout(brand, title, copy, login);

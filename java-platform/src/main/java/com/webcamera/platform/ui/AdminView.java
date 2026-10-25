@@ -75,12 +75,14 @@ public class AdminView extends VerticalLayout {
         this.inventory = inventory;
         this.chats = chats;
         setSizeFull();
+        setId("admin-view");
         addClassName("admin-view");
         H2 heading = new H2("Tổng quan vận hành");
         heading.addClassName("admin-page-title");
         add(heading);
 
         Tabs tabs = new Tabs();
+        tabs.setId("admin-tabs");
         tabs.addClassName("admin-tabs");
         addPage(tabs, "Tổng quan", createDashboard());
         addPage(tabs, "Sản phẩm", createProductsPage());
@@ -91,6 +93,7 @@ public class AdminView extends VerticalLayout {
         tabs.addSelectedChangeListener(event -> showPage(event.getSelectedTab()));
 
         content.setSizeFull();
+        content.setId("admin-content");
         content.setPadding(true);
         content.addClassName("admin-content");
         add(tabs, content);
@@ -100,6 +103,7 @@ public class AdminView extends VerticalLayout {
 
     private VerticalLayout createPaymentsPage() {
         Grid<Payment> grid = new Grid<>(Payment.class, false);
+        grid.setId("admin-payments-grid");
         grid.addColumn(payment -> payment.getOrder().getOrderNumber()).setHeader("Order").setAutoWidth(true);
         grid.addColumn(Payment::getTransferContent).setHeader("Transfer content").setAutoWidth(true);
         grid.addColumn(payment -> money(payment.getAmount())).setHeader("Amount").setAutoWidth(true);
@@ -149,6 +153,7 @@ public class AdminView extends VerticalLayout {
 
     private VerticalLayout createDashboard() {
         dashboard = new VerticalLayout();
+        dashboard.setId("admin-dashboard");
         dashboard.setPadding(false);
         refreshDashboard();
         return dashboard;
@@ -188,6 +193,7 @@ public class AdminView extends VerticalLayout {
         configureProductForm();
         HorizontalLayout actions = new HorizontalLayout(save, cancel);
         VerticalLayout form = new VerticalLayout(new H3("Product editor"), sku, name, description, price, stock, active, actions);
+        form.setId("admin-product-form");
         form.setPadding(false);
         form.setWidthFull();
         VerticalLayout page = new VerticalLayout(productGrid, form);
@@ -199,6 +205,15 @@ public class AdminView extends VerticalLayout {
     }
 
     private void configureProductGrid() {
+        productGrid.setId("admin-products-grid");
+        sku.setId("admin-product-sku");
+        name.setId("admin-product-name");
+        description.setId("admin-product-description");
+        price.setId("admin-product-price");
+        stock.setId("admin-product-stock");
+        active.setId("admin-product-active");
+        save.setId("admin-product-save");
+        cancel.setId("admin-product-cancel");
         productGrid.addColumn(Product::getSku).setHeader("SKU").setAutoWidth(true);
         productGrid.addColumn(Product::getName).setHeader("Name").setFlexGrow(1);
         productGrid.addColumn(product -> money(product.getPrice())).setHeader("Price").setAutoWidth(true);
@@ -287,6 +302,7 @@ public class AdminView extends VerticalLayout {
 
     private VerticalLayout createOrdersPage() {
         Grid<Order> grid = new Grid<>(Order.class, false);
+        grid.setId("admin-orders-grid");
         grid.addColumn(Order::getOrderNumber).setHeader("Order").setAutoWidth(true);
         grid.addColumn(order -> order.getCustomer().getDisplayName()).setHeader("Customer").setFlexGrow(1);
         grid.addColumn(order -> money(order.total())).setHeader("Total").setAutoWidth(true);
@@ -324,6 +340,7 @@ public class AdminView extends VerticalLayout {
 
     private VerticalLayout createWarrantyPage() {
         Grid<Warranty> grid = new Grid<>(Warranty.class, false);
+        grid.setId("admin-warranties-grid");
         grid.addColumn(w -> w.getCameraSerial().getSerialNumber()).setHeader("Serial number").setAutoWidth(true);
         grid.addColumn(w -> w.getCameraSerial().getProduct().getName()).setHeader("Product").setFlexGrow(1);
         grid.addColumn(w -> w.getOrder().getOrderNumber()).setHeader("Order").setAutoWidth(true);

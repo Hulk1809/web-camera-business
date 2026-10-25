@@ -38,6 +38,7 @@ public class ProductDetailView extends VerticalLayout implements HasUrlParameter
     public ProductDetailView(CatalogService catalog) {
         this.catalog = catalog;
         setPadding(false);
+        setId("product-detail-view");
         setSpacing(false);
         setSizeFull();
         getStyle().set("background", UiTokens.PAGE).set("font-family", "Arial, Helvetica, sans-serif");
@@ -63,8 +64,10 @@ public class ProductDetailView extends VerticalLayout implements HasUrlParameter
         Button back = new Button("Về trang sản phẩm", new Icon(VaadinIcon.ARROW_LEFT),
                 event -> getUI().ifPresent(ui -> ui.navigate(StoreView.class)));
         back.getStyle().set("color", UiTokens.BRAND_RED);
+        back.setId("product-detail-back");
 
         Image image = new Image(StorePresentation.image(product), product.getName());
+        image.setId("product-detail-image");
         image.setWidthFull();
         image.setMaxWidth("520px");
         image.setHeight("480px");
@@ -73,6 +76,7 @@ public class ProductDetailView extends VerticalLayout implements HasUrlParameter
         Span category = new Span(StorePresentation.category(product) + " • " + StorePresentation.brand(product));
         category.getStyle().set("color", UiTokens.BRAND_RED).set("font-size", "12px").set("font-weight", "800");
         H1 name = new H1(product.getName());
+        name.setId("product-detail-name");
         name.getStyle().set("font-size", "clamp(24px,3vw,34px)").set("line-height", "1.2").set("margin", "8px 0");
         Span sku = new Span("SKU: " + product.getSku() + "  •  ★ 5.0");
         sku.getStyle().set("font-size", "12px").set("color", UiTokens.MUTED);
@@ -81,6 +85,7 @@ public class ProductDetailView extends VerticalLayout implements HasUrlParameter
         Span oldPrice = new Span(StorePresentation.money(StorePresentation.originalPrice(product)) + "  (-10%)");
         oldPrice.getStyle().set("font-size", "13px").set("text-decoration", "line-through").set("color", "#9CA3AF");
         Span stock = new Span(product.getStockQuantity() > 0 ? "✓ Còn hàng — giao ngay" : "◷ Đặt hàng chờ về");
+        stock.setId("product-detail-stock");
         stock.getStyle().set("color", product.getStockQuantity() > 0 ? UiTokens.SUCCESS : "#D97706")
                 .set("font-weight", "800").set("font-size", "13px");
         Paragraph description = new Paragraph(product.getDescription());
@@ -89,9 +94,11 @@ public class ProductDetailView extends VerticalLayout implements HasUrlParameter
         Button buy = new Button("MUA NGAY — VIETQR", new Icon(VaadinIcon.CART),
                 event -> getUI().ifPresent(ui -> ui.navigate(StoreView.class)));
         buy.setWidthFull();
+        buy.setId("product-detail-buy");
         buy.getStyle().set("background", UiTokens.BRAND_RED).set("color", "white").set("font-weight", "900")
                 .set("height", "48px");
         Button installment = new Button("TRẢ GÓP 0%", new Icon(VaadinIcon.CREDIT_CARD));
+        installment.setId("product-detail-installment");
         installment.setWidthFull();
         installment.getStyle().set("border", "1px solid " + UiTokens.BRAND_RED).set("color", UiTokens.BRAND_RED)
                 .set("font-weight", "800");
@@ -113,6 +120,7 @@ public class ProductDetailView extends VerticalLayout implements HasUrlParameter
         info.getElement().getStyle().set("flex", "1 1 420px");
 
         VerticalLayout specs = new VerticalLayout(new H3("Thông số kỹ thuật nổi bật"));
+        specs.setId("product-detail-specifications");
         specs.getStyle().set("background", "white").set("border", "1px solid " + UiTokens.BORDER)
                 .set("border-radius", "8px");
         if (product.getSpecifications().isEmpty()) {

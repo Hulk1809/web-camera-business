@@ -188,6 +188,7 @@ public class StoreView extends VerticalLayout {
     }
 
     private void configureCartDialog() {
+        cartDialog.setId("store-cart-dialog");
         cartDialog.setHeaderTitle("Giỏ Hàng Của Bạn");
         cartDialog.setWidth("min(480px, 95vw)");
         cartDialog.setHeight("min(780px, 92vh)");
@@ -195,13 +196,20 @@ public class StoreView extends VerticalLayout {
         cartLines.setWidthFull();
 
         TextField name = new TextField("Họ và tên");
+        name.setId("checkout-recipient-name");
         EmailField email = new EmailField("Email");
+        email.setId("checkout-email");
         TextField phone = new TextField("Số điện thoại");
+        phone.setId("checkout-phone");
         TextArea address = new TextArea("Địa chỉ giao hàng");
+        address.setId("checkout-address");
         RadioButtonGroup<String> method = new RadioButtonGroup<>("Thanh toán", "VietQR MB Bank", "COD");
+        method.setId("checkout-payment-method");
         method.setValue("VietQR MB Bank");
         Checkbox confirm = new Checkbox("Tôi xác nhận thông tin nhận hàng chính xác");
+        confirm.setId("checkout-confirmation");
         Button checkout = new Button("ĐẶT HÀNG", event -> placeOrder(name, email, phone, address, method, confirm));
+        checkout.setId("checkout-submit");
         checkout.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         checkout.setWidthFull();
         checkout.getStyle().set("background", UiTokens.BRAND_RED).set("font-weight", "900");

@@ -48,11 +48,28 @@ class UiSmokeResponsiveTest {
     }
 
     @Test
+    void publicProductAndWarrantyRoutesExposeStableUiContract() {
+        if (!QaConfig.javaTarget()) return;
+        open(new Dimension(1440, 900), "/");
+        visible(By.cssSelector("[data-testid='product-card'] [data-testid='product-detail-link']")).click();
+        visible(By.id("product-detail-view"));
+        visible(By.id("product-detail-name"));
+        visible(By.id("product-detail-specifications"));
+        assertNoHorizontalOverflow();
+
+        driver.get(QaConfig.uri("/warranty-check").toString());
+        visible(By.id("warranty-view"));
+        visible(By.id("warranty-serial-input"));
+        visible(By.id("warranty-submit"));
+        assertNoHorizontalOverflow();
+    }
+
+    @Test
     void adminLoginRendersWithoutAuthenticating() {
         open(new Dimension(1366, 768), QaConfig.javaTarget() ? "/admin/login" : "/admin/");
         if (QaConfig.javaTarget()) {
             visible(By.xpath("//*[contains(normalize-space(.), 'Đăng nhập nhân viên')]"));
-            WebElement form = visible(By.cssSelector("vaadin-login-form"));
+            WebElement form = visible(By.id("admin-login-form"));
             assertLoginI18n(form, "Tài khoản nhân viên");
             assertFalse(driver.getPageSource().contains("TẠO TÀI KHOẢN KHÁCH HÀNG"),
                     "Staff portal must not expose customer registration");

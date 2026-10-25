@@ -39,6 +39,7 @@ public final class ProductCard extends VerticalLayout {
         badges.setAlignItems(Alignment.CENTER);
 
         Image image = new Image(StorePresentation.image(product), product.getName());
+        image.getElement().setAttribute("data-testid", "product-detail-link");
         image.setWidthFull();
         image.setHeight("190px");
         image.getStyle().set("object-fit", "contain").set("background", "white");
@@ -50,6 +51,7 @@ public final class ProductCard extends VerticalLayout {
         specs.getStyle().set("overflow", "hidden");
 
         Span name = new Span(product.getName());
+        name.getElement().setAttribute("data-testid", "product-detail-link");
         name.getStyle().set("font-size", "14px").set("font-weight", "700").set("color", "#1F2937")
                 .set("line-height", "1.35").set("min-height", "38px").set("display", "-webkit-box")
                 .set("-webkit-line-clamp", "2").set("-webkit-box-orient", "vertical").set("overflow", "hidden");

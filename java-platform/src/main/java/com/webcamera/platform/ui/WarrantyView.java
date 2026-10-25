@@ -28,21 +28,25 @@ public class WarrantyView extends VerticalLayout {
     public WarrantyView(InventoryService inventory) {
         this.inventory = inventory;
         setSizeFull();
+        setId("warranty-view");
         setMaxWidth("800px");
 
         add(new H2("Tra cứu bảo hành PRO GEAR"),
                 new Paragraph("Nhập serial máy ảnh, ống kính hoặc phụ kiện để kiểm tra thời hạn bảo hành."));
 
         serialField.setPlaceholder("e.g. SN-A7M4-001");
+        serialField.setId("warranty-serial-input");
         serialField.setWidth("350px");
 
         checkBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        checkBtn.setId("warranty-submit");
         checkBtn.addClickListener(event -> lookupWarranty());
 
         HorizontalLayout inputRow = new HorizontalLayout(serialField, checkBtn);
         inputRow.setAlignItems(Alignment.END);
 
         resultCard.setVisible(false);
+        resultCard.setId("warranty-result");
         resultCard.getStyle()
                 .set("border", "1px solid var(--lumo-contrast-20pct)")
                 .set("border-radius", "8px")
