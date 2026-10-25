@@ -46,21 +46,26 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
 
         login.setId("qa-login-form");
         login.setI18n(VietnameseLoginI18n.create("Tài khoản khách hàng"));
-        login.setAction("login");
+        login.setAction("/dang-nhap");
         login.setForgotPasswordButtonVisible(false);
         VerticalLayout signIn = panel(new H2("Đăng nhập thành viên"),
                 new Paragraph("Theo dõi đơn hàng, thanh toán và quyền lợi bảo hành của bạn."), login);
 
         TextField name = new TextField("Họ và tên");
+        name.setId("customer-register-name");
         EmailField email = new EmailField("Email");
+        email.setId("customer-register-email");
         PasswordField password = new PasswordField("Mật khẩu");
+        password.setId("customer-register-password");
         PasswordField confirmation = new PasswordField("Nhập lại mật khẩu");
+        confirmation.setId("customer-register-confirmation");
         name.setWidthFull();
         email.setWidthFull();
         password.setWidthFull();
         confirmation.setWidthFull();
         Button register = new Button("TẠO TÀI KHOẢN KHÁCH HÀNG",
                 event -> register(name, email, password, confirmation));
+        register.setId("customer-register-submit");
         register.setWidthFull();
         register.getStyle().set("background", UiTokens.BRAND_RED).set("color", "white").set("font-weight", "900");
         VerticalLayout signUp = panel(new H2("Đăng ký thành viên"),

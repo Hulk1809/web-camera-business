@@ -35,6 +35,12 @@ public final class QaConfig {
         return "java".equalsIgnoreCase(env("QA_TARGET", "legacy"));
     }
 
+    public static boolean ephemeralWritesEnabled() {
+        String host = BASE_URI.getHost();
+        boolean loopback = "localhost".equalsIgnoreCase(host) || "127.0.0.1".equals(host) || "::1".equals(host);
+        return javaTarget() && loopback && boolEnv("QA_EPHEMERAL_WRITES", false);
+    }
+
     public static int intEnv(String name, int fallback) {
         String value = System.getenv(name);
         return value == null || value.isBlank() ? fallback : Integer.parseInt(value);

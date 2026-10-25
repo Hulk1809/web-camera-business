@@ -30,7 +30,7 @@ public final class AdminLoginView extends VerticalLayout implements BeforeEnterO
         Paragraph copy = new Paragraph("Cổng nội bộ dành cho nhân viên được cấp quyền. Khách hàng không đăng nhập tại đây.");
         copy.addClassName("admin-auth-copy");
 
-        login.setAction("login");
+        login.setAction("/dang-nhap");
         login.setId("admin-login-form");
         login.setI18n(VietnameseLoginI18n.create("Tài khoản nhân viên"));
         login.setForgotPasswordButtonVisible(false);
