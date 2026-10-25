@@ -7,6 +7,7 @@ import com.webcamera.platform.domain.User;
 import com.webcamera.platform.repository.OrderRepository;
 import com.webcamera.platform.repository.OrderStatusEventRepository;
 import com.webcamera.platform.repository.ProductRepository;
+import com.webcamera.platform.repository.PaymentRepository;
 import com.webcamera.platform.repository.UserRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -43,9 +44,13 @@ public class OrderService {
     private final ProductRepository products;
     private final UserRepository users;
     private final OrderStatusEventRepository statusEvents;
+    private final InventoryService inventory;
+    private final PaymentRepository payments;
     public OrderService(OrderRepository orders, ProductRepository products, UserRepository users,
-                        OrderStatusEventRepository statusEvents) {
+                        OrderStatusEventRepository statusEvents, InventoryService inventory, PaymentRepository payments) {
         this.orders = orders; this.products = products; this.users = users; this.statusEvents = statusEvents;
+        this.inventory = inventory;
+        this.payments = payments;
     }
     @Transactional
     public Order place(UUID customerId, List<Line> lines) {
@@ -95,6 +100,15 @@ public class OrderService {
 
     @Transactional
     public Order placePos(UUID staffOrCustomerId, List<Line> lines) {
+        return placePos(staffOrCustomerId, lines, true);
+    }
+
+    @Transactional
+    public Order placePosPending(UUID staffOrCustomerId, List<Line> lines) {
+        return placePos(staffOrCustomerId, lines, false);
+    }
+
+    private Order placePos(UUID staffOrCustomerId, List<Line> lines, boolean completeImmediately) {
         if (lines == null || lines.isEmpty()) throw new IllegalArgumentException("At least one line is required");
         User user = users.findById(staffOrCustomerId).orElseThrow(() -> new IllegalArgumentException("Unknown customer or staff"));
         Order order = new Order(user, Order.SalesChannel.POS);
@@ -104,9 +118,11 @@ public class OrderService {
             product.reserve(line.quantity());
             order.addItem(product, line.quantity());
         }
-        order.completePosSale();
+        if (completeImmediately) order.completePosSale();
+        else order.place();
         Order saved = orders.save(order);
-        statusEvents.save(new OrderStatusEvent(saved, saved.getStatus(), "Hoàn tất tại quầy"));
+        statusEvents.save(new OrderStatusEvent(saved, saved.getStatus(),
+                completeImmediately ? "Hoàn tất tại quầy" : "Đơn tại quầy đang chờ thanh toán"));
         return saved;
     }
     @Transactional(readOnly = true)
@@ -148,6 +164,8 @@ public class OrderService {
                 .orElseThrow(() -> new IllegalArgumentException("Unknown order"));
         order.cancel(reason);
         order.getItems().forEach(item -> item.getProduct().release(item.getQuantity()));
+        inventory.releaseReservations(order.getId());
+        payments.findByOrderId(order.getId()).ifPresent(com.webcamera.platform.domain.Payment::cancel);
         statusEvents.save(new OrderStatusEvent(order, Order.Status.CANCELLED, "Đơn hàng đã hủy"));
         return order;
     }
@@ -159,6 +177,8 @@ public class OrderService {
         if (!isCustomerCancellable(order)) throw new IllegalStateException("Đơn hàng không còn có thể hủy trực tuyến");
         order.cancel(reason);
         order.getItems().forEach(item -> item.getProduct().release(item.getQuantity()));
+        inventory.releaseReservations(order.getId());
+        payments.findByOrderId(order.getId()).ifPresent(com.webcamera.platform.domain.Payment::cancel);
         statusEvents.save(new OrderStatusEvent(order, Order.Status.CANCELLED, "Khách hàng yêu cầu hủy"));
         statusEvents.flush();
         List<StatusEvent> timeline = statusEvents.findByOrderIdOrderByRecordedAtAsc(order.getId()).stream()
