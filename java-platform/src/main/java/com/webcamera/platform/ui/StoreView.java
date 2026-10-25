@@ -68,6 +68,7 @@ public class StoreView extends VerticalLayout {
     private final Span cartCount = new Span();
     private final Dialog cartDialog = new Dialog();
     private final VerticalLayout cartLines = new VerticalLayout();
+    private final CheckoutAttemptGuard checkoutAttempt = new CheckoutAttemptGuard();
     private List<Product> products = List.of();
     private String selectedBrand = "Tất Cả";
     private String selectedCategory = "Tất Cả";
@@ -208,11 +209,18 @@ public class StoreView extends VerticalLayout {
         method.setValue("VietQR MB Bank");
         Checkbox confirm = new Checkbox("Tôi xác nhận thông tin nhận hàng chính xác");
         confirm.setId("checkout-confirmation");
-        Button checkout = new Button("ĐẶT HÀNG", event -> placeOrder(name, email, phone, address, method, confirm));
+        Button checkout = new Button("ĐẶT HÀNG");
         checkout.setId("checkout-submit");
+        checkout.addClickListener(event -> placeOrder(name, email, phone, address, method, confirm, checkout));
         checkout.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         checkout.setWidthFull();
         checkout.getStyle().set("background", UiTokens.BRAND_RED).set("font-weight", "900");
+        name.addValueChangeListener(event -> checkoutAttempt.payloadChanged());
+        email.addValueChangeListener(event -> checkoutAttempt.payloadChanged());
+        phone.addValueChangeListener(event -> checkoutAttempt.payloadChanged());
+        address.addValueChangeListener(event -> checkoutAttempt.payloadChanged());
+        method.addValueChangeListener(event -> checkoutAttempt.payloadChanged());
+        confirm.addValueChangeListener(event -> checkoutAttempt.payloadChanged());
 
         cartCount.getStyle().set("font-weight", "800").set("color", UiTokens.BRAND_RED);
         VerticalLayout body = new VerticalLayout(cartCount, cartLines, name, email, phone, address, method, confirm, checkout);
@@ -262,6 +270,7 @@ public class StoreView extends VerticalLayout {
             return;
         }
         cart.put(product.getId(), new CartLine(product, next));
+        checkoutAttempt.payloadChanged();
         refreshCart();
         Notification.show("Đã thêm " + product.getName() + " vào giỏ hàng");
     }
@@ -285,6 +294,7 @@ public class StoreView extends VerticalLayout {
             text.setSpacing(false);
             Button remove = new Button(new Icon(VaadinIcon.TRASH), event -> {
                 cart.remove(line.product().getId());
+                checkoutAttempt.payloadChanged();
                 refreshCart();
             });
             HorizontalLayout row = new HorizontalLayout(image, text, remove);
@@ -297,7 +307,7 @@ public class StoreView extends VerticalLayout {
     }
 
     private void placeOrder(TextField name, EmailField email, TextField phone, TextArea address,
-                            RadioButtonGroup<String> method, Checkbox confirmation) {
+                            RadioButtonGroup<String> method, Checkbox confirmation, Button submit) {
         if (cart.isEmpty() || name.isEmpty() || email.isEmpty() || phone.isEmpty() || address.isEmpty()
                 || !Boolean.TRUE.equals(confirmation.getValue())) {
             Notification.show("Vui lòng hoàn tất giỏ hàng và thông tin nhận hàng.");
@@ -309,25 +319,40 @@ public class StoreView extends VerticalLayout {
             getUI().ifPresent(ui -> ui.navigate(LoginView.class));
             return;
         }
+        java.util.Optional<String> attemptKey = checkoutAttempt.start();
+        if (attemptKey.isEmpty()) return;
+        submit.setEnabled(false);
+        Order order;
+        PaymentService.Instructions payment = null;
         try {
             User customer = users.requireDomainUser(authentication.getName());
             List<OrderService.Line> lines = cart.values().stream()
                     .map(line -> new OrderService.Line(line.product().getId(), line.quantity())).toList();
-            Order order = checkout.checkout(customer.getId(), UUID.randomUUID().toString(), lines,
+            order = checkout.checkout(customer.getId(), attemptKey.orElseThrow(), lines,
                     new OrderService.DeliveryDetails(name.getValue(), email.getValue(), phone.getValue(),
                             address.getValue(), method.getValue()));
-            PaymentService.Instructions payment = null;
             if ("VietQR MB Bank".equals(method.getValue())) {
                 payment = payments.instructions(order.getId(), customer.getEmail());
             }
-            cart.clear();
-            refreshCart();
-            cartDialog.close();
-            showPayment(order, payment, method.getValue());
-            refreshCatalog();
         } catch (RuntimeException ex) {
+            checkoutAttempt.failed();
+            submit.setEnabled(true);
             Notification.show("Không thể đặt hàng: " + safe(ex), 6000, Notification.Position.MIDDLE);
+            return;
         }
+        cart.clear();
+        checkoutAttempt.succeeded();
+        submit.setEnabled(true);
+        refreshCart();
+        cartDialog.close();
+        try {
+            showPayment(order, payment, method.getValue());
+        } catch (RuntimeException ex) {
+            Notification.show("Đơn " + order.getOrderNumber()
+                    + " đã được tạo nhưng không thể hiển thị hướng dẫn thanh toán. Vui lòng mở Đơn hàng của tôi.",
+                    7000, Notification.Position.MIDDLE);
+        }
+        refreshCatalog();
     }
 
     private void showPayment(Order order, PaymentService.Instructions payment, String method) {
