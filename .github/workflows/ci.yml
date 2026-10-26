@@ -73,6 +73,7 @@ jobs:
           scanners: secret
           exit-code: '1'
       - name: Build commit image and record digest
+        id: build
         run: |
           docker buildx build --load --tag camera-commerce:${{ github.sha }} --metadata-file image-metadata.json .
           jq -er '."containerimage.digest" | select(test("^sha256:[0-9a-f]{64}$"))' image-metadata.json > image-digest.txt
@@ -93,6 +94,7 @@ jobs:
           severity: CRITICAL
           exit-code: '1'
       - name: Block critical image vulnerabilities
+        if: always() && steps.build.outcome == 'success'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: image
