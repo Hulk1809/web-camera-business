@@ -80,7 +80,7 @@ Mỗi module chỉ thêm `domain`, `application`, `repository`, `ui` hoặc `web
 | 5 | Order, payment, tracking, cancel | State machine + rollback xanh |
 | 6 | Admin operations, POS, serial, warranty | Transaction lifecycle xanh |
 | 7 | Responsive, accessibility, browser E2E | Chromium/Firefox/WebKit xanh |
-| 8 | AWS staging, observability | Smoke + alert + secret gates xanh |
+| 8 | Staging ephemeral, chuẩn bị AWS production | Smoke + alert + secret gates xanh |
 | 9 | Backup/restore, rollback | Restore drill + digest rollback xanh |
 | 10 | Production | Post-deploy read-only QA xanh |
 

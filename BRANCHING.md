@@ -24,7 +24,7 @@ feat/catalog-read-model
 feat/customer-auth
 feat/idempotent-checkout
 test/checkout-concurrency
-infra/aws-staging
+infra/aws-production
 ```
 
 Một nhánh chỉ giải quyết một task, sống tối đa 1–3 ngày, rebase/merge `main` thường xuyên. Không gom refactor không liên quan.
@@ -44,7 +44,7 @@ Một nhánh chỉ giải quyết một task, sống tối đa 1–3 ngày, reba
 | 9 | `feat/admin-operations` | Catalog, inventory, order admin |
 | 10 | `feat/pos-warranty` | POS, serial, warranty lifecycle |
 | 11 | `test/browser-security` | Browser, a11y, IDOR, concurrency |
-| 12 | `infra/aws-staging` | AWS staging + observability |
+| 12 | `infra/aws-production` | Production AWS + observability |
 | 13 | `infra/backup-rollback` | Restore drill + digest rollback |
 | 14 | `chore/production-release` | Release candidate |
 
