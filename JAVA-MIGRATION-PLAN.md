@@ -18,7 +18,7 @@
 | 3 | Order, inventory, cancel, POS, warranty | Không oversell, không bán trùng serial, rollback đúng |
 | 4 | Vaadin Admin feature parity | CRUD, finance, POS, warranty, chat critical flows pass |
 | 5 | Vaadin Store feature parity | Search, cart, checkout, tracking, warranty, account pass |
-| 6 | Preview AKS + QA 7 tầng | 7/7 tầng xanh hai lần liên tiếp |
+| 6 | Preview AWS EC2 + QA 7 tầng | 7/7 tầng xanh hai lần liên tiếp |
 | 7 | Cutover có rollback | Smoke production xanh, quan sát lỗi/tồn kho/đơn hàng ổn định |
 
 ## QA Java độc lập

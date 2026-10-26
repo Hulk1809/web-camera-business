@@ -4,7 +4,7 @@
 
 - Store: duyệt/tìm/lọc sản phẩm, chi tiết, yêu thích, giỏ hàng, đặt hàng, tra cứu, bảo hành, tài khoản và chat.
 - Admin: đăng nhập/phân quyền, dashboard, sản phẩm/ảnh/thông số, tồn kho, đơn hàng/POS/preorder, doanh thu, bảo hành và chat.
-- Production `http://74.176.156.158`: kiểm tra trình duyệt desktop/mobile và HTTP chỉ đọc. Dữ liệu trình duyệt của ca kiểm thử được giữ trong context riêng.
+- Java AWS `https://java-aws.54.179.55.104.nip.io`: kiểm tra trình duyệt desktop/mobile và HTTP chỉ đọc. Dữ liệu trình duyệt của ca kiểm thử được giữ trong context riêng.
 - Các ca ghi dữ liệu dùng môi trường local và PostgreSQL test riêng. Không đặt đơn hoặc thay đổi dữ liệu kinh doanh trên production.
 - Báo cáo này đang được tổng hợp; không coi HTTP 200 hoặc E2E fallback là chứng nhận tính đúng đắn toàn hệ thống.
 

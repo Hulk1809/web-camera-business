@@ -32,12 +32,10 @@ Kiểm thử cạnh tranh hiện dùng mô phỏng repository; cần kiểm th�
 ## Kết nối triển khai đã xác minh
 
 - Repository: https://github.com/Hulk1809/web-camera-business — remote đọc được.
-- Push vào `main` kích hoạt `.github/workflows/ci-cd.yml`: build/push GHCR rồi deploy AKS, namespace `camera-shop`.
-- Run gần nhất đã xác minh thành công: https://github.com/Hulk1809/web-camera-business/actions/runs/39275567948 (commit `0c5f5ac`). Đây là bản trước đợt sửa này.
+- Push Java vào `main` kích hoạt `.github/workflows/java-platform-ci.yml`, rồi `.github/workflows/aws-ec2-deploy.yml` deploy AWS EC2.
 - Đã đăng nhập GitHub CLI bằng tài khoản `Hulk1809`; `git push --dry-run origin main` thành công sau khi đăng nhập.
-- Production: http://74.176.156.158 — Deploy đã kiểm tra GET `/`, `/admin/`, `/api/health`, `/api/products`, `/api/categories`, `/api/brands` đều HTTP 200 trên bản hiện tại.
+- Java AWS: https://java-aws.54.179.55.104.nip.io — readiness và QA sau deploy chạy read-only.
 - QA commerce cốt lõi: 41/41 E2E, 5/5 unit và 6/6 integration HTTP/PostgreSQL pass; build toàn bộ pass.
 - Chat đa thiết bị, customer auth backend và Meta OAuth chưa phải tích hợp thật; chưa deploy bản sửa mới.
 - JWT production đã được chuyển khỏi manifest sang GitHub Secret `JWT_SECRET` và Kubernetes Secret.
-- HTTPS mục tiêu: `https://progear.74.176.156.158.nip.io` bằng cert-manager và Let’s Encrypt; chờ deploy/smoke test chứng chỉ.
 - Customer auth email/password dùng cookie HttpOnly; chat Store/Admin dùng PostgreSQL và REST polling. Facebook OAuth thật được tắt an toàn khi chưa có Meta credentials.

@@ -1,5 +1,5 @@
 # 🎬 PRO GEAR — Hệ Thống Thương Mại Điện Tử Máy Ảnh, Máy Quay Cinema & Flycam DJI
-> **Nền tảng thương mại điện tử chuyên nghiệp cho ngành Nhiếp Ảnh & Điện Ảnh (Sony Alpha, Canon EOS, Fujifilm, Blackmagic Cinema, Flycam & Gimbal DJI). Tích hợp Monorepo NestJS API, PostgreSQL, React Vite & hạ tầng Kubernetes AKS.**
+> **Nền tảng thương mại điện tử chuyên nghiệp cho ngành Nhiếp Ảnh & Điện Ảnh (Sony Alpha, Canon EOS, Fujifilm, Blackmagic Cinema, Flycam & Gimbal DJI). Tích hợp Monorepo NestJS API, PostgreSQL, React Vite và nền tảng Java Spring Boot/Vaadin trên AWS.**
 
 > **Java migration đang thực hiện:** `java-platform/` chứa Spring Boot + Vaadin Flow Java 21 chạy shadow, chưa nhận production traffic. `qa-java/` là bộ QA 7 tầng Java độc lập kiểm thử website từ bên ngoài. Bản Java chỉ được cutover sau khi đạt feature parity và toàn bộ quality gate.
 
@@ -19,7 +19,6 @@
   - **Quản lý thiết bị (Products):** Thêm mới máy ảnh, máy quay, flycam DJI với thông số cảm biến, video codec, dải tương phản, tải trọng gimbal. Nạp dữ liệu chuẩn mẫu (Seed).
   - **Quản lý đơn hàng (Orders) - Thông 100% với Bán Hàng:** Nhận đơn hàng mới từ Storefront tức thì (auto-polling & live API), duyệt trạng thái đơn: *Chờ xác nhận → Đã xác nhận → Đang giao hàng → Hoàn tất*.
   - **Quản lý Serial & Bảo hành:** Quản lý kho Serial Number (DJI-M3PRO-..., SONY-FX3-..., CANON-R5M2-...) gán vào đơn hàng.
-  - **Giám sát K8s:** Trực quan hóa cụm Azure AKS `k8s-hulk-lab`.
 
 - **Backend API:** NestJS (TypeScript) + Prisma ORM (Port `4000`)
   - RESTful APIs cho Products, Orders, Warranty, Dashboard, Categories.
@@ -47,7 +46,7 @@ web camera business/
 │
 ├── deploy/
 │   ├── docker-compose.yml     # PostgreSQL 16 & Redis local
-│   └── k8s/                   # Manifests Kubernetes AKS
+│   └── k8s/                   # Manifests Kubernetes lưu trữ từ hạ tầng cũ
 └── package.json               # Root monorepo scripts
 ```
 
