@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: progear
       POSTGRES_USER: progear
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-progear}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U progear -d progear"]
       interval: 5s
@@ -18,7 +18,7 @@ services:
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/progear
       DB_USER: progear
-      DB_PASSWORD: ${DB_PASSWORD:-progear}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     depends_on:
       postgres:
         condition: service_healthy
