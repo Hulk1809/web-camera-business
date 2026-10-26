@@ -32,7 +32,7 @@ public final class QaConfig {
     }
 
     public static boolean javaTarget() {
-        return "java".equalsIgnoreCase(env("QA_TARGET", "legacy"));
+        return "java".equalsIgnoreCase(env("QA_TARGET", "java"));
     }
 
     public static boolean ephemeralWritesEnabled() {

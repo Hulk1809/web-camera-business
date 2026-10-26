@@ -52,7 +52,7 @@ Disable `BOOTSTRAP_ADMIN_ENABLED` after first startup. In TLS environments set `
 
 ## TODO before production migration
 
-- Define a reviewed legacy-data mapping and write separate, idempotent import jobs; this scaffold intentionally performs no legacy migration.
+- Dữ liệu import cần mapping được review và job idempotent riêng; ứng dụng không tự import dữ liệu ngoài.
 - Add checkout/payment, idempotency keys, inventory reservation expiry, tax/shipping, and order state authorization.
 - Add customer registration/email verification, password reset, MFA for admins, login throttling, and audit events.
 - Add admin edit workflows, chat UI/API authorization, pagination, image/object storage, and product search.
