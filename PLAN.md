@@ -10,9 +10,9 @@ Xây nền tảng commerce chuyên bán máy ảnh, ống kính, flycam, gimbal 
 - Spring Security, Spring Data JPA, Hibernate.
 - PostgreSQL 16, Flyway.
 - Maven, JUnit 5, Testcontainers, Selenium Java.
-- Docker, AWS EC2/ECS, RDS PostgreSQL, S3, CloudFront, Route 53, CloudWatch.
+- Docker; một AWS EC2 `t4g.small` chạy app + PostgreSQL + Caddy trong giai đoạn zero-cash.
 
-Dùng modular monolith. Chưa dùng microservice hoặc Kubernetes.
+Dùng modular monolith. Chưa dùng microservice, RDS chạy thường trực hoặc Kubernetes.
 
 ## 3. Phạm vi MVP
 

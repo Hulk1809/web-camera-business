@@ -1,114 +1,98 @@
-# Ước tính chi phí AWS
+# Kế hoạch AWS mục tiêu 0 USD tiền mặt/tháng
 
-## 1. Giả định
+## 1. Số dư hiện tại
 
-- Region: Singapore `ap-southeast-1`.
-- 730 giờ/tháng, Linux ARM64 khi dependency hỗ trợ.
-- Một ứng dụng Java modular monolith.
-- PostgreSQL managed trên RDS cho production.
-- 20–100 GB ảnh/tháng và 50–500 GB CDN/tháng tùy mức.
-- Giá On-Demand trước thuế, domain, support plan và phí thanh toán ngân hàng.
-- Không lấy Free Tier làm baseline. Giá cần xác nhận lại bằng AWS Pricing Calculator trước mua.
+Kiểm tra ngày 26/10/2026:
 
-Tỷ giá kế hoạch: `1 USD = 25.500 VND`.
+| Credit | Còn ghi nhận | Còn ước tính sau chi phí mở |
+|---|---:|---:|
+| AWS Free Tier promotion | 33,08 USD | 22,10 USD |
+| RDS promotion | 20,00 USD | 20,00 USD |
+| **Tổng** | **53,08 USD** | **42,10 USD** |
 
-## 2. Phương án A — Dev/demo tiết kiệm
+Hai credit hết hạn ngày **12/05/2027**. Mục tiêu `0 USD` nghĩa hóa đơn tiền mặt bằng 0 nhờ Free Tier/credit; không có cam kết AWS miễn phí vĩnh viễn.
 
-Một EC2 chạy app + PostgreSQL bằng Docker. Không phù hợp production vì app và DB chung failure domain.
+## 2. Kiến trúc zero-cash
 
-| Hạng mục | Giả định | USD/tháng |
-|---|---|---:|
-| EC2 | `t4g.small`, 2 vCPU/2 GiB | 12–18 |
-| EBS | gp3 30 GB | 3–4 |
-| Public IPv4 | 1 địa chỉ, 730 giờ | khoảng 3.65 |
-| S3 | 20 GB ảnh | 1 |
-| CloudFront | 50 GB transfer | 0–6 |
-| Route 53 | 1 hosted zone + queries thấp | 0.5–1 |
-| CloudWatch | Log/metric thấp | 2–5 |
-| Backup | Snapshot/EBS thấp | 1–3 |
-| **Tổng** |  | **23–42 USD** |
+- Một EC2 `t4g.small` ARM64 chạy Spring Boot, PostgreSQL và Caddy bằng Docker Compose.
+- EBS gp3 tối đa 20–30 GB.
+- Không dùng RDS mặc định; giữ 20 USD RDS credit cho restore drill hoặc thử nghiệm có thời hạn.
+- Không dùng ALB, NAT Gateway, ECS, EKS, WAF trả phí hoặc Multi-AZ.
+- Dùng domain `nip.io` trong giai đoạn MVP để tránh phí domain/Route 53.
+- Lưu ảnh đã tối ưu trên EBS lúc đầu; chỉ bật S3/CloudFront khi dung lượng hoặc traffic yêu cầu.
+- GitHub Container Registry và GitHub Actions thay ECR/CodeBuild nếu quota GitHub còn đủ.
+- CloudWatch tối thiểu; log chính giữ local, rotate 7–14 ngày.
+- Secret truyền từ GitHub Actions vào file `.env` quyền `600`; không commit secret.
 
-Khoảng **587.000–1.071.000 VND/tháng**.
+## 3. Ngân sách tháng
 
-## 3. Phương án B — MVP production khuyến nghị
+| Hạng mục | Gross ước tính | Tiền mặt mục tiêu |
+|---|---:|---:|
+| EC2 `t4g.small` | 0–18 USD | 0 USD nhờ trial/credit khi đủ điều kiện |
+| EBS gp3 20–30 GB | 2–4 USD | 0 USD nhờ credit |
+| Public IPv4 | khoảng 3,65 USD | 0 USD nhờ credit |
+| Snapshot 10–20 GB | 1–2 USD | 0 USD nhờ credit |
+| Data transfer thấp | 0–3 USD | 0 USD nhờ allowance/credit |
+| Monitoring tối thiểu | 0–1 USD | 0 USD nhờ allowance/credit |
+| **Tổng gross** | **7–29 USD/tháng** | **0 USD/tháng khi credit đủ** |
 
-Một EC2 app, RDS PostgreSQL Single-AZ, S3/CloudFront. Chấp nhận downtime khi EC2 hoặc AZ lỗi; có backup và rollback.
+Với credit khả dụng ước tính **42,10 USD**, runway khoảng:
 
-| Hạng mục | Giả định | USD/tháng |
-|---|---|---:|
-| EC2 app | `t4g.small` hoặc `t4g.medium` | 15–35 |
-| EBS | gp3 30 GB | 3–4 |
-| RDS PostgreSQL | `db.t4g.micro/small`, Single-AZ | 18–45 |
-| RDS storage/backup | gp3 30–50 GB + backup dư | 4–10 |
-| Public IPv4 | 1 địa chỉ | khoảng 3.65 |
-| S3 | 50 GB ảnh | 1–2 |
-| CloudFront | 100–300 GB APAC | 8–36 |
-| Route 53 | Hosted zone + DNS queries | 0.5–2 |
-| CloudWatch | Logs, metrics, alarms | 5–15 |
-| Secrets Manager/SSM | 5–10 secret/parameter | 0–5 |
-| Data transfer khác | API/backup nhỏ | 2–10 |
-| **Tổng** |  | **60–165 USD** |
+- **6 tháng** nếu gross 7 USD/tháng.
+- **2 tháng** nếu gross 20 USD/tháng.
+- **1–2 tháng** nếu gross gần 29 USD/tháng.
 
-Khoảng **1.530.000–4.208.000 VND/tháng**.
+Không tạo RDS chạy 24/7 cùng EC2 trong giai đoạn zero-cash vì burn rate tăng mạnh.
 
-Ngân sách vận hành nên đặt **120 USD/tháng** và budget alert tại 50%, 80%, 100%.
+## 4. Giới hạn bắt buộc
 
-## 4. Phương án C — HA production
+- Tối đa 1 EC2 đang chạy.
+- Không tạo NAT Gateway hoặc Load Balancer.
+- Không cấp Elastic IP/Public IPv4 thứ hai.
+- EBS tổng tối đa 30 GB; snapshot tối đa 20 GB.
+- Không bật paid support.
+- Không dùng Secrets Manager nếu SSM Standard/CI secret đủ.
+- Không giữ CloudWatch log quá 14 ngày.
+- Không upload ảnh gốc dung lượng lớn; sinh WebP/AVIF trước khi lưu.
+- Không chạy staging AWS 24/7; test staging bằng stack ephemeral local/CI.
 
-Hai app task/instance qua ALB, RDS Multi-AZ, NAT hoặc VPC endpoints, WAF và giám sát đầy đủ.
+## 5. Cost guardrails
 
-| Hạng mục | Giả định | USD/tháng |
-|---|---|---:|
-| ECS/EC2 app | 2 task/instance | 50–120 |
-| ALB | Giờ chạy + LCU | 20–40 |
-| RDS PostgreSQL | `db.t4g.small`, Multi-AZ | 80–140 |
-| RDS storage/backup | 50–100 GB | 10–25 |
-| NAT Gateway | Giờ chạy + data, nếu dùng | 35–80 |
-| S3 + CloudFront | 100 GB storage, 500 GB transfer | 30–70 |
-| Route 53 | DNS + health checks | 1–5 |
-| WAF | Web ACL + rules + requests | 10–30 |
-| CloudWatch | Logs, metrics, alarms | 15–40 |
-| Secrets/KMS | Secrets và key | 3–10 |
-| **Tổng** |  | **254–560 USD** |
+1. Bật Cost Explorer; hiện account chưa được enable.
+2. Tạo AWS Budget **10 USD/tháng** dù credit đang bù chi phí.
+3. Alert tại 5 USD, 8 USD và 10 USD gross usage.
+4. Tạo Cost Anomaly Detection.
+5. Tag mọi resource: `Project=progear`, `Environment=production`, `Owner=<owner>`.
+6. Chạy kiểm kê resource hằng tuần: EC2, EBS, snapshot, IPv4, RDS, NAT, ELB, S3.
+7. Dừng/xóa resource thử nghiệm trong ngày.
 
-Khoảng **6.477.000–14.280.000 VND/tháng**.
+## 6. Backup trong ngân sách thấp
 
-## 5. Chi phí dễ bị bỏ sót
+- PostgreSQL `pg_dump` hằng ngày, nén gzip.
+- Giữ 7 daily backup local.
+- Đồng bộ 1–2 bản gần nhất sang S3 nếu chi phí vẫn dưới budget.
+- Snapshot EBS trước migration lớn, xóa sau khi xác minh.
+- Restore drill hàng tháng vào container PostgreSQL tạm trên cùng EC2 hoặc local; xóa ngay sau test.
 
-- Public IPv4 tính theo giờ.
-- NAT Gateway có phí giờ và phí mỗi GB; tránh ở MVP nếu thiết kế mạng cho phép.
-- CloudWatch log giữ vô hạn gây tăng phí; đặt retention 14–30 ngày.
-- Snapshot và RDS backup vượt dung lượng miễn phí.
-- CloudFront APAC đắt hơn US/EU.
-- RDS CPU credit khi T-family chạy vượt baseline kéo dài.
-- Cross-AZ transfer, ECR/GHCR pull và data egress.
-- AWS Support, thuế VAT và phí domain không nằm trong tổng trên.
+Một EC2 là single point of failure. Kế hoạch này phù hợp MVP/lưu lượng thấp, không đáp ứng HA.
 
-## 6. Tối ưu chi phí
+## 7. Điều kiện nâng cấp
 
-1. Bắt đầu phương án B với `t4g.small`; đo heap/CPU trước khi tăng size.
-2. Dùng ARM64 và multi-stage image.
-3. S3 lifecycle cho ảnh gốc/backup cũ.
-4. CloudFront cache ảnh theo content hash.
-5. CloudWatch retention 14–30 ngày.
-6. Không dùng NAT Gateway nếu chưa cần private egress.
-7. Sau 2–3 tháng tải ổn định, mua Compute Savings Plan/RDS Reserved Instance.
-8. AWS Budgets và Cost Anomaly Detection ngay ngày đầu.
+Chuyển khỏi zero-cash khi một điều kiện xảy ra:
 
-## 7. Mốc mở rộng
+- Credit còn dưới 15 USD hoặc còn dưới 60 ngày tới hạn.
+- Gross usage vượt 10 USD/tháng hai tháng liên tiếp.
+- Dữ liệu/đơn hàng thật yêu cầu RPO/RTO tốt hơn single EC2.
+- CPU > 60%, RAM > 75%, disk > 70% kéo dài.
+- Doanh thu đủ trả RDS và HA.
 
-- CPU app > 60% hoặc heap > 70% kéo dài: tăng app size hoặc thêm replica.
-- RDS CPU/connection/storage > 70%: nâng DB trước peak.
-- Cần uptime theo AZ: chuyển Multi-AZ và ít nhất hai app replicas.
-- Media egress tăng: tối ưu ảnh WebP/AVIF, cache và lifecycle trước khi tăng hạ tầng.
+Thứ tự nâng cấp: RDS Single-AZ → S3/CloudFront → app replica + ALB → Multi-AZ. Không nhảy thẳng Kubernetes.
 
-## 8. Nguồn giá cần đối chiếu
+## 8. Cảnh báo
 
-- EC2 On-Demand: https://aws.amazon.com/ec2/pricing/on-demand/
-- RDS PostgreSQL: https://aws.amazon.com/rds/postgresql/pricing/
-- S3: https://aws.amazon.com/s3/pricing/
-- CloudFront: https://aws.amazon.com/cloudfront/pricing/
-- Route 53: https://aws.amazon.com/route53/pricing/
-- AWS Pricing Calculator: https://calculator.aws/
+- Free Tier và promotion có điều kiện dịch vụ, khu vực và ngày hết hạn.
+- `remainingAmount` có thể chưa gồm toàn bộ usage đang xử lý; dùng `estimatedAmount` làm số an toàn hơn.
+- Mục tiêu 0 USD có thể bị phá bởi traffic spike, IPv4, snapshot, log hoặc resource quên xóa.
+- Cần thẻ thanh toán hợp lệ; AWS vẫn có thể thu phần vượt credit.
 
-Con số cuối phải xuất từ Calculator với region, traffic, storage, backup retention và topology đã chốt.
+Nguồn kiểm tra cuối: AWS Billing Credits API, AWS Budgets và https://calculator.aws/.

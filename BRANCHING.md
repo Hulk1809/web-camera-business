@@ -77,7 +77,7 @@ Backend và Frontend làm song song sau khi contract merge. QA viết contract t
 | Environment | Nguồn deploy | Write test |
 |---|---|---|
 | Local/ephemeral | Branch/PR | Cho phép, tự hủy |
-| Staging AWS | `main` artifact | Chỉ fixture sandbox |
+| Staging ephemeral local/CI | `main` artifact | Chỉ fixture sandbox |
 | Production AWS | Approved digest | Cấm; QA read-only |
 
 ## 7. Rollback
