@@ -8,7 +8,7 @@ on:
         required: false
         type: string
   workflow_run:
-    workflows: ['Java Platform Shadow CI']
+    workflows: ['Java Platform CI']
     types: [completed]
 
 permissions:

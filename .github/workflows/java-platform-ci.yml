@@ -1,4 +1,4 @@
-name: Java Platform Shadow CI
+name: Java Platform CI
 
 on:
   workflow_dispatch:
