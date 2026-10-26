@@ -13,6 +13,8 @@ import org.springframework.data.jpa.repository.EntityGraph;
 public interface ProductRepository extends JpaRepository<Product, UUID> {
     @EntityGraph(attributePaths = {"category", "brand"})
     List<Product> findByActiveTrueOrderByNameAsc();
+    @EntityGraph(attributePaths = {"category", "brand"})
+    Optional<Product> findDetailedById(UUID id);
     Optional<Product> findBySkuIgnoreCase(String sku);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Product p where p.id = :id")

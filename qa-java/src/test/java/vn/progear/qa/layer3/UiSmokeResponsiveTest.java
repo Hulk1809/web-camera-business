@@ -51,7 +51,9 @@ class UiSmokeResponsiveTest {
     void publicProductAndWarrantyRoutesExposeStableUiContract() {
         if (!QaConfig.javaTarget()) return;
         open(new Dimension(1440, 900), "/");
-        visible(By.cssSelector("[data-testid='product-card'] [data-testid='product-detail-link']")).click();
+        WebElement detailLink = visible(By.cssSelector("[data-testid='product-card'] a[data-testid='product-detail-link']"));
+        assertTrue(detailLink.getAttribute("href").contains("/products/"), detailLink.getAttribute("href"));
+        detailLink.click();
         visible(By.id("product-detail-view"));
         visible(By.id("product-detail-name"));
         visible(By.id("product-detail-specifications"));

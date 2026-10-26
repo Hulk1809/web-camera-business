@@ -1,6 +1,7 @@
 package com.webcamera.platform.ui.store;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
@@ -13,7 +14,7 @@ import com.webcamera.platform.ui.theme.UiTokens;
 import java.util.function.Consumer;
 
 public final class ProductCard extends VerticalLayout {
-    public ProductCard(Product product, Consumer<Product> addToCart, Consumer<Product> openDetails) {
+    public ProductCard(Product product, Consumer<Product> addToCart) {
         setId("product-card-" + product.getSku());
         getElement().setAttribute("data-testid", "product-card");
         getElement().setAttribute("data-sku", product.getSku());
@@ -39,11 +40,14 @@ public final class ProductCard extends VerticalLayout {
         badges.setAlignItems(Alignment.CENTER);
 
         Image image = new Image(StorePresentation.image(product), product.getName());
-        image.getElement().setAttribute("data-testid", "product-detail-link");
         image.setWidthFull();
         image.setHeight("190px");
         image.getStyle().set("object-fit", "contain").set("background", "white");
-        image.addClickListener(event -> openDetails.accept(product));
+        Anchor imageLink = new Anchor("/products/" + product.getId(), image);
+        imageLink.getElement().setAttribute("data-testid", "product-detail-link");
+        imageLink.getElement().setAttribute("router-ignore", true);
+        imageLink.getElement().setAttribute("aria-label", "Xem chi tiết " + product.getName());
+        imageLink.getStyle().set("display", "block").set("width", "100%");
 
         HorizontalLayout specs = new HorizontalLayout();
         specs.setSpacing(true);
@@ -51,11 +55,13 @@ public final class ProductCard extends VerticalLayout {
         specs.getStyle().set("overflow", "hidden");
 
         Span name = new Span(product.getName());
-        name.getElement().setAttribute("data-testid", "product-detail-link");
         name.getStyle().set("font-size", "14px").set("font-weight", "700").set("color", "#1F2937")
                 .set("line-height", "1.35").set("min-height", "38px").set("display", "-webkit-box")
                 .set("-webkit-line-clamp", "2").set("-webkit-box-orient", "vertical").set("overflow", "hidden");
-        name.addClickListener(event -> openDetails.accept(product));
+        Anchor nameLink = new Anchor("/products/" + product.getId(), name);
+        nameLink.getElement().setAttribute("data-testid", "product-detail-link");
+        nameLink.getElement().setAttribute("router-ignore", true);
+        nameLink.getStyle().set("text-decoration", "none");
 
         Span price = new Span(StorePresentation.money(product.getPrice()));
         price.getStyle().set("color", UiTokens.BRAND_RED).set("font-size", "17px").set("font-weight", "800");
@@ -81,8 +87,8 @@ public final class ProductCard extends VerticalLayout {
         footer.setJustifyContentMode(JustifyContentMode.BETWEEN);
         footer.getStyle().set("border-top", "1px solid #F3F4F6").set("padding-top", "8px");
 
-        add(badges, image, specs, name, prices, footer);
-        expand(name);
+        add(badges, imageLink, specs, nameLink, prices, footer);
+        expand(nameLink);
     }
 
     private static Span pill(String text) {

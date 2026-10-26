@@ -68,7 +68,7 @@ public class ProductDetailView extends VerticalLayout implements HasUrlParameter
 
         Image image = new Image(StorePresentation.image(product), product.getName());
         image.setId("product-detail-image");
-        image.setWidthFull();
+        image.setWidth("min(520px, 100%)");
         image.setMaxWidth("520px");
         image.setHeight("480px");
         image.getStyle().set("object-fit", "contain").set("background", "white").set("border-radius", "8px");
@@ -104,6 +104,7 @@ public class ProductDetailView extends VerticalLayout implements HasUrlParameter
                 .set("font-weight", "800");
         HorizontalLayout actions = new HorizontalLayout(buy, installment);
         actions.setWidthFull();
+        actions.getStyle().set("flex-wrap", "wrap");
         actions.setFlexGrow(2, buy);
         actions.setFlexGrow(1, installment);
 
@@ -115,9 +116,10 @@ public class ProductDetailView extends VerticalLayout implements HasUrlParameter
 
         FlexLayout top = new FlexLayout(image, info);
         top.setWidthFull();
-        top.getStyle().set("gap", "20px").set("flex-wrap", "wrap");
+        top.getStyle().set("gap", "20px").set("flex-wrap", "wrap").set("min-width", "0");
         image.getElement().getStyle().set("flex", "1 1 420px");
         info.getElement().getStyle().set("flex", "1 1 420px");
+        info.getElement().getStyle().set("min-width", "0");
 
         VerticalLayout specs = new VerticalLayout(new H3("Thông số kỹ thuật nổi bật"));
         specs.setId("product-detail-specifications");
@@ -129,6 +131,7 @@ public class ProductDetailView extends VerticalLayout implements HasUrlParameter
             for (Map.Entry<String, String> entry : product.getSpecifications().entrySet()) {
                 HorizontalLayout row = new HorizontalLayout(new Span(label(entry.getKey())), new Span(entry.getValue()));
                 row.setWidthFull();
+                row.getStyle().set("flex-wrap", "wrap").set("overflow-wrap", "anywhere");
                 row.getChildren().findFirst().ifPresent(component -> component.getElement().getStyle()
                         .set("font-weight", "800").set("min-width", "180px"));
                 row.getStyle().set("border-top", "1px solid #F3F4F6").set("padding", "8px 0");

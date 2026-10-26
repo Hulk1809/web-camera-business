@@ -246,9 +246,9 @@ public class StoreView extends VerticalLayout {
                         || product.getName().toLowerCase(Locale.ROOT).contains(selectedCategory.toLowerCase(Locale.ROOT)))
                 .toList();
         catalogCards.removeAll();
-        filtered.forEach(product -> catalogCards.add(new ProductCard(product, this::addToCart, this::openProduct)));
+        filtered.forEach(product -> catalogCards.add(new ProductCard(product, this::addToCart)));
         flashCards.removeAll();
-        products.stream().limit(5).forEach(product -> flashCards.add(new ProductCard(product, this::addToCart, this::openProduct)));
+        products.stream().limit(5).forEach(product -> flashCards.add(new ProductCard(product, this::addToCart)));
         resultCount.setText(filtered.size() + " sản phẩm");
     }
 
@@ -256,10 +256,6 @@ public class StoreView extends VerticalLayout {
         selectedCategory = category;
         applyFilters();
         Notification.show("Đang lọc danh mục: " + category);
-    }
-
-    private void openProduct(Product product) {
-        getUI().ifPresent(ui -> ui.navigate(ProductDetailView.class, product.getId().toString()));
     }
 
     private void addToCart(Product product) {

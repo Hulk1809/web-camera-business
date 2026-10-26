@@ -17,7 +17,8 @@ public class CatalogService {
     public List<Product> allProducts() { return products.findAll(); }
     @Transactional(readOnly = true)
     public Product activeProduct(UUID id) {
-        Product product = products.findById(id).orElseThrow(() -> new IllegalArgumentException("Product not found"));
+        Product product = products.findDetailedById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
         if (!product.isActive()) throw new IllegalArgumentException("Product not found");
         return product;
     }
