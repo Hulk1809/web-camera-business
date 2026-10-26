@@ -19,6 +19,8 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
+      - name: Configure Docker API for Testcontainers
+        run: echo 'api.version=1.44' > ~/.docker-java.properties
       - run: mvn --batch-mode verify
 
   compose:
@@ -42,7 +44,9 @@ jobs:
       - name: Verify PostgreSQL health
         run: test "$(docker inspect --format '{{.State.Health.Status}}' progear-ci-postgres-1)" = healthy
       - name: Verify Flyway migration
-        run: test "$(docker compose exec -T postgres psql -U progear -d progear -Atc \"select version || ':' || success from flyway_schema_history where version = '1'\")" = "1:true"
+        run: |
+          result="$(docker compose exec -T postgres psql -U progear -d progear -Atc "select version || ':' || success from flyway_schema_history where version = '1'")"
+          test "$result" = "1:true"
       - name: Verify public health
         run: curl --fail --silent http://localhost:8080/actuator/health | grep --fixed-strings '"status":"UP"'
       - name: Verify anonymous root protection
