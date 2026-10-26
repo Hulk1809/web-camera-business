@@ -5,7 +5,7 @@ import java.time.Duration;
 import java.util.Locale;
 
 public final class QaConfig {
-    public static final String PRODUCTION_URL = "https://progear.74.176.156.158.nip.io";
+    public static final String PRODUCTION_URL = "https://java-aws.54.179.55.104.nip.io";
     private static final URI BASE_URI = cleanUri(env("QA_BASE_URL", PRODUCTION_URL));
 
     private QaConfig() {}

@@ -14,7 +14,7 @@
   - **Thông API Đặt Hàng:** Khi khách ấn Đặt Hàng, gửi `POST /api/orders` tới Backend; đơn hàng ngay lập tức xuất hiện trong Admin Portal để quản trị viên duyệt.
   - **Tra cứu bảo hành Serial:** Gửi `GET /api/warranty/:serialNumber` kiểm tra nguồn gốc chính hãng và hạn bảo hành.
 
-- **Admin Operations (Quản trị):** React + Vite + Tailwind CSS (Port `3001` local / Port `80` K8s)
+- **Admin Operations (Quản trị):** React + Vite + Tailwind CSS (Port `3001` local)
   - Dashboard doanh thu thời gian thực, tổng đơn hàng, cảnh báo tồn kho.
   - **Quản lý thiết bị (Products):** Thêm mới máy ảnh, máy quay, flycam DJI với thông số cảm biến, video codec, dải tương phản, tải trọng gimbal. Nạp dữ liệu chuẩn mẫu (Seed).
   - **Quản lý đơn hàng (Orders) - Thông 100% với Bán Hàng:** Nhận đơn hàng mới từ Storefront tức thì (auto-polling & live API), duyệt trạng thái đơn: *Chờ xác nhận → Đã xác nhận → Đang giao hàng → Hoàn tất*.
@@ -46,7 +46,7 @@ web camera business/
 │
 ├── deploy/
 │   ├── docker-compose.yml     # PostgreSQL 16 & Redis local
-│   └── k8s/                   # Manifests Kubernetes lưu trữ từ hạ tầng cũ
+│   └── aws/                   # Triển khai Java lên AWS EC2
 └── package.json               # Root monorepo scripts
 ```
 

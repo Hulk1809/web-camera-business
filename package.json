@@ -2,7 +2,7 @@
   "name": "camera-business-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "Smart Camera E-Commerce Platform with Admin, Storefront, NestJS API, PostgreSQL & K8s deployment",
+  "description": "Smart Camera E-Commerce Platform with Admin, Storefront, NestJS API, PostgreSQL & AWS deployment",
   "workspaces": [
     "apps/*"
   ],
@@ -22,7 +22,7 @@
   "keywords": [
     "ecommerce",
     "camera",
-    "kubernetes",
+    "aws",
     "nestjs",
     "nextjs",
     "postgresql"

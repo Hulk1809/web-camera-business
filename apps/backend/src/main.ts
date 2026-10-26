@@ -7,7 +7,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? ['https://progear.74.176.156.158.nip.io']
+    ? ['https://java-aws.54.179.55.104.nip.io']
     : ['http://localhost:3000', 'http://localhost:3001'];
   app.enableCors({
     origin: allowedOrigins,

@@ -33,7 +33,7 @@ Thumbs.db
 *.swp
 *.swo
 
-# Docker / K8s local volumes
+# Docker local volumes
 postgres_data/
 redis_data/
 

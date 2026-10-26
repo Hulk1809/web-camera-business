@@ -4,7 +4,6 @@ import {
   Package,
   ShoppingBag,
   ShieldCheck,
-  Server,
   DollarSign,
   TrendingUp,
   AlertTriangle,
@@ -661,7 +660,7 @@ const adminFetch = (input: RequestInfo | URL, init: RequestInit = {}) => {
 };
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'finance' | 'products' | 'categories' | 'warranty' | 'k8s' | 'chat'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'finance' | 'products' | 'categories' | 'warranty' | 'chat'>('dashboard');
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const showToast = (t: ToastMessage) => setToast(t);
 
@@ -2035,21 +2034,6 @@ export function App() {
               )}
             </button>
 
-            <button
-              data-testid="nav-k8s"
-              onClick={() => setActiveTab('k8s')}
-              className={`w-full text-left px-3 py-2 rounded-md text-xs font-semibold flex items-center justify-between transition-colors ${
-                activeTab === 'k8s'
-                  ? 'bg-indigo-50 text-indigo-700 font-bold'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              <div className="flex items-center space-x-2.5">
-                <Server className={`w-4 h-4 ${activeTab === 'k8s' ? 'text-indigo-600' : 'text-slate-400'}`} />
-                <span>Hạ Tầng & Máy Chủ</span>
-              </div>
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            </button>
           </nav>
         </div>
 
@@ -2096,7 +2080,6 @@ export function App() {
               {activeTab === 'categories' && 'Danh Mục & Phân Loại Sản Phẩm'}
               {activeTab === 'warranty' && 'Quản Lý Serial & Bảo Hành Điện Tử (Kho Hàng & Kích Hoạt POS)'}
               {activeTab === 'chat' && 'Trung Tâm Tư Vấn CSKH & Hỗ Trợ Trực Tuyến'}
-              {activeTab === 'k8s' && 'Giám Sát Hạ Tầng & Cụm Máy Chủ Kubernetes'}
             </h1>
             <p className="text-xs text-slate-500">
               {activeTab === 'warranty'
@@ -2894,32 +2877,6 @@ export function App() {
           {/* ----------------- TAB: LIVE ADVISOR CHAT (CSKH TRỰC TUYẾN) ----------------- */}
           {activeTab === 'chat' && <AdminAdvisorChatView />}
 
-          {/* ----------------- TAB: SERVER / K8S ----------------- */}
-          {activeTab === 'k8s' && (
-            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm space-y-4">
-              <div className="flex items-center space-x-2 text-indigo-600 font-bold text-sm">
-                <Server className="w-5 h-5" />
-                <span>Trạng Thái Cụm Máy Chủ Kubernetes (Azure AKS k8s-hulk-lab)</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                  <div className="text-slate-500 font-medium">Cluster Name:</div>
-                  <div className="font-bold text-slate-900 font-mono">k8s-hulk-lab (Azure)</div>
-                  <div className="text-emerald-600 font-semibold">● 100% Sẵn Sàng</div>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                  <div className="text-slate-500 font-medium">PostgreSQL Database:</div>
-                  <div className="font-bold text-slate-900 font-mono">camera-postgres:5432</div>
-                  <div className="text-emerald-600 font-semibold">● Kết nối ổn định</div>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                  <div className="text-slate-500 font-medium">Public Domain / IP:</div>
-                  <div className="font-bold text-slate-900 font-mono">https://progear.74.176.156.158.nip.io</div>
-                  <div className="text-indigo-600 font-semibold">● Port 80 Ingress</div>
-                </div>
-              </div>
-            </div>
-          )}
         </main>
       </div>
 

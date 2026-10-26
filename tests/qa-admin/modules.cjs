@@ -16,7 +16,7 @@ save('Backend admin authentication',login.status===201&&!!token?'PASS':'FAIL',{s
 const product=await api('/products','POST',productBody);
 const order=await api('/orders','POST',{customerName:prefix,customerPhone:'0901234567',shippingAddress:'QA_ADMIN local only',paymentMethod:'COD',items:[{productId:product.data.id,quantity:1}]});
 save('API own fixtures created',product.status===201&&order.status===201?'PASS':'FAIL',{productId:product.data.id,order:order.data});
-for(const module of ['dashboard','categories','orders','finance','warranty','chat','k8s','pos','role']){
+for(const module of ['dashboard','categories','orders','finance','warranty','chat','pos','role']){
  const context=await browser.newContext({viewport:{width:1440,height:1000}}),page=await context.newPage(),errors=[],requests=[];
  page.setDefaultTimeout(6000);page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.url().includes('/api/'))requests.push({method:r.request().method(),url:r.url(),status:r.status()});});
  const id=s=>page.getByTestId(s);

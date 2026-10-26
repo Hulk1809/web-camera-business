@@ -37,7 +37,7 @@ const check = (name, ok, evidence) => { results.push({ name, status: ok ? 'PASS'
   await id('input-admin-password').fill('admin123456'); await id('btn-admin-login-submit').click();
   await expect(id('nav-dashboard')).toBeVisible(); check('admin login UI', true);
   check('backend authentication performed', network.some(n => /auth.*login/.test(n.url)), network);
-  for (const tab of ['dashboard','products','categories','orders','finance','warranty','chat','k8s']) {
+  for (const tab of ['dashboard','products','categories','orders','finance','warranty','chat']) {
    await id(`nav-${tab}`).click(); await page.screenshot({path:`${out}/${tab}.png`,fullPage:true});
    check(`navigation ${tab}`, (await page.locator('main').innerText()).length > 100);
   }

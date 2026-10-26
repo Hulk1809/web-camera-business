@@ -30,7 +30,7 @@
 - Customer auth: đăng ký, logout và đăng nhập lại bằng backend/cookie HttpOnly pass.
 - Chat: khách tạo phiên/gửi tin trên Store, Admin nhận/claim/trả lời qua PostgreSQL pass.
 - Admin CRUD chuyên sâu: đăng nhập thật, sản phẩm/ảnh/thông số, nhập kho, đơn hàng, tài chính, POS, bảo hành, xóa mềm và phân quyền đều pass.
-- API quản trị chưa đăng nhập trả 401; JWT production đã chuyển sang GitHub Secret/Kubernetes Secret và được xoay mới.
+- API quản trị chưa đăng nhập trả 401; JWT production được quản lý bằng secret và đã xoay mới.
 - Production read-only: Store/Admin desktop và mobile render pass; chưa smoke test bản sửa vì chưa deploy.
 
 ### Các lỗi đã sửa trong đợt full test
