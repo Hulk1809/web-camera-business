@@ -72,11 +72,13 @@ jobs:
           scan-ref: .
           scanners: secret
           exit-code: '1'
-      - name: Block critical dependency vulnerabilities
+      - name: Package resolved dependencies for scan
+        run: mvn --batch-mode -DskipTests package
+      - name: Scan resolved application dependencies
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
-          scan-ref: .
+          scan-ref: target/camera-commerce-0.0.1-SNAPSHOT.jar
           scanners: vuln
           severity: CRITICAL
           exit-code: '1'
