@@ -3,5 +3,6 @@
 node_modules/
 target/
 src/main/frontend/generated/
+src/main/bundles/
 *.iml
 .env
