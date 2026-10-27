@@ -9,7 +9,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.http.HttpMethod;
-import jakarta.servlet.DispatcherType;
 
 @Configuration
 class SecurityConfiguration {
@@ -17,7 +16,6 @@ class SecurityConfiguration {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
-                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/products", "/products/{id}").permitAll());
         http.with(VaadinSecurityConfigurer.vaadin(), configurer -> {});
