@@ -70,17 +70,17 @@ class PlatformIntegrationTest {
             """
             INSERT INTO product (category_id, brand_id, name, sku, price, description, visible)
             SELECT c.id, b.id, 'Camera <script>alert(1)</script>', 'CAM-1', 123.45, '<img src=x onerror=alert(1)>', true
-            FROM category c, brand b WHERE c.name = 'Camera' AND b.name = 'Brand'
+            FROM category c, brand b WHERE c.name = 'Camera' AND b.name = 'Brand';
             """,
             """
             INSERT INTO product (category_id, brand_id, name, sku, price, visible)
             SELECT c.id, b.id, 'Secret product', 'HIDDEN', 10, false
-            FROM category c, brand b WHERE c.name = 'Camera' AND b.name = 'Brand'
+            FROM category c, brand b WHERE c.name = 'Camera' AND b.name = 'Brand';
             """,
             """
             INSERT INTO product (category_id, brand_id, name, sku, price, visible)
             SELECT c.id, b.id, 'Hidden parent product', 'PARENT', 10, true
-            FROM category c, brand b WHERE c.name = 'Hidden category' AND b.name = 'Hidden brand'
+            FROM category c, brand b WHERE c.name = 'Hidden category' AND b.name = 'Hidden brand';
             """
     })
     @Sql(statements = "TRUNCATE product, category, brand RESTART IDENTITY", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
