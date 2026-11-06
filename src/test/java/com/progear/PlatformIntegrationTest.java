@@ -79,8 +79,13 @@ class PlatformIntegrationTest {
             """,
             """
             INSERT INTO product (category_id, brand_id, name, sku, price, visible)
-            SELECT c.id, b.id, 'Hidden parent product', 'PARENT', 10, true
-            FROM category c, brand b WHERE c.name = 'Hidden category' AND b.name = 'Hidden brand';
+            SELECT c.id, b.id, 'Hidden category product', 'HIDDEN-CAT', 10, true
+            FROM category c, brand b WHERE c.name = 'Hidden category' AND b.name = 'Brand';
+            """,
+            """
+            INSERT INTO product (category_id, brand_id, name, sku, price, visible)
+            SELECT c.id, b.id, 'Hidden brand product', 'HIDDEN-BRAND', 10, true
+            FROM category c, brand b WHERE c.name = 'Camera' AND b.name = 'Hidden brand';
             """
     })
     @Sql(statements = "TRUNCATE product, category, brand RESTART IDENTITY", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
@@ -90,20 +95,26 @@ class PlatformIntegrationTest {
         var list = rest.getForEntity("/products", String.class);
         assertThat(list.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(list.getBody()).contains("123.45 VND", "&lt;script&gt;")
-                .doesNotContain("Secret product", "Hidden parent product", "<script>");
+                .doesNotContain("Secret product", "Hidden category product", "Hidden brand product", "HIDDEN", "HIDDEN-CAT", "HIDDEN-BRAND", "<script>");
         long id = jdbcClient.sql("SELECT id FROM product WHERE sku = 'CAM-1'").query(Long.class).single();
         var detail = rest.getForEntity("/products/" + id, String.class);
         assertThat(detail.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(detail.getBody()).contains("CAM-1", "123.45 VND", "&lt;img", "Camera", "Brand")
                 .doesNotContain("<img", "<script>");
         for (long hiddenId : jdbcClient.sql("SELECT id FROM product WHERE sku <> 'CAM-1'").query(Long.class).list()) {
-            assertThat(rest.getForEntity("/products/" + hiddenId, String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+            var hiddenDetail = rest.getForEntity("/products/" + hiddenId, String.class);
+            assertThat(hiddenDetail.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(hiddenDetail.getBody()).doesNotContain("Secret product", "Hidden category product", "Hidden brand product", "HIDDEN", "HIDDEN-CAT", "HIDDEN-BRAND");
         }
         assertThat(rest.getForEntity("/products/999999", String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(rest.getForEntity("/products/not-a-number", String.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(rest.getForEntity("/products?page=-1", String.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(rest.getForEntity("/products?page=1", String.class).getBody()).contains("Chưa có sản phẩm");
-        assertThat(rest.postForEntity("/products", "", String.class).getStatusCode().is4xxClientError()).isTrue();
+        var errorResponse = rest.getForEntity("/error", String.class);
+        assertThat(errorResponse.getStatusCode().is3xxRedirection()
+                || errorResponse.getStatusCode() == HttpStatus.UNAUTHORIZED
+                || errorResponse.getStatusCode() == HttpStatus.FORBIDDEN).isTrue();
+        assertThat(rest.postForEntity("/products", "", String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThatThrownBy(() -> jdbcClient.sql("UPDATE product SET price = -1 WHERE id = :id").param("id", id).update())
                 .isInstanceOf(DataIntegrityViolationException.class);
         assertThatThrownBy(() -> jdbcClient.sql("UPDATE product SET sku = 'CAM-1' WHERE sku = 'HIDDEN'").update())
