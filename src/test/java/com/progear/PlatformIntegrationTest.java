@@ -44,6 +44,9 @@ class PlatformIntegrationTest {
                 .single();
 
         assertThat(success).isTrue();
+        assertThat(jdbcClient.sql("SELECT success FROM flyway_schema_history WHERE version = '3'")
+                .query(Boolean.class)
+                .single()).isTrue();
     }
 
     @Test
@@ -56,7 +59,8 @@ class PlatformIntegrationTest {
 
     @Test
     void anonymousRootIsProtected() {
-        ResponseEntity<String> response = rest.getForEntity("/", String.class);
+        ResponseEntity<String> response = rest.withRedirects(org.springframework.boot.http.client.HttpRedirects.DONT_FOLLOW)
+                .getForEntity("/", String.class);
 
         assertThat(response.getStatusCode().is3xxRedirection()
                 || response.getStatusCode() == HttpStatus.UNAUTHORIZED
@@ -65,6 +69,7 @@ class PlatformIntegrationTest {
 
     @Test
     @Sql(statements = {
+            "TRUNCATE product, category, brand RESTART IDENTITY",
             "INSERT INTO category (name, visible) VALUES ('Camera', true), ('Hidden category', false)",
             "INSERT INTO brand (name, visible) VALUES ('Brand', true), ('Hidden brand', false)",
             """
