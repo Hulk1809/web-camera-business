@@ -54,7 +54,7 @@ class PlatformIntegrationTest {
 
     @Test
     void contextLoadsAndFlywayVersionOneSucceeded() {
-        for (String version : List.of("1", "2", "3", "4")) {
+        for (String version : List.of("1", "2", "3", "4", "5")) {
             Boolean success = jdbcClient.sql("SELECT success FROM flyway_schema_history WHERE version = :v")
                     .param("v", version)
                     .query(Boolean.class)
@@ -110,7 +110,7 @@ class PlatformIntegrationTest {
             """
     })
     @Sql(statements = "TRUNCATE product, category, brand RESTART IDENTITY CASCADE", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-    @Sql(scripts = "/db/migration/V3__initial_catalog_items.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+    @Sql(scripts = {"/db/migration/V3__initial_catalog_items.sql", "/db/migration/V5__shelf_and_checkout_upgrade.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     void catalogIsPublicAndDoesNotLeakHiddenProductsOrRenderHtml() {
         assertThat(jdbcClient.sql("SELECT success FROM flyway_schema_history WHERE version = '2'")
                 .query(Boolean.class).single()).isTrue();
@@ -458,6 +458,102 @@ class PlatformIntegrationTest {
         var warrantyPage = rest.getForEntity("/warranty?serial=SN-POS-RF50-001", String.class);
         assertThat(warrantyPage.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(warrantyPage.getBody()).contains("SN-POS-RF50-001", "CANON-RF-50-12", "SOLD", LocalDate.now().plusDays(365).toString());
+    }
+
+    @Test
+    void shelfManagementGuestCartVietQrAndVietnameseErrorPage() {
+        String adminCookie = login("admin@progear.vn", "Admin@123456");
+        long catId = jdbcClient.sql("INSERT INTO category (name, visible) VALUES ('Shelf Category', true) RETURNING id").query(Long.class).single();
+        long brandId = jdbcClient.sql("INSERT INTO brand (name, visible) VALUES ('Shelf Brand', true) RETURNING id").query(Long.class).single();
+
+        // 1. Admin creates product on shelf with photo URL
+        var prodForm = new LinkedMultiValueMap<String, String>();
+        prodForm.add("categoryId", String.valueOf(catId));
+        prodForm.add("brandId", String.valueOf(brandId));
+        prodForm.add("name", "Leica Q3 Compact Full-Frame");
+        prodForm.add("sku", "LEICA-Q3-60MP");
+        prodForm.add("price", "165000000.00");
+        prodForm.add("stock", "6");
+        prodForm.add("imageUrl", "https://images.unsplash.com/photo-1516035069371-29a1b244cc32");
+        prodForm.add("description", "Summilux 28mm f/1.7 ASPH, 60MP BSI CMOS");
+        prodForm.add("visible", "true");
+        assertThat(postWithCsrf("/admin/products", adminCookie, prodForm).getStatusCode()).isEqualTo(HttpStatus.FOUND);
+
+        long prodId = jdbcClient.sql("SELECT id FROM product WHERE sku = 'LEICA-Q3-60MP'").query(Long.class).single();
+
+        // Verify edit prefill on /admin?editProductId=
+        var editView = getWithCookie("/admin?editProductId=" + prodId, adminCookie);
+        assertThat(editView.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(editView.getBody()).contains("LEICA-Q3-60MP", "165000000.00", "https://images.unsplash.com/photo-1516035069371-29a1b244cc32");
+
+        // 2. 1-click toggle off shelf (Hạ kệ) -> hidden from storefront
+        assertThat(postWithCsrf("/admin/products/" + prodId + "/shelf", adminCookie, new LinkedMultiValueMap<>()).getStatusCode())
+                .isEqualTo(HttpStatus.FOUND);
+        assertThat(rest.getForEntity("/products?q=LEICA-Q3-60MP", String.class).getBody())
+                .contains("Chưa có sản phẩm.")
+                .doesNotContain("Leica Q3 Compact Full-Frame");
+
+        // 1-click toggle back on shelf (Lên kệ) -> visible on storefront with photo and sort/inStock filter
+        assertThat(postWithCsrf("/admin/products/" + prodId + "/shelf", adminCookie, new LinkedMultiValueMap<>()).getStatusCode())
+                .isEqualTo(HttpStatus.FOUND);
+        var sortedList = rest.getForEntity("/products?q=LEICA-Q3-60MP&sort=price_desc&inStock=true", String.class);
+        assertThat(sortedList.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(sortedList.getBody()).contains("LEICA-Q3-60MP", "https://images.unsplash.com/photo-1516035069371-29a1b244cc32");
+
+        // 3. Anonymous guest can add to cart, update quantity, and see cart badge
+        var initGuest = getWithCookie("/login", null);
+        extractCsrf(initGuest.getBody());
+        String guestCookie = extractSessionCookie(initGuest.getHeaders(), null);
+
+        var guestAdd = new LinkedMultiValueMap<String, String>();
+        guestAdd.add("productId", String.valueOf(prodId));
+        guestAdd.add("quantity", "1");
+        assertThat(postWithCsrf("/cart/add", guestCookie, guestAdd).getStatusCode()).isEqualTo(HttpStatus.FOUND);
+
+        var guestUpdate = new LinkedMultiValueMap<String, String>();
+        guestUpdate.add("productId", String.valueOf(prodId));
+        guestUpdate.add("quantity", "2");
+        assertThat(postWithCsrf("/cart/update", guestCookie, guestUpdate).getStatusCode()).isEqualTo(HttpStatus.FOUND);
+
+        var guestCartPage = getWithCookie("/cart", guestCookie);
+        assertThat(guestCartPage.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(guestCartPage.getBody()).contains("Giỏ hàng (2)", "LEICA-Q3-60MP", "330000000.00 VND");
+
+        // 4. Customer checkout with recipientPhone, shippingNote, and BANK_TRANSFER renders VietQR
+        String customerCookie = login("customer@progear.vn", "Customer@123456");
+        var checkoutForm = new LinkedMultiValueMap<String, String>();
+        checkoutForm.add("idempotencyKey", "VIETQR-" + UUID.randomUUID());
+        checkoutForm.add("paymentMethod", "BANK_TRANSFER");
+        checkoutForm.add("recipientPhone", "0988777666");
+        checkoutForm.add("shippingAddress", "200 Pasteur, Q3, TP.HCM");
+        checkoutForm.add("shippingNote", "Giao buổi sáng, gọi trước 15 phút");
+        checkoutForm.add("productId", String.valueOf(prodId));
+        checkoutForm.add("quantity", "1");
+        var orderRedirect = postWithCsrf("/checkout", customerCookie, checkoutForm);
+        assertThat(orderRedirect.getStatusCode()).isEqualTo(HttpStatus.FOUND);
+
+        var orderDetail = getWithCookie(orderRedirect.getHeaders().getLocation().getPath(), customerCookie);
+        assertThat(orderDetail.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(orderDetail.getBody()).contains(
+                "0988777666",
+                "Giao buổi sáng, gọi trước 15 phút",
+                "Hướng dẫn Chuyển khoản Ngân hàng (VietQR)",
+                "img.vietqr.io",
+                "PROGEAR DH#"
+        );
+
+        // 5. Conflict/Error returns styled Vietnamese error page instead of Whitelabel Error Page
+        String staffCookie = login("staff@progear.vn", "Staff@123456");
+        var badPos = new LinkedMultiValueMap<String, String>();
+        badPos.add("sku", "LEICA-Q3-60MP");
+        badPos.add("quantity", "1");
+        badPos.add("serialNumber", "SN-DOES-NOT-EXIST-999");
+        badPos.add("paymentMethod", "CASH");
+        badPos.add("idempotencyKey", "BAD-POS-" + UUID.randomUUID());
+        var badPosResp = postWithCsrf("/pos/orders", staffCookie, badPos);
+        assertThat(badPosResp.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(badPosResp.getBody()).contains("Serial không hợp lệ hoặc đã bán")
+                .doesNotContain("Whitelabel Error Page");
     }
 
     private String login(String email, String password) {

@@ -50,11 +50,11 @@ public class SecurityConfiguration {
         http.authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers(HttpMethod.GET, "/", "/products", "/products/{id}", "/warranty", "/login", "/register").permitAll()
-                .requestMatchers(HttpMethod.POST, "/register").permitAll()
+                .requestMatchers(HttpMethod.GET, "/", "/products", "/products/{id}", "/warranty", "/login", "/register", "/cart").permitAll()
+                .requestMatchers(HttpMethod.POST, "/register", "/cart/**").permitAll()
                 .requestMatchers("/pos", "/pos/**").hasAnyAuthority("ROLE_STAFF", "ROLE_ADMIN")
                 .requestMatchers("/admin", "/admin/**").hasAuthority("ROLE_ADMIN")
-                .requestMatchers("/cart", "/cart/**", "/checkout", "/orders", "/orders/**", "/profile", "/profile/**").authenticated()
+                .requestMatchers("/checkout", "/orders", "/orders/**", "/profile", "/profile/**").authenticated()
                 .anyRequest().authenticated())
             .formLogin(form -> form
                 .loginPage("/login")
