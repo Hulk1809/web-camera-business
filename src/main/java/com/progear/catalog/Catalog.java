@@ -1,7 +1,11 @@
 package com.progear.catalog;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -11,7 +15,9 @@ import org.springframework.stereotype.Repository;
 public class Catalog {
     private static final String SELECT = """
             SELECT p.id, p.name, p.sku, p.price, p.description,
-                   c.name AS category, b.name AS brand
+                   c.name AS category, b.name AS brand,
+                   p.stock, p.image_url AS imageUrl,
+                   p.category_id AS categoryId, p.brand_id AS brandId
             FROM product p
             JOIN category c ON c.id = p.category_id
             JOIN brand b ON b.id = p.brand_id
@@ -24,14 +30,71 @@ public class Catalog {
     }
 
     public record Product(long id, String name, String sku, BigDecimal price,
-                          String description, String category, String brand) {}
+                          String description, String category, String brand,
+                          int stock, String imageUrl, long categoryId, long brandId) {}
+
+    public record Option(long id, String name) {}
+
+    public record WarrantyInfo(String serialNumber, String status, LocalDate warrantyUntil,
+                               String sku, String productName, String brand) {}
 
     public List<Product> list(int page) {
-        return jdbc.sql(SELECT + " ORDER BY p.id LIMIT 51 OFFSET :offset")
-                .param("offset", (long) page * 50).query(Product.class).list();
+        return list(page, null, null, null);
+    }
+
+    public List<Product> list(int page, String q, Long categoryId, Long brandId) {
+        var sql = new StringBuilder(SELECT);
+        Map<String, Object> params = new HashMap<>();
+        if (q != null && !q.isBlank()) {
+            sql.append(" AND (LOWER(p.name) LIKE :q OR LOWER(p.sku) LIKE :q OR LOWER(p.description) LIKE :q)");
+            params.put("q", "%" + q.trim().toLowerCase() + "%");
+        }
+        if (categoryId != null && categoryId > 0) {
+            sql.append(" AND p.category_id = :categoryId");
+            params.put("categoryId", categoryId);
+        }
+        if (brandId != null && brandId > 0) {
+            sql.append(" AND p.brand_id = :brandId");
+            params.put("brandId", brandId);
+        }
+        sql.append(" ORDER BY p.id LIMIT 51 OFFSET :offset");
+        params.put("offset", (long) page * 50);
+
+        var stmt = jdbc.sql(sql.toString());
+        for (var entry : params.entrySet()) {
+            stmt = stmt.param(entry.getKey(), entry.getValue());
+        }
+        return stmt.query(Product.class).list();
     }
 
     public Optional<Product> find(long id) {
         return jdbc.sql(SELECT + " AND p.id = :id").param("id", id).query(Product.class).optional();
+    }
+
+    public List<Option> categories() {
+        return jdbc.sql("SELECT id, name FROM category WHERE visible ORDER BY name")
+                .query(Option.class).list();
+    }
+
+    public List<Option> brands() {
+        return jdbc.sql("SELECT id, name FROM brand WHERE visible ORDER BY name")
+                .query(Option.class).list();
+    }
+
+    public Optional<WarrantyInfo> findWarranty(String serial) {
+        if (serial == null || serial.isBlank()) {
+            return Optional.empty();
+        }
+        return jdbc.sql("""
+                        SELECT s.serial_number AS serialNumber, s.status, s.warranty_until AS warrantyUntil,
+                               p.sku, p.name AS productName, b.name AS brand
+                        FROM serial_unit s
+                        JOIN product p ON p.id = s.product_id
+                        JOIN brand b ON b.id = p.brand_id
+                        WHERE UPPER(s.serial_number) = UPPER(btrim(:serial))
+                        """)
+                .param("serial", serial)
+                .query(WarrantyInfo.class)
+                .optional();
     }
 }
