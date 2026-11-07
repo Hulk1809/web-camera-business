@@ -637,6 +637,9 @@ public class CommerceService {
                             .param("pid", item.getKey())
                             .update();
                 }
+                jdbc.sql("UPDATE serial_unit SET status = 'IN_STOCK', order_id = NULL, warranty_until = NULL WHERE order_id = :oid")
+                        .param("oid", orderId)
+                        .update();
             } else {
                 jdbc.sql("UPDATE customer_order SET status = 'CANCELLED', payment_status = :pstatus WHERE id = :id")
                         .param("pstatus", paymentStatus)
@@ -646,7 +649,6 @@ public class CommerceService {
         } else {
             jdbc.sql("UPDATE customer_order SET status = :status, payment_status = :pstatus WHERE id = :id")
                     .param("status", status)
-                    .param("paymentStatus", paymentStatus)
                     .param("pstatus", paymentStatus)
                     .param("id", orderId)
                     .update();
@@ -659,6 +661,10 @@ public class CommerceService {
     public void adminUpdateUserRole(String actor, long userId, String role) {
         if (role == null || !ROLES.contains(role)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quyền không hợp lệ");
+        }
+        AppUser self = requireUser(actor);
+        if (self.id() == userId && !"ROLE_ADMIN".equals(role)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không thể tự hạ quyền Quản trị viên của chính mình");
         }
         jdbc.sql("UPDATE app_user SET role = :role WHERE id = :id")
                 .param("role", role)
