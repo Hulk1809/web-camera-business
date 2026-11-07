@@ -7,12 +7,14 @@ import java.util.Locale;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpSession;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,8 +23,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.HtmlUtils;
+import org.springframework.web.util.UriUtils;
 
 @Controller
 @ControllerAdvice
@@ -55,7 +59,7 @@ public class CatalogController {
             .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
             .shelf-thumb { width:48px; height:48px; border-radius:0.375rem; object-fit:cover; background:#0f172a; display:inline-flex; align-items:center; justify-content:center; color:#38bdf8; font-size:0.7rem; overflow:hidden; }
             .badges { display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem; }
-            .badge { font-size:0.75rem; font-weight:600; background:var(--badge-bg); color:var(--muted); padding:0.2rem 0.6rem; border-radius:999px; }
+            .badge { font-size:0.75rem; font-weight:600; background:var(--badge-bg); color:var(--muted); padding:0.2rem 0.6rem; border-radius:999px; white-space:nowrap; display:inline-block; }
             .badge-brand { background:#e0f2fe; color:#0369a1; }
             .badge-stock { background:#dcfce7; color:#15803d; }
             .badge-out { background:#fee2e2; color:#b91c1c; }
@@ -67,7 +71,7 @@ public class CatalogController {
             .price-box { border-top:1px solid var(--border); padding-top:0.75rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; }
             .price-fmt { font-size:1.2rem; font-weight:700; color:var(--primary-dark); }
             .price-raw { font-size:0.8rem; color:var(--muted); }
-            .btn { display:inline-block; background:var(--primary); color:#fff; text-decoration:none; font-weight:600; padding:0.5rem 1rem; border-radius:0.5rem; font-size:0.9rem; border:none; cursor:pointer; }
+            .btn { display:inline-block; background:var(--primary); color:#fff; text-decoration:none; font-weight:600; padding:0.5rem 1rem; border-radius:0.5rem; font-size:0.9rem; border:none; cursor:pointer; white-space:nowrap; }
             .btn:hover, .btn:focus-visible { background:var(--primary-dark); outline:2px solid var(--primary-dark); outline-offset:2px; }
             .btn-secondary { background:#334155; }
             .btn-danger { background:var(--danger); }
@@ -116,11 +120,25 @@ public class CatalogController {
         String reason = ex.getReason() != null && !ex.getReason().isBlank()
                 ? ex.getReason()
                 : "Yêu cầu không hợp lệ hoặc không tìm thấy dữ liệu.";
+        return renderError(ex.getStatusCode(), reason, auth, csrf);
+    }
+
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class, IllegalArgumentException.class})
+    public ResponseEntity<String> handleBadRequest(Exception ex, Authentication auth, CsrfToken csrf) {
+        return renderError(HttpStatus.BAD_REQUEST, "Tham số yêu cầu không hợp lệ.", auth, csrf);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<String> handleDataIntegrity(DataIntegrityViolationException ex, Authentication auth, CsrfToken csrf) {
+        return renderError(HttpStatus.CONFLICT, "Dữ liệu bị trùng lặp (SKU, Serial hoặc tên đã tồn tại) hoặc vi phạm ràng buộc hệ thống.", auth, csrf);
+    }
+
+    private static ResponseEntity<String> renderError(org.springframework.http.HttpStatusCode status, String reason, Authentication auth, CsrfToken csrf) {
         String html = document("Thông báo — ProGear Camera",
                 "<div class=\"panel\"><div class=\"alert alert-error\">" + escape(reason) + "</div>"
                 + "<p><a class=\"btn btn-secondary\" href=\"/products\">&larr; Quay lại trang sản phẩm</a></p></div>",
                 auth, csrf);
-        return ResponseEntity.status(ex.getStatusCode())
+        return ResponseEntity.status(status)
                 .contentType(MediaType.parseMediaType("text/html;charset=UTF-8"))
                 .body(html);
     }
@@ -214,9 +232,16 @@ public class CatalogController {
             products.stream().limit(50).forEach(p -> appendProductCard(body, p, csrf));
             body.append("</ul>");
         }
+        var filterTail = new StringBuilder();
+        if (q != null && !q.isBlank()) filterTail.append("&q=").append(escape(UriUtils.encodeQueryParam(q, java.nio.charset.StandardCharsets.UTF_8)));
+        if (categoryId != null && categoryId > 0) filterTail.append("&categoryId=").append(categoryId);
+        if (brandId != null && brandId > 0) filterTail.append("&brandId=").append(brandId);
+        if (sort != null && !sort.isBlank()) filterTail.append("&sort=").append(escape(UriUtils.encodeQueryParam(sort, java.nio.charset.StandardCharsets.UTF_8)));
+        if (inStock) filterTail.append("&inStock=true");
+
         body.append("<nav class=\"pagination\" aria-label=\"Phân trang\">");
-        if (page > 0) body.append("<a class=\"btn\" href=\"/products?page=").append(page - 1).append("\">Trang trước</a> ");
-        if (products.size() > 50) body.append("<a class=\"btn\" href=\"/products?page=").append((long) page + 1).append("\">Trang sau</a>");
+        if (page > 0) body.append("<a class=\"btn\" href=\"/products?page=").append(page - 1).append(filterTail).append("\">Trang trước</a> ");
+        if (products.size() > 50) body.append("<a class=\"btn\" href=\"/products?page=").append((long) page + 1).append(filterTail).append("\">Trang sau</a>");
         body.append("</nav>");
         return document("Sản phẩm — ProGear Camera", body.toString(), auth, csrf);
     }
@@ -246,8 +271,9 @@ public class CatalogController {
                 .append(csrfInput(csrf))
                 .append("<input type=\"hidden\" name=\"productId\" value=\"").append(p.id()).append("\">")
                 .append("<label for=\"qty\">Số lượng:</label>")
-                .append("<input id=\"qty\" name=\"quantity\" type=\"number\" min=\"1\" max=\"").append(Math.max(1, p.stock())).append("\" value=\"1\" style=\"width:90px\">")
-                .append("<button class=\"btn\" type=\"submit\">Thêm vào giỏ hàng</button>")
+                .append("<input id=\"qty\" name=\"quantity\" type=\"number\" min=\"1\" max=\"").append(Math.max(1, p.stock())).append("\" value=\"1\" style=\"width:90px\"").append(p.stock() > 0 ? "" : " disabled").append(">")
+                .append("<button class=\"btn\" type=\"submit\"").append(p.stock() > 0 ? "" : " disabled style=\"opacity:0.5;cursor:not-allowed\"").append(">")
+                .append(p.stock() > 0 ? "Thêm vào giỏ hàng" : "Tạm hết hàng").append("</button>")
                 .append("</form></article>");
 
         var related = catalog.related(p.id(), p.categoryId());
@@ -282,7 +308,8 @@ public class CatalogController {
                 .append(csrfInput(csrf))
                 .append("<input type=\"hidden\" name=\"productId\" value=\"").append(p.id()).append("\">")
                 .append("<input type=\"hidden\" name=\"quantity\" value=\"1\">")
-                .append("<button class=\"btn\" type=\"submit\">Thêm vào giỏ</button></form>")
+                .append("<button class=\"btn\" type=\"submit\"").append(p.stock() > 0 ? "" : " disabled style=\"opacity:0.5;cursor:not-allowed\"").append(">")
+                .append(p.stock() > 0 ? "Thêm vào giỏ" : "Hết hàng").append("</button></form>")
                 .append("</div></div></li>");
     }
 

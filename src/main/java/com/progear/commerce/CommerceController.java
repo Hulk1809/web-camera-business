@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
@@ -175,8 +176,14 @@ public class CommerceController {
                                           @RequestParam(defaultValue = "1") int quantity,
                                           HttpSession session) {
         if (quantity > 0) {
+            var prod = service.findVisibleProduct(productId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sản phẩm không tồn tại hoặc đã ngừng kinh doanh"));
+            if (prod.stock() <= 0) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Sản phẩm tạm hết hàng");
+            }
             Map<Long, Integer> cart = getCart(session);
-            cart.merge(productId, quantity, Integer::sum);
+            int nextQty = Math.min(prod.stock(), cart.getOrDefault(productId, 0) + quantity);
+            cart.put(productId, nextQty);
         }
         return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("/cart")).build();
     }
@@ -189,7 +196,12 @@ public class CommerceController {
         if (quantity <= 0) {
             cart.remove(productId);
         } else {
-            cart.put(productId, quantity);
+            var prodOpt = service.findVisibleProduct(productId);
+            if (prodOpt.isEmpty() || prodOpt.get().stock() <= 0) {
+                cart.remove(productId);
+            } else {
+                cart.put(productId, Math.min(prodOpt.get().stock(), quantity));
+            }
         }
         return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("/cart")).build();
     }
@@ -209,6 +221,7 @@ public class CommerceController {
         String defaultPhone = userOpt.map(CommerceService.AppUser::phone).orElse("");
 
         var body = new StringBuilder("<div class=\"panel\"><h1>Giỏ hàng của bạn</h1>");
+        cart.entrySet().removeIf(e -> e.getValue() == null || e.getValue() <= 0 || service.findVisibleProduct(e.getKey()).isEmpty());
         if (cart.isEmpty()) {
             body.append("<div class=\"empty\"><p>Giỏ hàng đang trống.</p><a class=\"btn\" href=\"/products\">Tiếp tục mua sắm</a></div></div>");
             return document("Giỏ hàng — ProGear Camera", body.toString(), auth, csrf);
@@ -372,6 +385,25 @@ public class CommerceController {
                 .append(csrfInput(csrf))
                 .append("<button class=\"btn btn-danger\" type=\"submit\">Hủy đơn hàng &amp; Hoàn kho</button></form>");
         }
+        if (auth != null && auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
+            body.append("<div style=\"margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border)\">")
+                .append("<h3>Quản trị cập nhật trạng thái đơn</h3>")
+                .append("<form method=\"post\" action=\"/admin/orders/").append(o.id()).append("/status\" style=\"display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center\">")
+                .append(csrfInput(csrf))
+                .append("<input type=\"hidden\" name=\"returnToOrder\" value=\"true\">")
+                .append("<select name=\"status\" aria-label=\"Trạng thái đơn\">")
+                .append("<option value=\"PENDING_PAYMENT\"").append("PENDING_PAYMENT".equals(o.status()) ? " selected" : "").append(">PENDING_PAYMENT</option>")
+                .append("<option value=\"CONFIRMED\"").append("CONFIRMED".equals(o.status()) ? " selected" : "").append(">CONFIRMED</option>")
+                .append("<option value=\"COMPLETED\"").append("COMPLETED".equals(o.status()) ? " selected" : "").append(">COMPLETED</option>")
+                .append("<option value=\"CANCELLED\"").append("CANCELLED".equals(o.status()) ? " selected" : "").append(">CANCELLED</option>")
+                .append("</select>")
+                .append("<select name=\"paymentStatus\" aria-label=\"Trạng thái thanh toán\">")
+                .append("<option value=\"PENDING\"").append("PENDING".equals(o.paymentStatus()) ? " selected" : "").append(">PENDING</option>")
+                .append("<option value=\"PAID\"").append("PAID".equals(o.paymentStatus()) ? " selected" : "").append(">PAID</option>")
+                .append("<option value=\"REFUNDED\"").append("REFUNDED".equals(o.paymentStatus()) ? " selected" : "").append(">REFUNDED</option>")
+                .append("</select>")
+                .append("<button class=\"btn btn-sm\" type=\"submit\">Lưu trạng thái đơn</button></form></div>");
+        }
         body.append("</div>");
         return document("Đơn hàng #" + o.id() + " — ProGear Camera", body.toString(), auth, csrf);
     }
@@ -385,6 +417,21 @@ public class CommerceController {
     @GetMapping(value = "/pos", produces = MediaType.TEXT_HTML_VALUE)
     public String posPage(Authentication auth, CsrfToken csrf) {
         var serials = service.listSerials();
+        var products = service.listAllProducts();
+        var skuOptions = new StringBuilder();
+        for (var p : products) {
+            skuOptions.append("<option value=\"").append(escape(p.sku())).append("\">")
+                    .append(escape(p.name())).append(" — Tồn: ").append(p.stock()).append(" — ").append(formatVnd(p.price()))
+                    .append("</option>");
+        }
+        var snOptions = new StringBuilder();
+        for (var s : serials) {
+            if ("IN_STOCK".equals(s.status())) {
+                snOptions.append("<option value=\"").append(escape(s.serialNumber())).append("\">")
+                        .append(escape(s.sku())).append(" — ").append(escape(s.productName()))
+                        .append("</option>");
+            }
+        }
         var body = new StringBuilder("""
                 <section class="hero">
                   <h1>Quầy POS Bán Hàng Trực Tiếp</h1>
@@ -397,7 +444,8 @@ public class CommerceController {
                     <input type="hidden" name="idempotencyKey" value="%s">
                     <div class="filter-group">
                       <label for="sku">Mã SKU sản phẩm</label>
-                      <input id="sku" name="sku" type="text" required placeholder="VD: SONY-A7M4-BODY">
+                      <input id="sku" name="sku" list="pos-sku-list" type="text" required placeholder="Chọn hoặc nhập SKU (VD: SONY-A7M4-BODY)">
+                      <datalist id="pos-sku-list">%s</datalist>
                     </div>
                     <div class="filter-group">
                       <label for="quantity">Số lượng</label>
@@ -405,7 +453,8 @@ public class CommerceController {
                     </div>
                     <div class="filter-group">
                       <label for="serialNumber">Số Serial xuất kho (tùy chọn)</label>
-                      <input id="serialNumber" name="serialNumber" type="text" placeholder="VD: SN-SONY-A7M4-001">
+                      <input id="serialNumber" name="serialNumber" list="pos-sn-list" type="text" placeholder="Chọn hoặc nhập Serial sẵn kho">
+                      <datalist id="pos-sn-list">%s</datalist>
                     </div>
                     <div class="filter-group">
                       <label for="paymentMethod">Phương thức thanh toán</label>
@@ -425,7 +474,7 @@ public class CommerceController {
                 <div class="panel">
                   <h2>Danh sách Serial trong kho / đã bán</h2>
                   <table><thead><tr><th>Serial</th><th>SKU</th><th>Sản phẩm</th><th>Trạng thái</th><th>Hạn bảo hành</th></tr></thead><tbody>
-                """.formatted(csrfInput(csrf), UUID.randomUUID()));
+                """.formatted(csrfInput(csrf), UUID.randomUUID(), skuOptions, snOptions));
         for (var s : serials) {
             body.append("<tr><td><code>").append(escape(s.serialNumber())).append("</code></td>")
                 .append("<td>").append(escape(s.sku())).append("</td>")
@@ -556,14 +605,16 @@ public class CommerceController {
         } else {
             body.append("<table><thead><tr><th>Đơn</th><th>Khách</th><th>Tổng tiền</th><th>TT</th><th>Duyệt nhanh</th></tr></thead><tbody>");
             for (var po : dash.pendingOrders()) {
+                String nextStatus = "CONFIRMED".equals(po.status()) ? "COMPLETED" : "CONFIRMED";
+                String btnLabel = "CONFIRMED".equals(po.status()) ? "Hoàn tất &amp; Đã thu" : "Xác nhận Đã thu tiền";
                 body.append("<tr><td><a href=\"/orders/").append(po.id()).append("\">#").append(po.id()).append("</a></td>")
-                    .append("<td>").append(escape(po.userEmail())).append("</td><td>").append( po.totalAmount().toPlainString()).append(" VND</td>")
+                    .append("<td>").append(escape(po.userEmail())).append("</td><td>").append(po.totalAmount().toPlainString()).append(" VND</td>")
                     .append("<td>").append(escape(po.paymentMethod())).append(" (").append(escape(po.status())).append(")</td>")
                     .append("<td><form method=\"post\" action=\"/admin/orders/").append(po.id()).append("/status\" style=\"margin:0\">")
                     .append(csrfInput(csrf))
-                    .append("<input type=\"hidden\" name=\"status\" value=\"CONFIRMED\">")
+                    .append("<input type=\"hidden\" name=\"status\" value=\"").append(nextStatus).append("\">")
                     .append("<input type=\"hidden\" name=\"paymentStatus\" value=\"PAID\">")
-                    .append("<button class=\"btn btn-sm\" type=\"submit\">Xác nhận Đã thu tiền</button></form></td></tr>");
+                    .append("<button class=\"btn btn-sm\" type=\"submit\">").append(btnLabel).append("</button></form></td></tr>");
             }
             body.append("</tbody></table>");
         }
@@ -584,7 +635,11 @@ public class CommerceController {
                 .append(escape(u.role())).append("</span></td><td>")
                 .append("<form method=\"post\" action=\"/admin/users/").append(u.id()).append("/role\" style=\"display:flex;gap:0.4rem;margin:0\">")
                 .append(csrfInput(csrf))
-                .append("<select name=\"role\"><option value=\"ROLE_CUSTOMER\">ROLE_CUSTOMER</option><option value=\"ROLE_STAFF\">ROLE_STAFF</option><option value=\"ROLE_ADMIN\">ROLE_ADMIN</option></select>")
+                .append("<select name=\"role\" aria-label=\"Quyền cho ").append(escape(u.email())).append("\">")
+                .append("<option value=\"ROLE_CUSTOMER\"").append("ROLE_CUSTOMER".equals(u.role()) ? " selected" : "").append(">ROLE_CUSTOMER</option>")
+                .append("<option value=\"ROLE_STAFF\"").append("ROLE_STAFF".equals(u.role()) ? " selected" : "").append(">ROLE_STAFF</option>")
+                .append("<option value=\"ROLE_ADMIN\"").append("ROLE_ADMIN".equals(u.role()) ? " selected" : "").append(">ROLE_ADMIN</option>")
+                .append("</select>")
                 .append("<button class=\"btn btn-secondary btn-sm\" type=\"submit\">Cập nhật</button></form></td></tr>");
         }
         body.append("</tbody></table></div>");
@@ -807,9 +862,11 @@ public class CommerceController {
     public ResponseEntity<Void> updateOrderStatus(@PathVariable long id,
                                                   @RequestParam String status,
                                                   @RequestParam(defaultValue = "PAID") String paymentStatus,
+                                                  @RequestParam(defaultValue = "false") boolean returnToOrder,
                                                   Authentication auth) {
         service.adminUpdateOrder(auth.getName(), id, status, paymentStatus);
-        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("/admin")).build();
+        String target = returnToOrder ? "/orders/" + id : "/admin";
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(target)).build();
     }
 
     @PostMapping("/admin/users/{id}/role")

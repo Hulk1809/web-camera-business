@@ -554,6 +554,29 @@ class PlatformIntegrationTest {
         assertThat(badPosResp.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(badPosResp.getBody()).contains("Serial không hợp lệ hoặc đã bán")
                 .doesNotContain("Whitelabel Error Page");
+
+        // 6. Duplicate SKU returns 409 CONFLICT with Vietnamese message, and Admin cannot demote own ROLE_ADMIN
+        var dupSkuResp = postWithCsrf("/admin/products", adminCookie, prodForm);
+        assertThat(dupSkuResp.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(dupSkuResp.getBody()).contains("Dữ liệu bị trùng lặp");
+
+        long adminId = jdbcClient.sql("SELECT id FROM app_user WHERE email = 'admin@progear.vn'").query(Long.class).single();
+        var selfDemote = new LinkedMultiValueMap<String, String>();
+        selfDemote.add("role", "ROLE_CUSTOMER");
+        var demoteResp = postWithCsrf("/admin/users/" + adminId + "/role", adminCookie, selfDemote);
+        assertThat(demoteResp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(demoteResp.getBody()).contains("Không thể tự hạ quyền Quản trị viên");
+
+        // 7. Admin order approval from /orders/{id} (returnToOrder=true) redirects back to /orders/{id}
+        String orderPath = orderRedirect.getHeaders().getLocation().getPath();
+        long vqrOrderId = Long.parseLong(orderPath.substring(orderPath.lastIndexOf('/') + 1));
+        var approveOnDetail = new LinkedMultiValueMap<String, String>();
+        approveOnDetail.add("status", "COMPLETED");
+        approveOnDetail.add("paymentStatus", "PAID");
+        approveOnDetail.add("returnToOrder", "true");
+        var detailApproveResp = postWithCsrf("/admin/orders/" + vqrOrderId + "/status", adminCookie, approveOnDetail);
+        assertThat(detailApproveResp.getStatusCode()).isEqualTo(HttpStatus.FOUND);
+        assertThat(detailApproveResp.getHeaders().getLocation().getPath()).isEqualTo(orderPath);
     }
 
     private String login(String email, String password) {
