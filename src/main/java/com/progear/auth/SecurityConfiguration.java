@@ -19,7 +19,7 @@ class SecurityConfiguration {
         http.authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers(HttpMethod.GET, "/products", "/products/{id}").permitAll());
+                .requestMatchers(HttpMethod.GET, "/", "/products", "/products/{id}").permitAll());
         http.with(VaadinSecurityConfigurer.vaadin(), configurer -> {});
         return http.build();
     }
