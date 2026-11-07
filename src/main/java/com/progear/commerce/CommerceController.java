@@ -361,25 +361,150 @@ public class CommerceController {
     }
 
     @GetMapping(value = "/admin", produces = MediaType.TEXT_HTML_VALUE)
-    public String adminDashboard(Authentication auth, CsrfToken csrf) {
+    public String adminDashboard(@RequestParam(defaultValue = "all") String range,
+                                 Authentication auth,
+                                 CsrfToken csrf) {
+        var dash = service.buildDashboard(range);
         var categories = service.listAllCategories();
         var brands = service.listAllBrands();
         var products = service.listAllProducts();
         var orders = service.listOrdersForUser(auth.getName(), true);
         var users = service.listUsers();
         var audits = service.listRecentAudits();
-        var revenue = service.totalPaidRevenue();
+
+        long cancelRate = dash.totalOrders() == 0 ? 0 : Math.round((dash.cancelledOrders() * 100.0) / dash.totalOrders());
 
         var body = new StringBuilder("""
-                <section class="hero">
-                  <h1>Quản trị hệ thống ProGear</h1>
-                  <p>Quản lý danh mục, thương hiệu, sản phẩm, tồn kho, serial, đơn hàng, phân quyền và nhật ký kiểm toán.</p>
-                </section>
-                <dl class="specs">
-                  <div><dt>Tổng doanh thu hợp lệ</dt><dd>""").append(formatVnd(revenue)).append(" (").append(revenue.toPlainString()).append(" VND)</dd></div>")
-                .append("<div><dt>Tổng số đơn hàng</dt><dd>").append(orders.size()).append("</dd></div>")
-                .append("<div><dt>Tổng số sản phẩm</dt><dd>").append(products.size()).append("</dd></div>")
-                .append("</dl>");
+                <section class="hero" style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:1rem">
+                  <div>
+                    <h1>Quản trị &amp; Phân tích Kinh doanh ProGear</h1>
+                    <p>Báo cáo doanh thu thực thu, kênh bán ONLINE/POS, sản phẩm bán chạy, tồn kho, bảo hành và kiểm toán.</p>
+                  </div>
+                  <div style="display:flex;gap:0.5rem;flex-wrap:wrap" role="group" aria-label="Bộ lọc thời gian">
+                """);
+        for (var opt : java.util.List.of(
+                Map.entry("7d", "7 ngày qua"),
+                Map.entry("30d", "30 ngày qua"),
+                Map.entry("all", "Toàn thời gian"))) {
+            boolean active = opt.getKey().equals(dash.range());
+            body.append("<a class=\"btn").append(active ? "" : " btn-secondary")
+                .append("\" href=\"/admin?range=").append(opt.getKey()).append("\">")
+                .append(opt.getValue()).append("</a>");
+        }
+        body.append("</div></section>");
+
+        // 6 KPI Cards
+        body.append("<section class=\"kpi-grid\" aria-label=\"Chỉ số KPI cốt lõi\">")
+            .append("<div class=\"kpi-card ok\"><p class=\"kpi-title\">Doanh thu thực thu (PAID)</p><p class=\"kpi-val\">")
+            .append(formatVnd(dash.paidRevenue())).append("</p><p class=\"kpi-sub\">")
+            .append(dash.paidRevenue().toPlainString()).append(" VND | Tổng hợp lệ: ").append(dash.validRevenue().toPlainString()).append(" VND</p></div>")
+
+            .append("<div class=\"kpi-card\"><p class=\"kpi-title\">Doanh thu chờ thu (PENDING)</p><p class=\"kpi-val\">")
+            .append(formatVnd(dash.pendingRevenue())).append("</p><p class=\"kpi-sub\">")
+            .append(dash.pendingRevenue().toPlainString()).append(" VND (").append(dash.pendingOrders().size()).append(" đơn chờ xử lý)</p></div>")
+
+            .append("<div class=\"kpi-card\"><p class=\"kpi-title\">Tổng đơn &amp; Tỷ lệ hủy</p><p class=\"kpi-val\">")
+            .append(dash.totalOrders()).append(" đơn</p><p class=\"kpi-sub\">Hợp lệ: ")
+            .append(dash.activeOrders()).append(" | Đã hủy: ").append(dash.cancelledOrders())
+            .append(" (").append(cancelRate).append("%)</p></div>")
+
+            .append("<div class=\"kpi-card\"><p class=\"kpi-title\">Kênh bán ONLINE vs POS</p><p class=\"kpi-val\">")
+            .append(dash.onlineOrders()).append(" Web / ").append(dash.posOrders()).append(" POS</p><p class=\"kpi-sub\">ONLINE: ")
+            .append(dash.onlineRevenue().toPlainString()).append(" VND | POS: ").append(dash.posRevenue().toPlainString()).append(" VND</p></div>")
+
+            .append("<div class=\"kpi-card").append(dash.lowStockCount() > 0 ? " warn" : " ok")
+            .append("\"><p class=\"kpi-title\">Giá trị Tồn kho &amp; Sắp hết</p><p class=\"kpi-val\">")
+            .append(formatVnd(dash.inventoryValue())).append("</p><p class=\"kpi-sub\">")
+            .append(dash.totalStockUnits()).append(" máy/ống kính | Cảnh báo sắp hết (&le;3): ").append(dash.lowStockCount()).append(" SKU</p></div>")
+
+            .append("<div class=\"kpi-card ok\"><p class=\"kpi-title\">Serial &amp; Bảo hành hiệu lực</p><p class=\"kpi-val\">")
+            .append(dash.activeWarrantySerials()).append(" máy</p><p class=\"kpi-sub\">Serial sẵn kho (IN_STOCK): ")
+            .append(dash.inStockSerials()).append("</p></div>")
+            .append("</section>");
+
+        // Row 1: Daily Revenue Bar Chart + Top 5 Best-Selling Products
+        body.append("<div class=\"two-col\">");
+
+        body.append("<div class=\"panel\"><h2>Biểu đồ doanh thu theo ngày</h2>");
+        if (dash.dailyRevenues().isEmpty()) {
+            body.append("<p class=\"price-raw\">Chưa có dữ liệu đơn hàng trong khoảng thời gian này.</p>");
+        } else {
+            BigDecimal maxDayRev = dash.dailyRevenues().stream()
+                    .map(CommerceService.DailyRevenue::revenue)
+                    .max(BigDecimal::compareTo)
+                    .orElse(BigDecimal.ONE);
+            for (var d : dash.dailyRevenues()) {
+                int pct = maxDayRev.compareTo(BigDecimal.ZERO) <= 0 ? 0
+                        : d.revenue().multiply(BigDecimal.valueOf(100)).divide(maxDayRev, 0, java.math.RoundingMode.HALF_UP).intValue();
+                body.append("<div class=\"bar-row\"><div class=\"bar-label\"><span>")
+                    .append(escape(d.day().toString())).append(" (").append(d.orderCount()).append(" đơn)</span><span>")
+                    .append(formatVnd(d.revenue())).append(" (").append(d.revenue().toPlainString()).append(" VND)</span></div>")
+                    .append("<div class=\"bar-track\"><div class=\"bar-fill\" style=\"width:").append(Math.max(4, pct)).append("%\"></div></div></div>");
+            }
+        }
+        body.append("</div>");
+
+        body.append("<div class=\"panel\"><h2>Top 5 Sản phẩm bán chạy nhất</h2>");
+        if (dash.topProducts().isEmpty()) {
+            body.append("<p class=\"price-raw\">Chưa có sản phẩm bán ra.</p>");
+        } else {
+            body.append("<table><thead><tr><th>SKU</th><th>Sản phẩm</th><th>SL bán</th><th>Doanh thu</th></tr></thead><tbody>");
+            for (var tp : dash.topProducts()) {
+                body.append("<tr><td>").append(escape(tp.sku())).append("</td><td>")
+                    .append(escape(tp.productName())).append("</td><td>").append(tp.unitsSold()).append("</td><td>")
+                    .append(formatVnd(tp.revenue())).append(" (").append(tp.revenue().toPlainString()).append(" VND)</td></tr>");
+            }
+            body.append("</tbody></table>");
+        }
+        body.append("</div></div>");
+
+        // Row 2: Revenue by Category & Brand
+        body.append("<div class=\"two-col\">");
+        body.append("<div class=\"panel\"><h2>Doanh thu theo Danh mục</h2>");
+        appendGroupRevenueBars(body, dash.categoryRevenues(), dash.validRevenue());
+        body.append("</div>");
+
+        body.append("<div class=\"panel\"><h2>Doanh thu theo Thương hiệu</h2>");
+        appendGroupRevenueBars(body, dash.brandRevenues(), dash.validRevenue());
+        body.append("</div></div>");
+
+        // Row 3: Low Stock Alert + Pending Payment Quick Approval
+        body.append("<div class=\"two-col\">");
+        body.append("<div class=\"panel\"><h2>Cảnh báo Tồn kho thấp (&le; 3) &amp; Nhập kho nhanh</h2>");
+        if (dash.lowStockProducts().isEmpty()) {
+            body.append("<p class=\"price-raw\">Tất cả sản phẩm đều đủ tồn kho (&gt; 3).</p>");
+        } else {
+            body.append("<table><thead><tr><th>SKU</th><th>Tên</th><th>Tồn</th><th>Cập nhật nhanh</th></tr></thead><tbody>");
+            for (var lp : dash.lowStockProducts()) {
+                body.append("<tr><td>").append(escape(lp.sku())).append("</td><td>").append(escape(lp.name()))
+                    .append("</td><td><span class=\"badge badge-out\">").append(lp.stock()).append("</span></td><td>")
+                    .append("<form method=\"post\" action=\"/admin/products/").append(lp.id()).append("/stock\" style=\"display:flex;gap:0.35rem\">")
+                    .append(csrfInput(csrf))
+                    .append("<input name=\"stock\" type=\"number\" min=\"0\" value=\"").append(lp.stock() + 10).append("\" style=\"width:80px\" required>")
+                    .append("<button class=\"btn\" type=\"submit\">Nhập kho</button></form></td></tr>");
+            }
+            body.append("</tbody></table>");
+        }
+        body.append("</div>");
+
+        body.append("<div class=\"panel\"><h2>Đơn chờ duyệt thanh toán</h2>");
+        if (dash.pendingOrders().isEmpty()) {
+            body.append("<p class=\"price-raw\">Không có đơn hàng chờ duyệt thanh toán.</p>");
+        } else {
+            body.append("<table><thead><tr><th>Đơn</th><th>Khách</th><th>Số tiền</th><th>Phương thức</th><th>Duyệt nhanh</th></tr></thead><tbody>");
+            for (var po : dash.pendingOrders()) {
+                body.append("<tr><td><a href=\"/orders/").append(po.id()).append("\">#").append(po.id()).append("</a></td><td>")
+                    .append(escape(po.userEmail())).append("</td><td>").append(po.totalAmount().toPlainString()).append(" VND</td><td>")
+                    .append(escape(po.paymentMethod())).append(" (").append(escape(po.status())).append(")</td><td>")
+                    .append("<form method=\"post\" action=\"/admin/orders/").append(po.id()).append("/status\" style=\"margin:0\">")
+                    .append(csrfInput(csrf))
+                    .append("<input type=\"hidden\" name=\"status\" value=\"CONFIRMED\">")
+                    .append("<input type=\"hidden\" name=\"paymentStatus\" value=\"PAID\">")
+                    .append("<button class=\"btn\" type=\"submit\">Xác nhận Đã thu tiền</button></form></td></tr>");
+            }
+            body.append("</tbody></table>");
+        }
+        body.append("</div></div>");
 
         // Product CRUD
         body.append("""
@@ -398,17 +523,21 @@ public class CommerceController {
                     <div class="filter-group"><label>Hiển thị</label><select name="visible"><option value="true">Hiển thị</option><option value="false">Ẩn</option></select></div>
                     <button class="btn" type="submit">Lưu sản phẩm</button>
                   </form>
-                  <table><thead><tr><th>ID</th><th>SKU</th><th>Tên</th><th>Giá</th><th>Kho</th><th>Hiển thị</th></tr></thead><tbody>
+                  <table><thead><tr><th>ID</th><th>SKU</th><th>Tên</th><th>Giá</th><th>Kho</th><th>Hiển thị</th><th>Chỉnh kho nhanh</th></tr></thead><tbody>
                 """);
         for (var p : products) {
             body.append("<tr><td>").append(p.id()).append("</td><td>").append(escape(p.sku())).append("</td><td>")
                 .append(escape(p.name())).append("</td><td>").append(p.price().toPlainString()).append(" VND</td><td>")
-                .append(p.stock()).append("</td><td>").append(p.visible()).append("</td></tr>");
+                .append(p.stock()).append("</td><td>").append(p.visible()).append("</td><td>")
+                .append("<form method=\"post\" action=\"/admin/products/").append(p.id()).append("/stock\" style=\"display:flex;gap:0.35rem\">")
+                .append(csrfInput(csrf))
+                .append("<input name=\"stock\" type=\"number\" min=\"0\" value=\"").append(p.stock()).append("\" style=\"width:75px\" required>")
+                .append("<button class=\"btn btn-secondary\" type=\"submit\">Lưu kho</button></form></td></tr>");
         }
         body.append("</tbody></table></div>");
 
         // Category & Brand & Serial forms
-        body.append("<div class=\"panel\"><h2>Danh mục &amp; Thương hiệu &amp; Serial</h2>")
+        body.append("<div class=\"panel\"><h2>Danh mục (").append(categories.size()).append(") &amp; Thương hiệu (").append(brands.size()).append(") &amp; Serial</h2>")
             .append("<form method=\"post\" action=\"/admin/categories\" style=\"display:flex;gap:0.5rem;margin-bottom:0.75rem\">")
             .append(csrfInput(csrf))
             .append("<input name=\"name\" placeholder=\"Tên danh mục mới\" required>")
@@ -426,9 +555,10 @@ public class CommerceController {
             .append("<button class=\"btn\" type=\"submit\">Thêm Serial</button></form></div>");
 
         // Orders management
-        body.append("<div class=\"panel\"><h2>Quản lý Đơn hàng</h2><table><thead><tr><th>ID</th><th>Khách hàng</th><th>Tổng tiền</th><th>Trạng thái</th><th>Cập nhật</th></tr></thead><tbody>");
+        body.append("<div class=\"panel\"><h2>Quản lý Đơn hàng</h2><table><thead><tr><th>ID</th><th>Khách hàng</th><th>Kênh</th><th>Tổng tiền</th><th>Trạng thái</th><th>Cập nhật</th></tr></thead><tbody>");
         for (var o : orders) {
             body.append("<tr><td>#").append(o.id()).append("</td><td>").append(escape(o.userEmail())).append("</td><td>")
+                .append(escape(o.channel())).append("</td><td>")
                 .append(o.totalAmount().toPlainString()).append(" VND</td><td>").append(escape(o.status())).append(" / ").append(escape(o.paymentStatus())).append("</td><td>")
                 .append("<form method=\"post\" action=\"/admin/orders/").append(o.id()).append("/status\" style=\"display:flex;gap:0.4rem\">")
                 .append(csrfInput(csrf))
@@ -460,6 +590,31 @@ public class CommerceController {
         body.append("</tbody></table></div>");
 
         return document("Quản trị — ProGear Camera", body.toString(), auth, csrf);
+    }
+
+    private static void appendGroupRevenueBars(StringBuilder body,
+                                               java.util.List<CommerceService.GroupRevenue> rows,
+                                               BigDecimal totalValidRevenue) {
+        if (rows.isEmpty()) {
+            body.append("<p class=\"price-raw\">Chưa có dữ liệu doanh thu.</p>");
+            return;
+        }
+        for (var r : rows) {
+            int pct = totalValidRevenue.compareTo(BigDecimal.ZERO) <= 0 ? 0
+                    : r.revenue().multiply(BigDecimal.valueOf(100)).divide(totalValidRevenue, 0, java.math.RoundingMode.HALF_UP).intValue();
+            body.append("<div class=\"bar-row\"><div class=\"bar-label\"><span>")
+                .append(escape(r.name())).append(" (").append(r.unitsSold()).append(" SP — ").append(pct).append("%)</span><span>")
+                .append(formatVnd(r.revenue())).append("</span></div>")
+                .append("<div class=\"bar-track\"><div class=\"bar-fill\" style=\"width:").append(Math.max(4, pct)).append("%\"></div></div></div>");
+        }
+    }
+
+    @PostMapping("/admin/products/{id}/stock")
+    public ResponseEntity<Void> updateProductStock(@PathVariable long id,
+                                                   @RequestParam int stock,
+                                                   Authentication auth) {
+        service.adminUpdateProductStock(auth.getName(), id, stock);
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("/admin")).build();
     }
 
     @PostMapping("/admin/categories")
