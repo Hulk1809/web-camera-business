@@ -4,12 +4,14 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.progear.catalog.CatalogController;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +27,28 @@ public class CommerceService {
     private static final Set<String> PAYMENT_STATUSES = Set.of("PENDING", "PAID", "REFUNDED");
     private static final Set<String> ROLES = Set.of("ROLE_CUSTOMER", "ROLE_STAFF", "ROLE_ADMIN");
 
+    private static final String PRODUCT_SNAPSHOT_SQL = """
+            SELECT p.id, p.name, p.sku, p.price, p.stock,
+                   p.category_id AS categoryId, p.brand_id AS brandId,
+                   p.description, p.visible, p.image_url AS imageUrl,
+                   c.name AS categoryName, b.name AS brandName
+            FROM product p
+            JOIN category c ON c.id = p.category_id
+            JOIN brand b ON b.id = p.brand_id
+            """;
+
+    private static final String ORDER_SUMMARY_SQL = """
+            SELECT o.id, o.user_id AS userId, COALESCE(u.email, '') AS userEmail,
+                   o.idempotency_key AS idempotencyKey, o.channel,
+                   o.payment_method AS paymentMethod, o.payment_status AS paymentStatus,
+                   o.status, o.shipping_address AS shippingAddress,
+                   o.recipient_phone AS recipientPhone, o.shipping_note AS shippingNote,
+                   o.total_amount AS totalAmount, o.stock_restored AS stockRestored,
+                   o.created_at AS createdAt
+            FROM customer_order o
+            LEFT JOIN app_user u ON u.id = o.user_id
+            """;
+
     private final JdbcClient jdbc;
     private final PasswordEncoder passwordEncoder;
 
@@ -33,15 +57,16 @@ public class CommerceService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public record AppUser(long id, String email, String fullName, String address, String role, boolean enabled) {}
+    public record AppUser(long id, String email, String fullName, String address, String phone, String role, boolean enabled) {}
 
     public record ProductSnapshot(long id, String name, String sku, BigDecimal price, int stock,
                                   long categoryId, long brandId, String description, boolean visible,
-                                  String categoryName, String brandName) {}
+                                  String imageUrl, String categoryName, String brandName) {}
 
     public record OrderSummary(long id, Long userId, String userEmail, String idempotencyKey,
                                String channel, String paymentMethod, String paymentStatus,
-                               String status, String shippingAddress, BigDecimal totalAmount,
+                               String status, String shippingAddress, String recipientPhone,
+                               String shippingNote, BigDecimal totalAmount,
                                boolean stockRestored, Instant createdAt) {}
 
     public record OrderItemRow(long id, long orderId, long productId, String productName,
@@ -92,7 +117,7 @@ public class CommerceService {
     public Optional<AppUser> findUserByEmail(String email) {
         if (email == null || email.isBlank()) return Optional.empty();
         return jdbc.sql("""
-                        SELECT id, email, full_name AS fullName, address, role, enabled
+                        SELECT id, email, full_name AS fullName, address, phone, role, enabled
                         FROM app_user
                         WHERE lower(email) = lower(btrim(:email))
                         """)
@@ -107,7 +132,7 @@ public class CommerceService {
     }
 
     @Transactional
-    public AppUser registerCustomer(String email, String password, String fullName, String address) {
+    public AppUser registerCustomer(String email, String password, String fullName, String address, String phone) {
         if (email == null || email.isBlank() || !email.contains("@")
                 || password == null || password.length() < 6
                 || fullName == null || fullName.isBlank()) {
@@ -119,46 +144,47 @@ public class CommerceService {
         }
         String cleanName = fullName.trim();
         String cleanAddr = address == null ? "" : address.trim();
+        String cleanPhone = phone == null ? "" : phone.trim();
         long id = jdbc.sql("""
-                        INSERT INTO app_user (email, password_hash, full_name, address, role, enabled)
-                        VALUES (:email, :hash, :name, :addr, 'ROLE_CUSTOMER', true)
+                        INSERT INTO app_user (email, password_hash, full_name, address, phone, role, enabled)
+                        VALUES (:email, :hash, :name, :addr, :phone, 'ROLE_CUSTOMER', true)
                         RETURNING id
                         """)
                 .param("email", cleanEmail)
                 .param("hash", passwordEncoder.encode(password))
                 .param("name", cleanName)
                 .param("addr", cleanAddr)
+                .param("phone", cleanPhone)
                 .query(Long.class)
                 .single();
         writeAudit(cleanEmail, "USER_REGISTER", "USER", String.valueOf(id), "Registered customer " + cleanEmail);
-        return new AppUser(id, cleanEmail, cleanName, cleanAddr, "ROLE_CUSTOMER", true);
+        return new AppUser(id, cleanEmail, cleanName, cleanAddr, cleanPhone, "ROLE_CUSTOMER", true);
     }
 
     @Transactional
-    public void updateProfile(String email, String fullName, String address) {
+    public void updateProfile(String email, String fullName, String address, String phone) {
         AppUser user = requireUser(email);
         if (fullName == null || fullName.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Họ tên không được để trống");
         }
-        jdbc.sql("UPDATE app_user SET full_name = :name, address = :addr WHERE id = :id")
+        jdbc.sql("UPDATE app_user SET full_name = :name, address = :addr, phone = :phone WHERE id = :id")
                 .param("name", fullName.trim())
                 .param("addr", address == null ? "" : address.trim())
+                .param("phone", phone == null ? "" : phone.trim())
                 .param("id", user.id())
                 .update();
         writeAudit(user.email(), "USER_PROFILE_UPDATE", "USER", String.valueOf(user.id()), "Updated profile");
     }
 
     public Optional<ProductSnapshot> findVisibleProduct(long id) {
-        return jdbc.sql("""
-                        SELECT p.id, p.name, p.sku, p.price, p.stock,
-                               p.category_id AS categoryId, p.brand_id AS brandId,
-                               p.description, p.visible,
-                               c.name AS categoryName, b.name AS brandName
-                        FROM product p
-                        JOIN category c ON c.id = p.category_id
-                        JOIN brand b ON b.id = p.brand_id
-                        WHERE p.id = :id AND p.visible AND c.visible AND b.visible
-                        """)
+        return jdbc.sql(PRODUCT_SNAPSHOT_SQL + " WHERE p.id = :id AND p.visible AND c.visible AND b.visible")
+                .param("id", id)
+                .query(ProductSnapshot.class)
+                .optional();
+    }
+
+    public Optional<ProductSnapshot> findProductById(long id) {
+        return jdbc.sql(PRODUCT_SNAPSHOT_SQL + " WHERE p.id = :id")
                 .param("id", id)
                 .query(ProductSnapshot.class)
                 .optional();
@@ -166,7 +192,8 @@ public class CommerceService {
 
     @Transactional
     public long checkout(String userEmail, Map<Long, Integer> cartItems,
-                         String idempotencyKey, String paymentMethod, String shippingAddress) {
+                         String idempotencyKey, String paymentMethod, String shippingAddress,
+                         String recipientPhone, String shippingNote) {
         AppUser user = requireUser(userEmail);
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu Idempotency-Key");
@@ -199,10 +226,12 @@ public class CommerceService {
         if (addr == null || addr.isBlank()) {
             addr = "Nhận tại cửa hàng ProGear";
         }
+        String phone = (recipientPhone == null || recipientPhone.isBlank()) ? user.phone() : recipientPhone.trim();
+        String note = shippingNote == null ? "" : shippingNote.trim();
 
         Map<Long, Integer> sortedCart = new TreeMap<>(cartItems);
         BigDecimal total = BigDecimal.ZERO;
-        var snapshots = new java.util.ArrayList<Map.Entry<ProductSnapshot, Integer>>();
+        var snapshots = new ArrayList<Map.Entry<ProductSnapshot, Integer>>();
 
         for (var entry : sortedCart.entrySet()) {
             long productId = entry.getKey();
@@ -230,9 +259,10 @@ public class CommerceService {
         String status = "COD".equals(method) ? "CONFIRMED" : "PENDING_PAYMENT";
         long orderId = jdbc.sql("""
                         INSERT INTO customer_order
-                            (user_id, idempotency_key, channel, payment_method, payment_status, status, shipping_address, total_amount, stock_restored)
+                            (user_id, idempotency_key, channel, payment_method, payment_status, status,
+                             shipping_address, recipient_phone, shipping_note, total_amount, stock_restored)
                         VALUES
-                            (:userId, :key, 'ONLINE', :method, 'PENDING', :status, :addr, :total, FALSE)
+                            (:userId, :key, 'ONLINE', :method, 'PENDING', :status, :addr, :phone, :note, :total, FALSE)
                         RETURNING id
                         """)
                 .param("userId", user.id())
@@ -240,6 +270,8 @@ public class CommerceService {
                 .param("method", method)
                 .param("status", status)
                 .param("addr", addr)
+                .param("phone", phone == null ? "" : phone)
+                .param("note", note)
                 .param("total", total)
                 .query(Long.class)
                 .single();
@@ -268,32 +300,11 @@ public class CommerceService {
     public List<OrderSummary> listOrdersForUser(String email, boolean isAdminOrStaff) {
         AppUser user = requireUser(email);
         if (isAdminOrStaff) {
-            return jdbc.sql("""
-                            SELECT o.id, o.user_id AS userId, COALESCE(u.email, '') AS userEmail,
-                                   o.idempotency_key AS idempotencyKey, o.channel,
-                                   o.payment_method AS paymentMethod, o.payment_status AS paymentStatus,
-                                   o.status, o.shipping_address AS shippingAddress,
-                                   o.total_amount AS totalAmount, o.stock_restored AS stockRestored,
-                                   o.created_at AS createdAt
-                            FROM customer_order o
-                            LEFT JOIN app_user u ON u.id = o.user_id
-                            ORDER BY o.id DESC
-                            """)
+            return jdbc.sql(ORDER_SUMMARY_SQL + " ORDER BY o.id DESC")
                     .query(OrderSummary.class)
                     .list();
         }
-        return jdbc.sql("""
-                        SELECT o.id, o.user_id AS userId, COALESCE(u.email, '') AS userEmail,
-                               o.idempotency_key AS idempotencyKey, o.channel,
-                               o.payment_method AS paymentMethod, o.payment_status AS paymentStatus,
-                               o.status, o.shipping_address AS shippingAddress,
-                               o.total_amount AS totalAmount, o.stock_restored AS stockRestored,
-                               o.created_at AS createdAt
-                        FROM customer_order o
-                        LEFT JOIN app_user u ON u.id = o.user_id
-                        WHERE o.user_id = :userId
-                        ORDER BY o.id DESC
-                        """)
+        return jdbc.sql(ORDER_SUMMARY_SQL + " WHERE o.user_id = :userId ORDER BY o.id DESC")
                 .param("userId", user.id())
                 .query(OrderSummary.class)
                 .list();
@@ -301,24 +312,14 @@ public class CommerceService {
 
     public OrderDetail getOrderForUser(long orderId, String email, boolean isAdminOrStaff) {
         AppUser user = requireUser(email);
-        OrderSummary order = jdbc.sql("""
-                        SELECT o.id, o.user_id AS userId, COALESCE(u.email, '') AS userEmail,
-                               o.idempotency_key AS idempotencyKey, o.channel,
-                               o.payment_method AS paymentMethod, o.payment_status AS paymentStatus,
-                               o.status, o.shipping_address AS shippingAddress,
-                               o.total_amount AS totalAmount, o.stock_restored AS stockRestored,
-                               o.created_at AS createdAt
-                        FROM customer_order o
-                        LEFT JOIN app_user u ON u.id = o.user_id
-                        WHERE o.id = :id
-                        """)
+        OrderSummary order = jdbc.sql(ORDER_SUMMARY_SQL + " WHERE o.id = :id")
                 .param("id", orderId)
                 .query(OrderSummary.class)
                 .optional()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
 
         if (!isAdminOrStaff && (order.userId() == null || order.userId() != user.id())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Không có quyền xem đơn hàng của người khác");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Không có quyền truy cập đơn hàng này");
         }
 
         List<OrderItemRow> items = jdbc.sql("""
@@ -346,34 +347,36 @@ public class CommerceService {
     public void cancelOrder(long orderId, String email, boolean isAdminOrStaff) {
         OrderDetail detail = getOrderForUser(orderId, email, isAdminOrStaff);
         OrderSummary order = detail.order();
-        if ("CANCELLED".equals(order.status()) && order.stockRestored()) {
-            return;
+        if ("COMPLETED".equals(order.status())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đơn hàng đã hoàn tất không thể hủy");
         }
-        if (!"PENDING_PAYMENT".equals(order.status()) && !"CONFIRMED".equals(order.status())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đơn hàng không thể hủy ở trạng thái " + order.status());
-        }
-        int updated = jdbc.sql("""
+        int marked = jdbc.sql("""
                         UPDATE customer_order
-                        SET status = 'CANCELLED', stock_restored = TRUE
-                        WHERE id = :id AND stock_restored = FALSE AND status IN ('PENDING_PAYMENT', 'CONFIRMED')
+                        SET status = 'CANCELLED',
+                            payment_status = CASE WHEN payment_status = 'PAID' THEN 'REFUNDED' ELSE payment_status END,
+                            stock_restored = TRUE
+                        WHERE id = :id AND stock_restored = FALSE
                         """)
                 .param("id", orderId)
                 .update();
-        if (updated == 1) {
+
+        if (marked == 1) {
             for (OrderItemRow item : detail.items()) {
                 jdbc.sql("UPDATE product SET stock = stock + :qty WHERE id = :pid")
                         .param("qty", item.quantity())
                         .param("pid", item.productId())
                         .update();
             }
-            writeAudit(email, "ORDER_CANCEL_RESTORE_STOCK", "ORDER", String.valueOf(orderId),
-                    "Cancelled order and restored stock once");
+            jdbc.sql("UPDATE serial_unit SET status = 'IN_STOCK', order_id = NULL, warranty_until = NULL WHERE order_id = :oid")
+                    .param("oid", orderId)
+                    .update();
+            writeAudit(email, "ORDER_CANCEL", "ORDER", String.valueOf(orderId), "Cancelled order and restored stock");
         }
     }
 
     @Transactional
-    public long posCreateOrder(String staffEmail, String sku, int quantity,
-                               String serialNumber, String paymentMethod, String idempotencyKey) {
+    public long createPosOrder(String staffEmail, String sku, int quantity, String serialNumber,
+                               String paymentMethod, String customerNote, String idempotencyKey) {
         AppUser staff = requireUser(staffEmail);
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu Idempotency-Key");
@@ -395,16 +398,7 @@ public class CommerceService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phương thức thanh toán POS không hợp lệ");
         }
 
-        ProductSnapshot prod = jdbc.sql("""
-                        SELECT p.id, p.name, p.sku, p.price, p.stock,
-                               p.category_id AS categoryId, p.brand_id AS brandId,
-                               p.description, p.visible,
-                               c.name AS categoryName, b.name AS brandName
-                        FROM product p
-                        JOIN category c ON c.id = p.category_id
-                        JOIN brand b ON b.id = p.brand_id
-                        WHERE UPPER(p.sku) = UPPER(btrim(:sku))
-                        """)
+        ProductSnapshot prod = jdbc.sql(PRODUCT_SNAPSHOT_SQL + " WHERE UPPER(p.sku) = UPPER(btrim(:sku))")
                 .param("sku", sku)
                 .query(ProductSnapshot.class)
                 .optional()
@@ -419,20 +413,26 @@ public class CommerceService {
                 .param("id", prod.id())
                 .update();
         if (updated == 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Không đủ tồn kho cho SKU " + prod.sku());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Tồn kho không đủ cho SKU: " + prod.sku());
         }
 
         BigDecimal total = prod.price().multiply(BigDecimal.valueOf(quantity));
+        String addr = (customerNote == null || customerNote.isBlank())
+                ? "Bán trực tiếp tại quầy POS"
+                : "POS: " + customerNote.trim();
+
         long orderId = jdbc.sql("""
                         INSERT INTO customer_order
-                            (user_id, idempotency_key, channel, payment_method, payment_status, status, shipping_address, total_amount, stock_restored)
+                            (user_id, idempotency_key, channel, payment_method, payment_status, status,
+                             shipping_address, recipient_phone, shipping_note, total_amount, stock_restored)
                         VALUES
-                            (:userId, :key, 'POS', :method, 'PAID', 'COMPLETED', 'Bán trực tiếp tại quầy POS', :total, FALSE)
+                            (:userId, :key, 'POS', :method, 'PAID', 'COMPLETED', :addr, '', '', :total, FALSE)
                         RETURNING id
                         """)
                 .param("userId", staff.id())
                 .param("key", cleanKey)
                 .param("method", method)
+                .param("addr", addr)
                 .param("total", total)
                 .query(Long.class)
                 .single();
@@ -491,6 +491,14 @@ public class CommerceService {
     }
 
     @Transactional
+    public void toggleCategoryShelf(String actor, long categoryId) {
+        Boolean vis = jdbc.sql("UPDATE category SET visible = NOT visible WHERE id = :id RETURNING visible")
+                .param("id", categoryId).query(Boolean.class).optional()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy danh mục"));
+        writeAudit(actor, "CATEGORY_SHELF_TOGGLE", "CATEGORY", String.valueOf(categoryId), "visible=" + vis);
+    }
+
+    @Transactional
     public long saveBrand(String actor, Long id, String name, boolean visible) {
         if (name == null || name.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tên thương hiệu không hợp lệ");
@@ -510,12 +518,24 @@ public class CommerceService {
     }
 
     @Transactional
+    public void toggleBrandShelf(String actor, long brandId) {
+        Boolean vis = jdbc.sql("UPDATE brand SET visible = NOT visible WHERE id = :id RETURNING visible")
+                .param("id", brandId).query(Boolean.class).optional()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy thương hiệu"));
+        writeAudit(actor, "BRAND_SHELF_TOGGLE", "BRAND", String.valueOf(brandId), "visible=" + vis);
+    }
+
+    @Transactional
     public long saveProduct(String actor, Long id, long categoryId, long brandId,
                             String name, String sku, BigDecimal price, int stock,
-                            String description, boolean visible) {
+                            String description, String imageUrl, boolean visible) {
         if (name == null || name.isBlank() || sku == null || sku.isBlank()
                 || price == null || price.compareTo(BigDecimal.ZERO) < 0 || stock < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thông tin sản phẩm không hợp lệ");
+        }
+        String cleanImg = imageUrl == null ? "" : imageUrl.trim();
+        if (!cleanImg.isEmpty() && !CatalogController.isSafeImageUrl(cleanImg)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "URL ảnh sản phẩm phải bắt đầu bằng https://, http:// hoặc /");
         }
         String cleanName = name.trim();
         String cleanSku = sku.trim();
@@ -525,7 +545,8 @@ public class CommerceService {
             jdbc.sql("""
                             UPDATE product
                             SET category_id = :cid, brand_id = :bid, name = :name, sku = :sku,
-                                price = :price, stock = :stock, description = :desc, visible = :visible
+                                price = :price, stock = :stock, description = :desc,
+                                image_url = :img, visible = :visible
                             WHERE id = :id
                             """)
                     .param("cid", categoryId)
@@ -535,14 +556,15 @@ public class CommerceService {
                     .param("price", price)
                     .param("stock", stock)
                     .param("desc", cleanDesc)
+                    .param("img", cleanImg)
                     .param("visible", visible)
                     .param("id", id)
                     .update();
             targetId = id;
         } else {
             targetId = jdbc.sql("""
-                            INSERT INTO product (category_id, brand_id, name, sku, price, stock, description, visible)
-                            VALUES (:cid, :bid, :name, :sku, :price, :stock, :desc, :visible)
+                            INSERT INTO product (category_id, brand_id, name, sku, price, stock, description, image_url, visible)
+                            VALUES (:cid, :bid, :name, :sku, :price, :stock, :desc, :img, :visible)
                             RETURNING id
                             """)
                     .param("cid", categoryId)
@@ -552,6 +574,7 @@ public class CommerceService {
                     .param("price", price)
                     .param("stock", stock)
                     .param("desc", cleanDesc)
+                    .param("img", cleanImg)
                     .param("visible", visible)
                     .query(Long.class)
                     .single();
@@ -559,6 +582,14 @@ public class CommerceService {
         writeAudit(actor, "PRODUCT_UPSERT", "PRODUCT", String.valueOf(targetId),
                 "sku=" + cleanSku + " price=" + price.toPlainString() + " stock=" + stock + " visible=" + visible);
         return targetId;
+    }
+
+    @Transactional
+    public void toggleProductShelf(String actor, long productId) {
+        Boolean vis = jdbc.sql("UPDATE product SET visible = NOT visible WHERE id = :id RETURNING visible")
+                .param("id", productId).query(Boolean.class).optional()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm"));
+        writeAudit(actor, "PRODUCT_SHELF_TOGGLE", "PRODUCT", String.valueOf(productId), "visible=" + vis);
     }
 
     @Transactional
@@ -615,6 +646,7 @@ public class CommerceService {
         } else {
             jdbc.sql("UPDATE customer_order SET status = :status, payment_status = :pstatus WHERE id = :id")
                     .param("status", status)
+                    .param("paymentStatus", paymentStatus)
                     .param("pstatus", paymentStatus)
                     .param("id", orderId)
                     .update();
@@ -644,18 +676,7 @@ public class CommerceService {
     }
 
     public List<ProductSnapshot> listAllProducts() {
-        return jdbc.sql("""
-                        SELECT p.id, p.name, p.sku, p.price, p.stock,
-                               p.category_id AS categoryId, p.brand_id AS brandId,
-                               p.description, p.visible,
-                               c.name AS categoryName, b.name AS brandName
-                        FROM product p
-                        JOIN category c ON c.id = p.category_id
-                        JOIN brand b ON b.id = p.brand_id
-                        ORDER BY p.id
-                        """)
-                .query(ProductSnapshot.class)
-                .list();
+        return jdbc.sql(PRODUCT_SNAPSHOT_SQL + " ORDER BY p.id").query(ProductSnapshot.class).list();
     }
 
     public List<SerialRow> listSerials() {
@@ -674,7 +695,7 @@ public class CommerceService {
 
     public List<AppUser> listUsers() {
         return jdbc.sql("""
-                        SELECT id, email, full_name AS fullName, address, role, enabled
+                        SELECT id, email, full_name AS fullName, address, phone, role, enabled
                         FROM app_user
                         ORDER BY id
                         """)
@@ -854,29 +875,11 @@ public class CommerceService {
                 .query(GroupRevenue.class)
                 .list();
 
-        List<ProductSnapshot> lowStockProducts = jdbc.sql("""
-                        SELECT p.id, p.name, p.sku, p.price, p.stock,
-                               p.category_id AS categoryId, p.brand_id AS brandId,
-                               p.description, p.visible,
-                               c.name AS categoryName, b.name AS brandName
-                        FROM product p
-                        JOIN category c ON c.id = p.category_id
-                        JOIN brand b ON b.id = p.brand_id
-                        WHERE p.stock <= 3
-                        ORDER BY p.stock ASC, p.id ASC
-                        """)
+        List<ProductSnapshot> lowStockProducts = jdbc.sql(PRODUCT_SNAPSHOT_SQL + " WHERE p.stock <= 3 ORDER BY p.stock ASC, p.id ASC")
                 .query(ProductSnapshot.class)
                 .list();
 
-        List<OrderSummary> pendingOrders = jdbc.sql("""
-                        SELECT o.id, o.user_id AS userId, COALESCE(u.email, '') AS userEmail,
-                               o.idempotency_key AS idempotencyKey, o.channel,
-                               o.payment_method AS paymentMethod, o.payment_status AS paymentStatus,
-                               o.status, o.shipping_address AS shippingAddress,
-                               o.total_amount AS totalAmount, o.stock_restored AS stockRestored,
-                               o.created_at AS createdAt
-                        FROM customer_order o
-                        LEFT JOIN app_user u ON u.id = o.user_id
+        List<OrderSummary> pendingOrders = jdbc.sql(ORDER_SUMMARY_SQL + """
                         WHERE o.status = 'PENDING_PAYMENT' OR (o.status <> 'CANCELLED' AND o.payment_status = 'PENDING')
                         ORDER BY o.id DESC
                         LIMIT 20
@@ -898,12 +901,12 @@ public class CommerceService {
     public void writeAudit(String actor, String action, String targetType, String targetId, String details) {
         jdbc.sql("""
                         INSERT INTO audit_log (actor, action, target_type, target_id, details)
-                        VALUES (:actor, :action, :type, :id, :details)
+                        VALUES (:actor, :action, :type, :tid, :details)
                         """)
-                .param("actor", actor == null ? "system" : actor)
+                .param("actor", actor == null || actor.isBlank() ? "system" : actor)
                 .param("action", action)
                 .param("type", targetType)
-                .param("id", targetId)
+                .param("tid", targetId)
                 .param("details", details == null ? "" : details)
                 .update();
     }

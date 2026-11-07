@@ -2,7 +2,6 @@ package com.progear.catalog;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,10 +38,14 @@ public class Catalog {
                                String sku, String productName, String brand) {}
 
     public List<Product> list(int page) {
-        return list(page, null, null, null);
+        return list(page, null, null, null, null, false);
     }
 
     public List<Product> list(int page, String q, Long categoryId, Long brandId) {
+        return list(page, q, categoryId, brandId, null, false);
+    }
+
+    public List<Product> list(int page, String q, Long categoryId, Long brandId, String sort, boolean inStockOnly) {
         var sql = new StringBuilder(SELECT);
         Map<String, Object> params = new HashMap<>();
         if (q != null && !q.isBlank()) {
@@ -57,7 +60,16 @@ public class Catalog {
             sql.append(" AND p.brand_id = :brandId");
             params.put("brandId", brandId);
         }
-        sql.append(" ORDER BY p.id LIMIT 51 OFFSET :offset");
+        if (inStockOnly) {
+            sql.append(" AND p.stock > 0");
+        }
+        String orderBy = switch (sort == null ? "" : sort) {
+            case "price_asc" -> " ORDER BY p.price ASC, p.id ASC";
+            case "price_desc" -> " ORDER BY p.price DESC, p.id ASC";
+            case "newest" -> " ORDER BY p.id DESC";
+            default -> " ORDER BY p.id ASC";
+        };
+        sql.append(orderBy).append(" LIMIT 51 OFFSET :offset");
         params.put("offset", (long) page * 50);
 
         var stmt = jdbc.sql(sql.toString());
@@ -69,6 +81,14 @@ public class Catalog {
 
     public Optional<Product> find(long id) {
         return jdbc.sql(SELECT + " AND p.id = :id").param("id", id).query(Product.class).optional();
+    }
+
+    public List<Product> related(long productId, long categoryId) {
+        return jdbc.sql(SELECT + " AND p.id <> :id ORDER BY (p.category_id = :cid) DESC, p.id ASC LIMIT 4")
+                .param("id", productId)
+                .param("cid", categoryId)
+                .query(Product.class)
+                .list();
     }
 
     public List<Option> categories() {
