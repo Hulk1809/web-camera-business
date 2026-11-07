@@ -73,6 +73,18 @@ public class CatalogController {
             table { width:100%; border-collapse:collapse; margin-top:0.75rem; font-size:0.92rem; }
             th, td { text-align:left; padding:0.65rem 0.75rem; border-bottom:1px solid var(--border); }
             th { background:var(--bg); font-weight:700; color:var(--muted); font-size:0.8rem; text-transform:uppercase; }
+            .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin:1.25rem 0; }
+            .kpi-card { background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--primary); border-radius:0.75rem; padding:1rem 1.25rem; }
+            .kpi-card.warn { border-left-color:var(--danger); }
+            .kpi-card.ok { border-left-color:var(--success); }
+            .kpi-title { font-size:0.78rem; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0; }
+            .kpi-val { font-size:1.35rem; font-weight:800; color:var(--text); margin:0.35rem 0 0.2rem; }
+            .kpi-sub { font-size:0.82rem; color:var(--muted); margin:0; }
+            .bar-row { margin-bottom:0.65rem; }
+            .bar-label { display:flex; justify-content:space-between; font-size:0.85rem; font-weight:600; margin-bottom:0.2rem; }
+            .bar-track { background:var(--badge-bg); border-radius:999px; height:10px; overflow:hidden; }
+            .bar-fill { background:linear-gradient(90deg,var(--primary),#38bdf8); height:100%; border-radius:999px; }
+            .two-col { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:1rem; }
             footer { background:#0f172a; color:#94a3b8; text-align:center; padding:1.5rem; font-size:0.875rem; margin-top:3rem; }
             """;
 

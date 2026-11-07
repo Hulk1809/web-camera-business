@@ -1,6 +1,7 @@
 package com.progear.commerce;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -57,6 +58,36 @@ public class CommerceService {
 
     public record AuditRow(long id, String actor, String action, String targetType,
                            String targetId, String details, Instant createdAt) {}
+
+    public record DailyRevenue(LocalDate day, long orderCount, BigDecimal revenue) {}
+
+    public record TopProduct(long productId, String sku, String productName, long unitsSold, BigDecimal revenue) {}
+
+    public record GroupRevenue(String name, long unitsSold, BigDecimal revenue) {}
+
+    public record DashboardReport(
+            String range,
+            BigDecimal paidRevenue,
+            BigDecimal pendingRevenue,
+            BigDecimal validRevenue,
+            long totalOrders,
+            long activeOrders,
+            long cancelledOrders,
+            BigDecimal onlineRevenue,
+            long onlineOrders,
+            BigDecimal posRevenue,
+            long posOrders,
+            BigDecimal inventoryValue,
+            long totalStockUnits,
+            long lowStockCount,
+            long activeWarrantySerials,
+            long inStockSerials,
+            List<DailyRevenue> dailyRevenues,
+            List<TopProduct> topProducts,
+            List<GroupRevenue> categoryRevenues,
+            List<GroupRevenue> brandRevenues,
+            List<ProductSnapshot> lowStockProducts,
+            List<OrderSummary> pendingOrders) {}
 
     public Optional<AppUser> findUserByEmail(String email) {
         if (email == null || email.isBlank()) return Optional.empty();
@@ -663,14 +694,205 @@ public class CommerceService {
                 .list();
     }
 
-    public BigDecimal totalPaidRevenue() {
-        return jdbc.sql("""
+    @Transactional
+    public void adminUpdateProductStock(String actor, long productId, int stock) {
+        if (stock < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tồn kho không được âm");
+        }
+        int updated = jdbc.sql("UPDATE product SET stock = :stock WHERE id = :id")
+                .param("stock", stock)
+                .param("id", productId)
+                .update();
+        if (updated == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm");
+        }
+        writeAudit(actor, "PRODUCT_STOCK_UPDATE", "PRODUCT", String.valueOf(productId), "stock=" + stock);
+    }
+
+    public DashboardReport buildDashboard(String rawRange) {
+        String range = (rawRange == null) ? "all" : switch (rawRange.trim().toLowerCase()) {
+            case "7d" -> "7d";
+            case "30d" -> "30d";
+            default -> "all";
+        };
+        Instant cutoffInstant = switch (range) {
+            case "7d" -> Instant.now().minus(Duration.ofDays(7));
+            case "30d" -> Instant.now().minus(Duration.ofDays(30));
+            default -> Instant.EPOCH;
+        };
+        var cutoff = java.sql.Timestamp.from(cutoffInstant);
+
+        BigDecimal paidRevenue = jdbc.sql("""
                         SELECT COALESCE(SUM(total_amount), 0)
                         FROM customer_order
-                        WHERE status <> 'CANCELLED'
+                        WHERE status <> 'CANCELLED' AND payment_status = 'PAID' AND created_at >= :cutoff
                         """)
-                .query(BigDecimal.class)
-                .single();
+                .param("cutoff", cutoff).query(BigDecimal.class).single();
+
+        BigDecimal pendingRevenue = jdbc.sql("""
+                        SELECT COALESCE(SUM(total_amount), 0)
+                        FROM customer_order
+                        WHERE status <> 'CANCELLED' AND payment_status = 'PENDING' AND created_at >= :cutoff
+                        """)
+                .param("cutoff", cutoff).query(BigDecimal.class).single();
+
+        BigDecimal validRevenue = jdbc.sql("""
+                        SELECT COALESCE(SUM(total_amount), 0)
+                        FROM customer_order
+                        WHERE status <> 'CANCELLED' AND created_at >= :cutoff
+                        """)
+                .param("cutoff", cutoff).query(BigDecimal.class).single();
+
+        long totalOrders = jdbc.sql("SELECT COUNT(*) FROM customer_order WHERE created_at >= :cutoff")
+                .param("cutoff", cutoff).query(Long.class).single();
+        long cancelledOrders = jdbc.sql("SELECT COUNT(*) FROM customer_order WHERE status = 'CANCELLED' AND created_at >= :cutoff")
+                .param("cutoff", cutoff).query(Long.class).single();
+        long activeOrders = totalOrders - cancelledOrders;
+
+        BigDecimal onlineRevenue = jdbc.sql("""
+                        SELECT COALESCE(SUM(total_amount), 0)
+                        FROM customer_order
+                        WHERE status <> 'CANCELLED' AND channel = 'ONLINE' AND created_at >= :cutoff
+                        """)
+                .param("cutoff", cutoff).query(BigDecimal.class).single();
+        long onlineOrders = jdbc.sql("""
+                        SELECT COUNT(*)
+                        FROM customer_order
+                        WHERE status <> 'CANCELLED' AND channel = 'ONLINE' AND created_at >= :cutoff
+                        """)
+                .param("cutoff", cutoff).query(Long.class).single();
+
+        BigDecimal posRevenue = jdbc.sql("""
+                        SELECT COALESCE(SUM(total_amount), 0)
+                        FROM customer_order
+                        WHERE status <> 'CANCELLED' AND channel = 'POS' AND created_at >= :cutoff
+                        """)
+                .param("cutoff", cutoff).query(BigDecimal.class).single();
+        long posOrders = jdbc.sql("""
+                        SELECT COUNT(*)
+                        FROM customer_order
+                        WHERE status <> 'CANCELLED' AND channel = 'POS' AND created_at >= :cutoff
+                        """)
+                .param("cutoff", cutoff).query(Long.class).single();
+
+        BigDecimal inventoryValue = jdbc.sql("SELECT COALESCE(SUM(price * stock), 0) FROM product")
+                .query(BigDecimal.class).single();
+        long totalStockUnits = jdbc.sql("SELECT COALESCE(SUM(stock), 0) FROM product")
+                .query(Long.class).single();
+        long lowStockCount = jdbc.sql("SELECT COUNT(*) FROM product WHERE stock <= 3")
+                .query(Long.class).single();
+
+        long activeWarrantySerials = jdbc.sql("""
+                        SELECT COUNT(*)
+                        FROM serial_unit
+                        WHERE status = 'SOLD' AND warranty_until >= CURRENT_DATE
+                        """)
+                .query(Long.class).single();
+        long inStockSerials = jdbc.sql("SELECT COUNT(*) FROM serial_unit WHERE status = 'IN_STOCK'")
+                .query(Long.class).single();
+
+        List<DailyRevenue> dailyRevenues = jdbc.sql("""
+                        SELECT CAST(created_at AT TIME ZONE 'UTC' AS DATE) AS day,
+                               COUNT(*) AS orderCount,
+                               COALESCE(SUM(total_amount), 0) AS revenue
+                        FROM customer_order
+                        WHERE status <> 'CANCELLED' AND created_at >= :cutoff
+                        GROUP BY CAST(created_at AT TIME ZONE 'UTC' AS DATE)
+                        ORDER BY day DESC
+                        LIMIT 14
+                        """)
+                .param("cutoff", cutoff)
+                .query(DailyRevenue.class)
+                .list();
+
+        List<TopProduct> topProducts = jdbc.sql("""
+                        SELECT oi.product_id AS productId,
+                               oi.sku,
+                               oi.product_name AS productName,
+                               COALESCE(SUM(oi.quantity), 0) AS unitsSold,
+                               COALESCE(SUM(oi.unit_price * oi.quantity), 0) AS revenue
+                        FROM order_item oi
+                        JOIN customer_order o ON o.id = oi.order_id
+                        WHERE o.status <> 'CANCELLED' AND o.created_at >= :cutoff
+                        GROUP BY oi.product_id, oi.sku, oi.product_name
+                        ORDER BY revenue DESC, unitsSold DESC
+                        LIMIT 5
+                        """)
+                .param("cutoff", cutoff)
+                .query(TopProduct.class)
+                .list();
+
+        List<GroupRevenue> categoryRevenues = jdbc.sql("""
+                        SELECT c.name,
+                               COALESCE(SUM(oi.quantity), 0) AS unitsSold,
+                               COALESCE(SUM(oi.unit_price * oi.quantity), 0) AS revenue
+                        FROM order_item oi
+                        JOIN customer_order o ON o.id = oi.order_id
+                        JOIN product p ON p.id = oi.product_id
+                        JOIN category c ON c.id = p.category_id
+                        WHERE o.status <> 'CANCELLED' AND o.created_at >= :cutoff
+                        GROUP BY c.id, c.name
+                        ORDER BY revenue DESC
+                        """)
+                .param("cutoff", cutoff)
+                .query(GroupRevenue.class)
+                .list();
+
+        List<GroupRevenue> brandRevenues = jdbc.sql("""
+                        SELECT b.name,
+                               COALESCE(SUM(oi.quantity), 0) AS unitsSold,
+                               COALESCE(SUM(oi.unit_price * oi.quantity), 0) AS revenue
+                        FROM order_item oi
+                        JOIN customer_order o ON o.id = oi.order_id
+                        JOIN product p ON p.id = oi.product_id
+                        JOIN brand b ON b.id = p.brand_id
+                        WHERE o.status <> 'CANCELLED' AND o.created_at >= :cutoff
+                        GROUP BY b.id, b.name
+                        ORDER BY revenue DESC
+                        """)
+                .param("cutoff", cutoff)
+                .query(GroupRevenue.class)
+                .list();
+
+        List<ProductSnapshot> lowStockProducts = jdbc.sql("""
+                        SELECT p.id, p.name, p.sku, p.price, p.stock,
+                               p.category_id AS categoryId, p.brand_id AS brandId,
+                               p.description, p.visible,
+                               c.name AS categoryName, b.name AS brandName
+                        FROM product p
+                        JOIN category c ON c.id = p.category_id
+                        JOIN brand b ON b.id = p.brand_id
+                        WHERE p.stock <= 3
+                        ORDER BY p.stock ASC, p.id ASC
+                        """)
+                .query(ProductSnapshot.class)
+                .list();
+
+        List<OrderSummary> pendingOrders = jdbc.sql("""
+                        SELECT o.id, o.user_id AS userId, COALESCE(u.email, '') AS userEmail,
+                               o.idempotency_key AS idempotencyKey, o.channel,
+                               o.payment_method AS paymentMethod, o.payment_status AS paymentStatus,
+                               o.status, o.shipping_address AS shippingAddress,
+                               o.total_amount AS totalAmount, o.stock_restored AS stockRestored,
+                               o.created_at AS createdAt
+                        FROM customer_order o
+                        LEFT JOIN app_user u ON u.id = o.user_id
+                        WHERE o.status = 'PENDING_PAYMENT' OR (o.status <> 'CANCELLED' AND o.payment_status = 'PENDING')
+                        ORDER BY o.id DESC
+                        LIMIT 20
+                        """)
+                .query(OrderSummary.class)
+                .list();
+
+        // ponytail: in-database SQL aggregation scales to ~100k orders on t4g.small; upgrade to materialized views when order count > 500k
+        return new DashboardReport(
+                range, paidRevenue, pendingRevenue, validRevenue,
+                totalOrders, activeOrders, cancelledOrders,
+                onlineRevenue, onlineOrders, posRevenue, posOrders,
+                inventoryValue, totalStockUnits, lowStockCount,
+                activeWarrantySerials, inStockSerials,
+                dailyRevenues, topProducts, categoryRevenues, brandRevenues,
+                lowStockProducts, pendingOrders);
     }
 
     public void writeAudit(String actor, String action, String targetType, String targetId, String details) {

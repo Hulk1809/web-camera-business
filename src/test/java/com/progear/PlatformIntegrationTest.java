@@ -225,6 +225,72 @@ class PlatformIntegrationTest {
         Long auditCount = jdbcClient.sql("SELECT COUNT(*) FROM audit_log WHERE actor = 'admin@progear.vn' AND action = 'PRODUCT_UPSERT'")
                 .query(Long.class).single();
         assertThat(auditCount).isGreaterThanOrEqualTo(1L);
+
+        // Quick stock adjustment to low stock (2) and then restock (15) + verify Dashboard Analytics
+        long prodId = jdbcClient.sql("SELECT id FROM product WHERE sku = 'RED-KOMODO-X'").query(Long.class).single();
+        var lowStockForm = new LinkedMultiValueMap<String, String>();
+        lowStockForm.add("stock", "2");
+        assertThat(postWithCsrf("/admin/products/" + prodId + "/stock", adminCookie, lowStockForm).getStatusCode())
+                .isEqualTo(HttpStatus.FOUND);
+        assertThat(jdbcClient.sql("SELECT stock FROM product WHERE id = :id").param("id", prodId).query(Integer.class).single())
+                .isEqualTo(2);
+
+        // Create an ONLINE BANK_TRANSFER order (PENDING_PAYMENT) to verify pending order approval on Dashboard
+        String customerCookie = login("customer@progear.vn", "Customer@123456");
+        var checkoutForm = new LinkedMultiValueMap<String, String>();
+        checkoutForm.add("idempotencyKey", "DASH-BANK-" + UUID.randomUUID());
+        checkoutForm.add("paymentMethod", "BANK_TRANSFER");
+        checkoutForm.add("shippingAddress", "101 Nguyễn Huệ, Q1");
+        checkoutForm.add("productId", String.valueOf(prodId));
+        checkoutForm.add("quantity", "1");
+        var orderRedirect = postWithCsrf("/checkout", customerCookie, checkoutForm);
+        assertThat(orderRedirect.getStatusCode()).isEqualTo(HttpStatus.FOUND);
+        String orderPath = orderRedirect.getHeaders().getLocation().getPath();
+        long pendingOrderId = Long.parseLong(orderPath.substring(orderPath.lastIndexOf('/') + 1));
+
+        // Verify Dashboard renders 6 KPIs, range filters (7d, 30d, all), low-stock alert (stock = 1 <= 3), and pending order
+        for (String range : List.of("7d", "30d", "all")) {
+            var dashPage = getWithCookie("/admin?range=" + range, adminCookie);
+            assertThat(dashPage.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(dashPage.getBody()).contains(
+                    "Quản trị &amp; Phân tích Kinh doanh ProGear",
+                    "Doanh thu thực thu (PAID)",
+                    "Doanh thu chờ thu (PENDING)",
+                    "Tổng đơn &amp; Tỷ lệ hủy",
+                    "Kênh bán ONLINE vs POS",
+                    "Giá trị Tồn kho &amp; Sắp hết",
+                    "Serial &amp; Bảo hành hiệu lực",
+                    "Biểu đồ doanh thu theo ngày",
+                    "Top 5 Sản phẩm bán chạy nhất",
+                    "Doanh thu theo Danh mục",
+                    "Doanh thu theo Thương hiệu",
+                    "Cảnh báo Tồn kho thấp",
+                    "Đơn chờ duyệt thanh toán",
+                    "RED-KOMODO-X",
+                    "215000000.00 VND"
+            );
+        }
+
+        // Approve pending bank-transfer order (CONFIRMED + PAID) and restock via quick stock form
+        var approveForm = new LinkedMultiValueMap<String, String>();
+        approveForm.add("status", "CONFIRMED");
+        approveForm.add("paymentStatus", "PAID");
+        assertThat(postWithCsrf("/admin/orders/" + pendingOrderId + "/status", adminCookie, approveForm).getStatusCode())
+                .isEqualTo(HttpStatus.FOUND);
+
+        String pStatus = jdbcClient.sql("SELECT payment_status FROM customer_order WHERE id = :id")
+                .param("id", pendingOrderId).query(String.class).single();
+        assertThat(pStatus).isEqualTo("PAID");
+
+        var restockForm = new LinkedMultiValueMap<String, String>();
+        restockForm.add("stock", "12");
+        assertThat(postWithCsrf("/admin/products/" + prodId + "/stock", adminCookie, restockForm).getStatusCode())
+                .isEqualTo(HttpStatus.FOUND);
+        assertThat(jdbcClient.sql("SELECT stock FROM product WHERE id = :id").param("id", prodId).query(Integer.class).single())
+                .isEqualTo(12);
+        Long stockAuditCount = jdbcClient.sql("SELECT COUNT(*) FROM audit_log WHERE action = 'PRODUCT_STOCK_UPDATE' AND target_id = :tid")
+                .param("tid", String.valueOf(prodId)).query(Long.class).single();
+        assertThat(stockAuditCount).isGreaterThanOrEqualTo(2L);
     }
 
     @Test
